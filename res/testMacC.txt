@@ -1,0 +1,1 @@
+000123   /* comment */            abcDEF123 456 2 * 3 100 / 50 if elif/* This isa multiline comment /* nested comments not */ @@@@#####\\\allowed  */ defabc 123 /* final comment */
