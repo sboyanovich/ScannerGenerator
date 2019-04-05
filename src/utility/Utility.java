@@ -8,8 +8,45 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 
 public class Utility {
+
+    public static final String SPACE = " ";
+    public static final String LAMBDA = "\u03BB";
+    public static final String NEWLINE = "\n";
+    public static final String TAB = "\t";
+    public static final String SEMICOLON = ";";
+    public static final String COMMA = ",";
+    public static final String ARROW = "-->";
+    public static final String EMPTY = "";
+    public static final String BNF_OR = " | ";
+    public static final String NONTERMINAL_NAME_PREFIX = "Q_";
+
+    public static String edgeLabelAsString(Set<Integer> edgeLabel) {
+        return edgeLabelAsString(edgeLabel, Utility::defaultAlphabetInterpretation);
+    }
+
+    public static String edgeLabelAsString(Set<Integer> edgeLabel, Function<Integer, String> alphabetInterpretation) {
+        Objects.requireNonNull(edgeLabel);
+
+        StringBuilder result = new StringBuilder();
+        if (edgeLabel.isEmpty()) {
+            result.append(LAMBDA);
+        } else {
+            List<Integer> letters = new ArrayList<>(edgeLabel);
+            result.append(alphabetInterpretation.apply(letters.get(0)));
+            for (int i = 1; i < letters.size(); i++) {
+                result.append(COMMA + SPACE);
+                result.append(alphabetInterpretation.apply(letters.get(i)));
+            }
+        }
+        return result.toString();
+    }
+
+    public static String defaultAlphabetInterpretation(int letter) {
+        return "a_" + letter;
+    }
 
     public static int asCodePoint(String symbol) {
         return Character.codePointAt(symbol, 0);

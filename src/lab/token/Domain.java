@@ -15,7 +15,4 @@ import lab.lex.Text;
  */
 public interface Domain {
     Token createToken(Text text, Fragment fragment);
-    /*boolean isError();
-    boolean isEndOfProgram();
-    */
 }
