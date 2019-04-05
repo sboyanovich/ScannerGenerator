@@ -240,4 +240,12 @@ public class Utility {
         )
                 .toString();
     }
+
+    public static int[][] copyTable(int[][] table) {
+        int[][] result = new int[table.length][];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = Arrays.copyOf(table[i], table[i].length);
+        }
+        return result;
+    }
 }
