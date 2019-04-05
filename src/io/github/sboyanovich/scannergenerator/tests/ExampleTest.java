@@ -1,27 +1,28 @@
-if elif
-ifelif
-
-package tests;
+package io.github.sboyanovich.scannergenerator.tests;
 
 import io.github.sboyanovich.scannergenerator.Position;
-import lab.lex.Compiler;
-import lab.lex.*;
-import lab.token.DomainTag;
-import lab.token.Token;
-import tests.data.TransitionTableExample;
-import utility.EquivalenceMap;
-import utility.Utility;
+import io.github.sboyanovich.scannergenerator.lex.Compiler;
+import io.github.sboyanovich.scannergenerator.lex.*;
+import io.github.sboyanovich.scannergenerator.tests.data.TransitionTableExample;
+import io.github.sboyanovich.scannergenerator.token.Domain;
+import io.github.sboyanovich.scannergenerator.token.DomainEOP;
+import io.github.sboyanovich.scannergenerator.token.DomainError;
+import io.github.sboyanovich.scannergenerator.token.Token;
+import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
+import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 
-import static lab.lex.StateTag.*;
-import static utility.Utility.*;
+import static io.github.sboyanovich.scannergenerator.tests.data.states.StateTags.*;
+import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 
 public class ExampleTest {
     public static void main(String[] args) {
+        /* TODO: Add automata handling classes and chain  */
+
         EquivalenceMap map1 = TransitionTableExample.map1;
         int[][] transitionTable = TransitionTableExample.get();
 
@@ -48,35 +49,29 @@ public class ExampleTest {
                 COMMENT             // 14
         );
 
-        /*System.out.println(map1.getEqClass(asCodePoint("a")));
-        System.out.println(map1.getEqClass(asCodePoint("b")));
-        printTransitionTable(transitionTable, 3);
-        System.out.println();
-        printTransitionTable(finalTransitionTable, 3);*/
-
         // note, Integer.parseInt guards against overflow
 
         LexicalRecognizer dfa = new LexicalRecognizer(map, finalTransitionTable, stateLabels);
 
-        String text = Utility.getText("test.txt");
+        String text = Utility.getText("testWin.txt");
         //text = text.replace("\n","\r");
 
         Compiler compiler = new Compiler(dfa);
         Scanner scanner = compiler.getScanner(text);
 
-        Set<DomainTag> ignoredTokenTypes = Set.of(
-                DomainTag.END_OF_PROGRAM,
-                DomainTag.ERROR
+        Set<Domain> ignoredTokenTypes = Set.of(
+                DomainEOP.END_OF_PROGRAM,
+                DomainError.ERROR
         );
 
         int errCount = 0;
 
         Token t = scanner.nextToken();
-        while(t.getTag() != DomainTag.END_OF_PROGRAM) {
-            if(!ignoredTokenTypes.contains(t.getTag())) {
+        while (t.getTag() != DomainEOP.END_OF_PROGRAM) {
+            if (!ignoredTokenTypes.contains(t.getTag())) {
                 System.out.println(t);
             }
-            if(t.getTag() == DomainTag.ERROR) {
+            if (t.getTag() == DomainError.ERROR) {
                 errCount++;
                 System.out.println(t.getCoords());
             }
@@ -87,21 +82,21 @@ public class ExampleTest {
         System.out.println("Errors: " + errCount);
         System.out.println("Compiler messages: ");
         SortedMap<Position, Message> messages = compiler.getSortedMessages();
-        for(Map.Entry<Position, Message> entry : messages.entrySet()) {
+        for (Map.Entry<Position, Message> entry : messages.entrySet()) {
             System.out.println(entry.getValue() + " at " + entry.getKey());
         }
     }
 
     public static void printTransitionTable(int[][] transitionTable, int paddingTo) {
-        for (int i = 0; i < transitionTable.length; i++) {
-            for (int j = 0; j < transitionTable[i].length; j++) {
-                System.out.print(pad(transitionTable[i][j], paddingTo) + " ");
+        for (int[] aTransitionTable : transitionTable) {
+            for (int anATransitionTable : aTransitionTable) {
+                System.out.print(pad(anATransitionTable, paddingTo) + " ");
             }
             System.out.println();
         }
     }
 
-    public static String pad(int arg, int paddingTo) {
+    private static String pad(int arg, int paddingTo) {
         StringBuilder result = new StringBuilder();
         int n = paddingTo - String.valueOf(arg).length();
         result.append(arg);
@@ -111,4 +106,3 @@ public class ExampleTest {
         return result.toString();
     }
 }
-
