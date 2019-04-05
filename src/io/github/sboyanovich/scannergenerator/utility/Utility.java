@@ -248,4 +248,8 @@ public class Utility {
         }
         return result;
     }
+
+    public static boolean isInRange(int x, int n, int m) {
+        return (x >= n && x <= m);
+    }
 }

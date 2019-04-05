@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 /* Mutable for now */
+// TODO: Convert this to builder and make immutable version
 public class NFAStateGraph {
     private int numberOfStates;
     private List<List<Set<Integer>>> edges;
