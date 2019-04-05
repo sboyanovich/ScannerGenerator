@@ -18,6 +18,8 @@ import static utility.Utility.*;
 
 public class ExampleTest {
     public static void main(String[] args) {
+        /* TODO: Add automata handling classes and chain  */
+
         EquivalenceMap map1 = TransitionTableExample.map1;
         int[][] transitionTable = TransitionTableExample.get();
 
