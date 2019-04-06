@@ -64,6 +64,11 @@ public class Scanner {
         return nextState != LexicalRecognizer.DEAD_END_STATE;
     }
 
+    private boolean isFinal(int currState) {
+        return !this.dfa.getStateTag(currState)
+                .equals(STNotFinal.NOT_FINAL);
+    }
+
     public Token nextToken() {
         if (getCurrentCodePoint() == Text.EOI) {
             return new TEndOfProgram(new Fragment(currPos, currPos));
@@ -81,7 +86,7 @@ public class Scanner {
             int currCodePoint = getCurrentCodePoint();
             int nextState = this.dfa.transition(currState, currCodePoint);
 
-            if (this.dfa.getStateTag(currState).isFinal()) {
+            if (isFinal(currState)) {
                 lastFinalState = OptionalInt.of(currState);
                 lastInFinal = this.currPos;
             }
@@ -92,7 +97,7 @@ public class Scanner {
             } else {
                 // it's time to stop
 
-                if (!this.dfa.getStateTag(currState).isFinal() && !lastFinalState.isPresent()) {
+                if (!isFinal(currState) && !lastFinalState.isPresent()) {
                     this.compiler.addError(this.currPos, "Unexpected symbol encountered.");
 
                     // recovery

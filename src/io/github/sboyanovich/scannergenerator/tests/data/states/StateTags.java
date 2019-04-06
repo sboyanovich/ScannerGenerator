@@ -42,21 +42,5 @@ public enum StateTags implements StateTag {
         public Domain getDomain() {
             return DomainsWithStringAttribute.COMMENT;
         }
-    },
-    NOT_FINAL {
-        @Override
-        public boolean isFinal() {
-            return false;
-        }
-
-        @Override
-        public Domain getDomain() {
-            throw new Error("This is never supposed to be called!");
-        }
-    };
-
-    @Override
-    public boolean isFinal() {
-        return true;
     }
 }
