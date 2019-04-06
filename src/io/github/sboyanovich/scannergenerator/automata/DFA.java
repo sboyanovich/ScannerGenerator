@@ -11,15 +11,12 @@ public class DFA {
     private int numberOfStates;
     private int alphabetSize;
     private int initialState;
-    private Set<Integer> acceptingStates;
     private List<StateTag> labels;
-
     private int[][] transitionTable;
 
-    public DFA(int numberOfStates, int alphabetSize, int initialState, Set<Integer> acceptingStates,
+    public DFA(int numberOfStates, int alphabetSize, int initialState,
                Map<Integer, StateTag> labelsMap, int[][] transitionTable) {
         // no NULLs allowed
-        Objects.requireNonNull(acceptingStates);
         Objects.requireNonNull(labelsMap);
         Objects.requireNonNull(transitionTable);
         for (int[] aTransitionTable : transitionTable) {
@@ -27,7 +24,6 @@ public class DFA {
         }
 
         // defensive copies (against TOCTOU)
-        acceptingStates = new HashSet<>(acceptingStates);
         labelsMap = new HashMap<>(labelsMap);
         transitionTable = copyTable(transitionTable);
 
@@ -35,7 +31,6 @@ public class DFA {
         //  numberOfStates > 0
         //  alphabetSize > 0
         //  initialState in [0, numberOfStates - 1]
-        //  acceptingStates subsetOf [0, numberOfStates - 1]
         //  labelsMap [0, numberOfStates - 1] -> StateTag (must be defined at these)
         //  transitionTable [numberOfStates][alphabetSize]
         //  transitionTable elements in [0, numberOfStates - 1]
@@ -48,11 +43,6 @@ public class DFA {
         }
         if (!isInRange(initialState, 0, numberOfStates - 1)) {
             throw new IllegalArgumentException("Initial state must be in range [0, numberOfStates-1]!");
-        }
-        for (int state : acceptingStates) {
-            if (!isInRange(state, 0, numberOfStates - 1)) {
-                throw new IllegalArgumentException("Accepting states must be in range [0, numberOfStates-1]!");
-            }
         }
         for (int i = 0; i < numberOfStates; i++) {
             if (!labelsMap.containsKey(i)) {
@@ -81,7 +71,6 @@ public class DFA {
         this.numberOfStates = numberOfStates;
         this.alphabetSize = alphabetSize;
         this.initialState = initialState;
-        this.acceptingStates = acceptingStates;
         this.labels = new ArrayList<>();
         for (int i = 0; i < this.numberOfStates; i++) {
             this.labels.add(labelsMap.get(i));
@@ -99,10 +88,6 @@ public class DFA {
 
     public int getInitialState() {
         return initialState;
-    }
-
-    public Set<Integer> getAcceptingStates() {
-        return Collections.unmodifiableSet(acceptingStates);
     }
 
     public List<StateTag> getLabels() {
