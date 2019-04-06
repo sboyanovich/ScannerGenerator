@@ -198,6 +198,7 @@ public class NFA {
                 .orElse(dummySTFinal);
 
         labels.put(acceptingState, defaultFinalStateTag);
+        labels.put(initialState, NOT_FINAL); // should fix NFATest1
 
         NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates);
         // preserving edges from this automaton
@@ -318,11 +319,14 @@ public class NFA {
     }
 
     public String toGraphvizDotString() {
-        return toGraphvizDotString(Utility::defaultAlphabetInterpretation);
+        return toGraphvizDotString(Utility::defaultAlphabetInterpretation, false);
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
-    public String toGraphvizDotString(Function<Integer, String> alphabetInterpretation) {
+    public String toGraphvizDotString(
+            Function<Integer, String> alphabetInterpretation,
+            boolean prefixFinalStatesWithTagName
+    ) {
         StringBuilder result = new StringBuilder();
 
         Set<Integer> acceptingStates = acceptingStates();
@@ -343,6 +347,12 @@ public class NFA {
         for (Integer state : acceptingStates) {
             result.append(TAB);
             result.append(state);
+            if(prefixFinalStatesWithTagName) {
+                result.append(TAB);
+                result.append("[label=\"");
+                result.append(state).append("_").append(this.labels.get(state));
+                result.append("\"]");
+            }
             result.append(SEMICOLON + NEWLINE);
         }
 
