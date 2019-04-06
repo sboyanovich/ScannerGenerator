@@ -65,8 +65,7 @@ public class Scanner {
     }
 
     private boolean isFinal(int currState) {
-        return !this.dfa.getStateTag(currState)
-                .equals(STNotFinal.NOT_FINAL);
+        return StateTag.isFinal(this.dfa.getStateTag(currState));
     }
 
     public Token nextToken() {
