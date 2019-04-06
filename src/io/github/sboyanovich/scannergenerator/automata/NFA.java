@@ -187,26 +187,21 @@ public class NFA {
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     public NFA iteration() {
-        int numberOfStates = this.numberOfStates + 2; // new start state and additional accepting state
+        Set<Integer> acceptingStates = acceptingStates();
+        // handle automaton with no accepting states
+        if (acceptingStates.isEmpty()) {
+            return emptyStringLanguage(this.alphabetSize);
+        }
+
+        int numberOfStates = this.numberOfStates + 1; // new start state
         int alphabetSize = this.alphabetSize;
-        int initialState = numberOfStates - 2;
-        int acceptingState = numberOfStates - 1;
+        int initialState = numberOfStates - 1;
 
         Map<Integer, StateTag> labels = new HashMap<>();
         for (int i = 0; i < this.labels.size(); i++) {
             labels.put(i, this.labels.get(i));
         }
-        // For practical purposes, one would call iteration() only on NFA with only one kind
-        // of final state, so we shall take the first encountered final state for default
-        // or dummy if none is present
-        // TODO: In the context of LexicalRecognizers, a slightly modified algorithm makes more sense
 
-        StateTag defaultFinalStateTag = this.labels.stream()
-                .filter(StateTag::isFinal)
-                .findFirst()
-                .orElse(dummySTFinal);
-
-        labels.put(acceptingState, defaultFinalStateTag);
         labels.put(initialState, NOT_FINAL); // should fix NFATest1
 
         NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates);
@@ -218,17 +213,15 @@ public class NFA {
                 }
             }
         }
-        // adding lambda-step from new initial to new accepting state
-        edges.setEdge(initialState, acceptingState, Set.of());
         // adding lambda-step from new initial to old initial state
         edges.setEdge(initialState, this.initialState, Set.of());
-        // linking this automaton's accepting states with old initial and new accepting state(lambda-steps)
-        // TODO: IS THIS SUPERFLUOUS?
 
+        // linking this automaton's accepting states with new initial state (lambda-steps)
+        // linking this automaton's new initial state with accepting states (lambda-steps)
         for (int i = 0; i < this.labels.size(); i++) {
             if (StateTag.isFinal(this.labels.get(i))) {
-                edges.setEdge(i, this.initialState, Set.of());
-                edges.setEdge(i, acceptingState, Set.of());
+                edges.setEdge(i, initialState, Set.of());
+                edges.setEdge(initialState, i, Set.of());
             }
         }
 
