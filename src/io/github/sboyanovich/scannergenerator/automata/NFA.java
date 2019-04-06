@@ -1,6 +1,7 @@
 package io.github.sboyanovich.scannergenerator.automata;
 
 import io.github.sboyanovich.scannergenerator.lex.StateTag;
+import io.github.sboyanovich.scannergenerator.token.Domain;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.util.*;
@@ -21,8 +22,16 @@ public class NFA {
 
     // TODO: Review this later. There might be a more elegant way.
     //  maybe having client provide their own state tag (other than NOT_FINAL)
-    private static final StateTag dummySTFinal = () -> {
-        throw new Error("Dummy tag doesn't correspond to any domain!");
+    private static final StateTag dummySTFinal = new StateTag() {
+        @Override
+        public Domain getDomain() {
+            throw new Error("Dummy tag doesn't correspond to any domain!");
+        }
+
+        @Override
+        public String toString() {
+            return "DUMMY";
+        }
     };
 
     private int numberOfStates;
@@ -347,7 +356,7 @@ public class NFA {
         for (Integer state : acceptingStates) {
             result.append(TAB);
             result.append(state);
-            if(prefixFinalStatesWithTagName) {
+            if (prefixFinalStatesWithTagName) {
                 result.append(TAB);
                 result.append("[label=\"");
                 result.append(state).append("_").append(this.labels.get(state));
@@ -488,7 +497,12 @@ public class NFA {
                     if (acceptingStates[curr] || newAcceptingStates[curr]) {
                         newAcceptingStates[i] = true;
                         // addition
-                        nasLabels[i] = this.labels.get(i);
+                        // here is the problem: we need to find out the label of reached final state
+                        if (acceptingStates[curr]) {
+                            nasLabels[i] = this.labels.get(curr);
+                        } else {
+                            nasLabels[i] = nasLabels[curr];
+                        } // this should fix it
 
                         bfs.clear(); // hope empty will return true
                     } else {
