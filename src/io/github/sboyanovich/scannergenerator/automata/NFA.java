@@ -75,6 +75,16 @@ public class NFA {
         );
     }
 
+    public NFA relabelStates(Map<Integer, StateTag> relabel) {
+        return new NFA(
+                this.numberOfStates,
+                this.alphabetSize,
+                this.initialState,
+                this.edges, // thanks to immutability,
+                relabel
+        );
+    }
+
     public NFA union(NFA second) {
         // It is assumed both automatons are over the exactly same alphabet.
 
@@ -549,10 +559,10 @@ public class NFA {
 
         // trying to keep track of state labels
         Map<Integer, StateTag> labels = new HashMap<>();
-        for(int i = 0; i < numberOfStates; i++) {
+        for (int i = 0; i < numberOfStates; i++) {
             labels.put(i, NOT_FINAL);
         }
-        for(int state : tempAcceptingStatesSet) {
+        for (int state : tempAcceptingStatesSet) {
             int renamed = renaming.get(state);
             labels.put(renamed, nasLabels[state]);
         }
