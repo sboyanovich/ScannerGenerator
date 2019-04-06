@@ -6,6 +6,7 @@ import io.github.sboyanovich.scannergenerator.token.Domain;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 import io.github.sboyanovich.scannergenerator.utility.unionfind.DisjointSetForest;
 
+import javax.swing.plaf.nimbus.State;
 import java.util.*;
 import java.util.function.Function;
 
@@ -85,17 +86,22 @@ public class NFA {
         int alphabetSize = this.alphabetSize;
 
         //rename all states of Second to oldName + this.numberOfStates
-        Set<Integer> acceptingStates = new HashSet<>(this.acceptingStates);
-        second.acceptingStates.forEach(n -> acceptingStates.add(n + this.numberOfStates));
-
+        Map<Integer, StateTag> labels = new HashMap<>();
+        for (int i = 0; i < this.labels.size(); i++) {
+            labels.put(i, this.labels.get(i));
+        }
+        for (int i = 0; i < second.labels.size(); i++) {
+            labels.put(this.numberOfStates + i, second.labels.get(i));
+        }
         int initialState = numberOfStates - 1;
 
-        NFAStateGraph edges = new NFAStateGraph(numberOfStates);
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates);
         // preserving edges from this automaton
         for (int i = 0; i < this.numberOfStates; i++) {
             for (int j = 0; j < this.numberOfStates; j++) {
                 if (this.edges.edgeExists(i, j)) {
-                    edges.setEdge(i, j, new HashSet<>(this.edges.getEdgeMarker(i, j)));
+                    // noinspection OptionalGetWithoutIsPresent (because edgeExists == true guarantees it)
+                    edges.setEdge(i, j, new HashSet<>(this.edges.getEdgeMarker(i, j).get()));
                 }
             }
         }
@@ -103,10 +109,11 @@ public class NFA {
         for (int i = 0; i < second.numberOfStates; i++) {
             for (int j = 0; j < second.numberOfStates; j++) {
                 if (second.edges.edgeExists(i, j)) {
+                    //noinspection OptionalGetWithoutIsPresent
                     edges.setEdge(
                             i + this.numberOfStates,
                             j + this.numberOfStates,
-                            new HashSet<>(second.edges.getEdgeMarker(i, j)));
+                            new HashSet<>(second.edges.getEdgeMarker(i, j).get()));
                 }
             }
         }
@@ -114,21 +121,29 @@ public class NFA {
         edges.setEdge(initialState, this.initialState, Set.of());
         edges.setEdge(initialState, second.initialState + this.numberOfStates, Set.of());
 
-        return new NFA(numberOfStates, alphabetSize, initialState, acceptingStates, edges);
+        return new NFA(numberOfStates, alphabetSize, initialState, edges.build(), labels);
     }
 
     public NFA concatenation(NFA second) {
         int numberOfStates = this.numberOfStates + second.numberOfStates;
         int alphabetSize = this.alphabetSize;
         int initialState = this.initialState;
-        Set<Integer> acceptingStates = new HashSet<>();
-        second.acceptingStates.forEach(n -> acceptingStates.add(n + this.numberOfStates));
-        NFAStateGraph edges = new NFAStateGraph(numberOfStates);
+
+        Map<Integer, StateTag> labels = new HashMap<>();
+        for (int i = 0; i < this.labels.size(); i++) {
+            labels.put(i, STNotFinal.NOT_FINAL);
+        }
+        for (int i = 0; i < second.labels.size(); i++) {
+            labels.put(this.numberOfStates + i, second.labels.get(i));
+        }
+
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates);
         // preserving edges from this automaton
         for (int i = 0; i < this.numberOfStates; i++) {
             for (int j = 0; j < this.numberOfStates; j++) {
                 if (this.edges.edgeExists(i, j)) {
-                    edges.setEdge(i, j, new HashSet<>(this.edges.getEdgeMarker(i, j)));
+                    //noinspection OptionalGetWithoutIsPresent
+                    edges.setEdge(i, j, new HashSet<>(this.edges.getEdgeMarker(i, j).get()));
                 }
             }
         }
@@ -136,34 +151,53 @@ public class NFA {
         for (int i = 0; i < second.numberOfStates; i++) {
             for (int j = 0; j < second.numberOfStates; j++) {
                 if (second.edges.edgeExists(i, j)) {
+                    //noinspection OptionalGetWithoutIsPresent
                     edges.setEdge(
                             i + this.numberOfStates,
                             j + this.numberOfStates,
-                            new HashSet<>(second.edges.getEdgeMarker(i, j)));
+                            new HashSet<>(second.edges.getEdgeMarker(i, j).get()));
                 }
             }
         }
+
         // linking this automaton's accepting states with second automaton's initial state (lambda-steps)
-        for (Integer state : this.acceptingStates) {
-            edges.setEdge(state, second.initialState + this.numberOfStates, Set.of());
+        for (int i = 0; i < this.labels.size(); i++) {
+            if (StateTag.isFinal(this.labels.get(i))) {
+                edges.setEdge(i, second.initialState + this.numberOfStates, Set.of());
+            }
         }
 
-        return new NFA(numberOfStates, alphabetSize, initialState, acceptingStates, edges);
+        return new NFA(numberOfStates, alphabetSize, initialState, edges.build(), labels);
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     public NFA iteration() {
         int numberOfStates = this.numberOfStates + 2; // new start state and additional accepting state
         int alphabetSize = this.alphabetSize;
         int initialState = numberOfStates - 2;
         int acceptingState = numberOfStates - 1;
-        Set<Integer> acceptingStates = new HashSet<>();
-        acceptingStates.add(acceptingState);
-        NFAStateGraph edges = new NFAStateGraph(numberOfStates);
+
+        Map<Integer, StateTag> labels = new HashMap<>();
+        for (int i = 0; i < this.labels.size(); i++) {
+            labels.put(i, this.labels.get(i));
+        }
+        // For practical purposes, one would call iteration() only on NFA with only one kind
+        // of final state, so we shall take the first encountered final state for default
+        // or dummy if none is present
+
+        StateTag defaultFinalStateTag = this.labels.stream()
+                .filter(StateTag::isFinal)
+                .findFirst()
+                .orElse(dummySTFinal);
+
+        labels.put(acceptingState, defaultFinalStateTag);
+
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates);
         // preserving edges from this automaton
         for (int i = 0; i < this.numberOfStates; i++) {
             for (int j = 0; j < this.numberOfStates; j++) {
                 if (this.edges.edgeExists(i, j)) {
-                    edges.setEdge(i, j, new HashSet<>(this.edges.getEdgeMarker(i, j)));
+                    edges.setEdge(i, j, new HashSet<>(this.edges.getEdgeMarker(i, j).get()));
                 }
             }
         }
@@ -172,12 +206,16 @@ public class NFA {
         // adding lambda-step from new initial to old initial state
         edges.setEdge(initialState, this.initialState, Set.of());
         // linking this automaton's accepting states with old initial and new accepting state(lambda-steps)
-        for (Integer state : this.acceptingStates) {
-            edges.setEdge(state, this.initialState, Set.of());
-            edges.setEdge(state, acceptingState, Set.of());
+        // TODO: IS THIS SUPERFLUOUS?
+
+        for (int i = 0; i < this.labels.size(); i++) {
+            if (StateTag.isFinal(this.labels.get(i))) {
+                edges.setEdge(i, this.initialState, Set.of());
+                edges.setEdge(i, acceptingState, Set.of());
+            }
         }
 
-        return new NFA(numberOfStates, alphabetSize, initialState, acceptingStates, edges);
+        return new NFA(numberOfStates, alphabetSize, initialState, edges.build(), labels);
     }
 
     public NFA positiveIteration() {
