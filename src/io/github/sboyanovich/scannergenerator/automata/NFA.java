@@ -1,5 +1,8 @@
 package io.github.sboyanovich.scannergenerator.automata;
 
+import io.github.sboyanovich.scannergenerator.lex.STNotFinal;
+import io.github.sboyanovich.scannergenerator.lex.StateTag;
+import io.github.sboyanovich.scannergenerator.token.Domain;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 import io.github.sboyanovich.scannergenerator.utility.unionfind.DisjointSetForest;
 
@@ -9,6 +12,8 @@ import java.util.function.Function;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 
 // TODO: Make separate class for DFA. determinize() should return a DFA then
+// TODO: acceptingStates set is kind of obsolete, since there are labels now
+// TODO: A lot of work here
 
 public class NFA {
     private static final String DOT_ARROW = "->";
@@ -17,6 +22,18 @@ public class NFA {
     private static final String DOT_MAXSIZE_INCHES = "50,0";
     private static final String DOT_AUX_INPUT_STATE_NAME = "input";
 
+    private static final StateTag dummySTFinal = new StateTag() {
+        @Override
+        public boolean isFinal() {
+            return true;
+        }
+
+        @Override
+        public Domain getDomain() {
+            return null;
+        }
+    };
+
     private int numberOfStates;
     private int alphabetSize; //at least 1
     private int initialState;
@@ -24,8 +41,10 @@ public class NFA {
 
     private NFAStateGraph edges;
 
+    private List<StateTag> labels;
+
     public NFA(int numberOfStates, int alphabetSize, int initialState, Set<Integer> acceptingStates,
-               NFAStateGraph edges) {
+               NFAStateGraph edges, Map<Integer, StateTag> labelsMap) {
         //Validate inputs
 
         this.numberOfStates = numberOfStates;
@@ -33,20 +52,40 @@ public class NFA {
         this.initialState = initialState;
         this.acceptingStates = acceptingStates;
         this.edges = edges;
+        this.labels = new ArrayList<>();
+        for (int i = 0; i < this.numberOfStates; i++) {
+            this.labels.add(labelsMap.get(i));
+        }
     }
 
-    public static NFA emptyLanguageNDFA(int alphabetSize) {
-        return new NFA(1, alphabetSize, 0, Set.of(), new NFAStateGraph(1));
+    public static NFA emptyLanguage(int alphabetSize) {
+        return new NFA(
+                1, alphabetSize, 0,
+                Set.of(),
+                new NFAStateGraphBuilder(1).build(),
+                Map.of(0, STNotFinal.NOT_FINAL)
+        );
     }
 
-    public static NFA emptyStringLanguageNDFA(int alphabetSize) {
-        return new NFA(1, alphabetSize, 0, Set.of(0), new NFAStateGraph(1));
+    public static NFA emptyStringLanguage(int alphabetSize) {
+        return new NFA(1, alphabetSize, 0,
+                Set.of(0),
+                new NFAStateGraphBuilder(1).build(),
+                Map.of(0, dummySTFinal)
+        );
     }
 
-    public static NFA singleLetterLanguageNDFA(int alphabetSize, int letter) {
-        NFAStateGraph edges = new NFAStateGraph(2);
+    public static NFA singleLetterLanguage(int alphabetSize, int letter) {
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(2);
         edges.setEdge(0, 1, Set.of(letter));
-        return new NFA(2, alphabetSize, 0, Set.of(1), edges);
+        return new NFA(2, alphabetSize, 0,
+                Set.of(1),
+                edges.build(),
+                Map.of(
+                        0, STNotFinal.NOT_FINAL,
+                        1, dummySTFinal
+                )
+        );
     }
 
     public NFA union(NFA second) {
@@ -158,7 +197,7 @@ public class NFA {
     // EXPERIMENTAL
     public NFA power(int n) {
         if (n == 0) {
-            return NFA.emptyStringLanguageNDFA(this.alphabetSize);
+            return NFA.emptyStringLanguage(this.alphabetSize);
         } else {
             NFA result = this;
             while (n > 1) {
