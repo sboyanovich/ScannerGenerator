@@ -22,35 +22,28 @@ public class NFA {
     private static final String DOT_MAXSIZE_INCHES = "50,0";
     private static final String DOT_AUX_INPUT_STATE_NAME = "input";
 
-    private static final StateTag dummySTFinal = new StateTag() {
-        @Override
-        public boolean isFinal() {
-            return true;
-        }
-
-        @Override
-        public Domain getDomain() {
-            return null;
-        }
+    // TODO: Review this later. There might be a more elegant way.
+    //  maybe having client provide their own state tag (other than NOT_FINAL)
+    private static final StateTag dummySTFinal = () -> {
+        throw new Error("Dummy tag doesn't correspond to any domain!");
     };
 
     private int numberOfStates;
     private int alphabetSize; //at least 1
     private int initialState;
-    private Set<Integer> acceptingStates;
+    // all states are accepting, except those labeled with NOT_FINAL
 
     private NFAStateGraph edges;
 
     private List<StateTag> labels;
 
-    public NFA(int numberOfStates, int alphabetSize, int initialState, Set<Integer> acceptingStates,
-               NFAStateGraph edges, Map<Integer, StateTag> labelsMap) {
-        //Validate inputs
+    public NFA(int numberOfStates, int alphabetSize, int initialState, NFAStateGraph edges,
+               Map<Integer, StateTag> labelsMap) {
+        // Validate inputs
 
         this.numberOfStates = numberOfStates;
         this.alphabetSize = alphabetSize;
         this.initialState = initialState;
-        this.acceptingStates = acceptingStates;
         this.edges = edges;
         this.labels = new ArrayList<>();
         for (int i = 0; i < this.numberOfStates; i++) {
@@ -61,7 +54,6 @@ public class NFA {
     public static NFA emptyLanguage(int alphabetSize) {
         return new NFA(
                 1, alphabetSize, 0,
-                Set.of(),
                 new NFAStateGraphBuilder(1).build(),
                 Map.of(0, STNotFinal.NOT_FINAL)
         );
@@ -69,7 +61,6 @@ public class NFA {
 
     public static NFA emptyStringLanguage(int alphabetSize) {
         return new NFA(1, alphabetSize, 0,
-                Set.of(0),
                 new NFAStateGraphBuilder(1).build(),
                 Map.of(0, dummySTFinal)
         );
@@ -79,7 +70,6 @@ public class NFA {
         NFAStateGraphBuilder edges = new NFAStateGraphBuilder(2);
         edges.setEdge(0, 1, Set.of(letter));
         return new NFA(2, alphabetSize, 0,
-                Set.of(1),
                 edges.build(),
                 Map.of(
                         0, STNotFinal.NOT_FINAL,
@@ -327,7 +317,7 @@ public class NFA {
        automaton language, this method WILL get stuck. This is because it brute force searches
        all possible paths from the initial state and repeated edge traversal is allowed.
     */
-    public boolean isAccepted(List<Integer> string) {
+/*    public boolean isAccepted(List<Integer> string) {
         class StateLetterNoPair {
             private int state;
             private int letterNo;
@@ -369,7 +359,7 @@ public class NFA {
             }
         }
         return false;
-    }
+    }*/
 
     public NFA removeLambdaSteps() {
         ///DFS
