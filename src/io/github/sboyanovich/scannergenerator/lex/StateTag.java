@@ -4,7 +4,32 @@ import io.github.sboyanovich.scannergenerator.token.Domain;
 
 public interface StateTag {
     static boolean isFinal(StateTag tag) {
-        return !tag.equals(STNotFinal.NOT_FINAL);
+        return !tag.equals(StateTag.NOT_FINAL);
     }
+
+    StateTag FINAL_DUMMY = new StateTag() {
+        @Override
+        public Domain getDomain() {
+            throw new Error("Dummy tag doesn't correspond to any domain!");
+        }
+
+        @Override
+        public String toString() {
+            return "DUMMY";
+        }
+    };
+
+    StateTag NOT_FINAL = new StateTag() {
+        @Override
+        public Domain getDomain() {
+            throw new Error("This is never supposed to be called!");
+        }
+
+        @Override
+        public String toString() {
+            return "NOT_FINAL";
+        }
+    };
+
     Domain getDomain();
 }

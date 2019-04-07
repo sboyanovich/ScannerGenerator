@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 
-import static io.github.sboyanovich.scannergenerator.lex.STNotFinal.NOT_FINAL;
 import static io.github.sboyanovich.scannergenerator.tests.data.states.StateTags.*;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 

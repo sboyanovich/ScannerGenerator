@@ -1,13 +1,11 @@
 package io.github.sboyanovich.scannergenerator.automata;
 
 import io.github.sboyanovich.scannergenerator.lex.StateTag;
-import io.github.sboyanovich.scannergenerator.token.Domain;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.util.*;
 import java.util.function.Function;
 
-import static io.github.sboyanovich.scannergenerator.lex.STNotFinal.NOT_FINAL;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 
 // TODO: Make separate class for DFA. determinize() should return a DFA then
@@ -19,20 +17,6 @@ public class NFA {
     private static final String DOT_REGULAR_STATE_SHAPE = "circle";
     private static final String DOT_MAXSIZE_INCHES = "50,0";
     private static final String DOT_AUX_INPUT_STATE_NAME = "input";
-
-    // TODO: Review this later. There might be a more elegant way.
-    //  maybe having client provide their own state tag (other than NOT_FINAL)
-    private static final StateTag dummySTFinal = new StateTag() {
-        @Override
-        public Domain getDomain() {
-            throw new Error("Dummy tag doesn't correspond to any domain!");
-        }
-
-        @Override
-        public String toString() {
-            return "DUMMY";
-        }
-    };
 
     private int numberOfStates;
     private int alphabetSize; //at least 1
@@ -61,14 +45,14 @@ public class NFA {
         return new NFA(
                 1, alphabetSize, 0,
                 new NFAStateGraphBuilder(1).build(),
-                Map.of(0, NOT_FINAL)
+                Map.of(0, StateTag.NOT_FINAL)
         );
     }
 
     public static NFA emptyStringLanguage(int alphabetSize) {
         return new NFA(1, alphabetSize, 0,
                 new NFAStateGraphBuilder(1).build(),
-                Map.of(0, dummySTFinal)
+                Map.of(0, StateTag.FINAL_DUMMY)
         );
     }
 
@@ -78,8 +62,8 @@ public class NFA {
         return new NFA(2, alphabetSize, 0,
                 edges.build(),
                 Map.of(
-                        0, NOT_FINAL,
-                        1, dummySTFinal
+                        0, StateTag.NOT_FINAL,
+                        1, StateTag.FINAL_DUMMY
                 )
         );
     }
@@ -146,7 +130,7 @@ public class NFA {
 
         Map<Integer, StateTag> labels = new HashMap<>();
         for (int i = 0; i < this.labels.size(); i++) {
-            labels.put(i, NOT_FINAL);
+            labels.put(i, StateTag.NOT_FINAL);
         }
         for (int i = 0; i < second.labels.size(); i++) {
             labels.put(this.numberOfStates + i, second.labels.get(i));
@@ -202,7 +186,7 @@ public class NFA {
             labels.put(i, this.labels.get(i));
         }
 
-        labels.put(initialState, NOT_FINAL); // should fix NFATest1
+        labels.put(initialState, StateTag.NOT_FINAL); // should fix NFATest1
 
         NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates);
         // preserving edges from this automaton
@@ -476,7 +460,7 @@ public class NFA {
         // addition
         StateTag[] nasLabels = new StateTag[this.numberOfStates];
         for (int i = 0; i < nasLabels.length; i++) {
-            nasLabels[i] = NOT_FINAL;
+            nasLabels[i] = StateTag.NOT_FINAL;
         }
 
         // Computing new accepting states
@@ -577,7 +561,7 @@ public class NFA {
         // trying to keep track of state labels
         Map<Integer, StateTag> labels = new HashMap<>();
         for (int i = 0; i < numberOfStates; i++) {
-            labels.put(i, NOT_FINAL);
+            labels.put(i, StateTag.NOT_FINAL);
         }
         for (int state : tempAcceptingStatesSet) {
             int renamed = renaming.get(state);

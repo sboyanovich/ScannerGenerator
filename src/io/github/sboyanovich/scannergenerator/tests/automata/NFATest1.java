@@ -6,8 +6,6 @@ import io.github.sboyanovich.scannergenerator.token.Domain;
 
 import java.util.Map;
 
-import static io.github.sboyanovich.scannergenerator.lex.STNotFinal.NOT_FINAL;
-
 public class NFATest1 {
 
     enum Keyword implements StateTag {
@@ -35,10 +33,10 @@ public class NFATest1 {
                 .removeLambdaSteps()
                 .relabelStates(
                         Map.of(
-                                0, NOT_FINAL,
-                                1, NOT_FINAL,
-                                2, NOT_FINAL,
-                                3, NOT_FINAL,
+                                0, StateTag.NOT_FINAL,
+                                1, StateTag.NOT_FINAL,
+                                2, StateTag.NOT_FINAL,
+                                3, StateTag.NOT_FINAL,
                                 4, Keyword.ELIF
                         )
                 )
