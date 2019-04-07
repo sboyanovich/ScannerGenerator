@@ -29,7 +29,35 @@ public class NFA {
 
     public NFA(int numberOfStates, int alphabetSize, int initialState, NFAStateGraph edges,
                Map<Integer, StateTag> labelsMap) {
+        // no NULLs allowed
+        Objects.requireNonNull(edges);
+        Objects.requireNonNull(labelsMap);
+
+        // TOCTOU PROOFING
+        //  edges is immutable
+        labelsMap = new HashMap<>(labelsMap);
+
         // Validate inputs
+        //  numberOfStates > 0
+        //  alphabetSize > 0
+        //  initialState
+        //  initialState in [0, numberOfStates - 1]
+        //  edges.numberOfStates = numberOfStates
+        //  labelsMap [0, numberOfStates - 1] -> StateTag (must be defined at these)
+        if (!(numberOfStates > 0)) {
+            throw new IllegalArgumentException("Number of states must be non-negative!");
+        }
+        if (!(alphabetSize > 0)) {
+            throw new IllegalArgumentException("Alphabet size must be non-negative!");
+        }
+        if (!isInRange(initialState, 0, numberOfStates - 1)) {
+            throw new IllegalArgumentException("Initial state must be in range [0, numberOfStates-1]!");
+        }
+        for (int i = 0; i < numberOfStates; i++) {
+            if (!labelsMap.containsKey(i)) {
+                throw new IllegalArgumentException("All states should be labeled!");
+            }
+        }
 
         this.numberOfStates = numberOfStates;
         this.alphabetSize = alphabetSize;
