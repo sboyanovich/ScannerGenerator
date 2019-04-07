@@ -5,8 +5,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static io.github.sboyanovich.scannergenerator.utility.Utility.isInRange;
+
 abstract class AbstractNFAStateGraph {
     int numberOfStates;
+    int alphabetSize;
     List<List<Optional<Set<Integer>>>> edges;
 
     /*
@@ -20,30 +23,44 @@ abstract class AbstractNFAStateGraph {
         return numberOfStates;
     }
 
-    public final boolean edgeExists(int i, int j) {
-        // validate
-        return this.edges.get(i).get(j).isPresent();
+    public int getAlphabetSize() {
+        return alphabetSize;
     }
 
-    public final boolean isNonTrivialEdge(int i, int j) {
+    public final boolean edgeExists(int from, int to) {
         // validate
-        return edgeExists(i, j) && !isLambdaEdge(i, j);
+        validateEdge(from, to);
+        return this.edges.get(from).get(to).isPresent();
     }
 
-    public final boolean isLambdaEdge(int i, int j) {
+    public final boolean isNonTrivialEdge(int from, int to) {
         // validate
-        Optional<Set<Integer>> marker = getEdgeMarkerAux(i, j);
+        validateEdge(from, to);
+        return edgeExists(from, to) && !isLambdaEdge(from, to);
+    }
+
+    public final boolean isLambdaEdge(int from, int to) {
+        // validate
+        validateEdge(from, to);
+        Optional<Set<Integer>> marker = getEdgeMarkerAux(from, to);
         return marker.isPresent() && marker.get().isEmpty();
     }
 
-    public final Optional<Set<Integer>> getEdgeMarker(int i, int j) {
+    public final Optional<Set<Integer>> getEdgeMarker(int from, int to) {
         // validate
-        Optional<Set<Integer>> marker = getEdgeMarkerAux(i, j);
+        validateEdge(from, to);
+        Optional<Set<Integer>> marker = getEdgeMarkerAux(from, to);
         return marker.map(Collections::unmodifiableSet);
     }
 
-    private Optional<Set<Integer>> getEdgeMarkerAux(int i, int j) {
-        // validate
-        return this.edges.get(i).get(j);
+    // is only ever called with valid parameters
+    private Optional<Set<Integer>> getEdgeMarkerAux(int from, int to) {
+        return this.edges.get(from).get(to);
+    }
+
+    void validateEdge(int from, int to) {
+        if (!isInRange(from, 0, this.numberOfStates - 1) || !isInRange(to, 0, this.numberOfStates - 1)) {
+            throw new IllegalArgumentException("States must be in range [0, numberOfStates-1]!");
+        }
     }
 }

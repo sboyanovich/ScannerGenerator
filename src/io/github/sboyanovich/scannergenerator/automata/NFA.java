@@ -40,9 +40,9 @@ public class NFA {
         // Validate inputs
         //  numberOfStates > 0
         //  alphabetSize > 0
-        //  initialState
         //  initialState in [0, numberOfStates - 1]
         //  edges.numberOfStates = numberOfStates
+        //  edges.alphabetSize  = alphabetSize
         //  labelsMap [0, numberOfStates - 1] -> StateTag (must be defined at these)
         if (!(numberOfStates > 0)) {
             throw new IllegalArgumentException("Number of states must be non-negative!");
@@ -52,6 +52,12 @@ public class NFA {
         }
         if (!isInRange(initialState, 0, numberOfStates - 1)) {
             throw new IllegalArgumentException("Initial state must be in range [0, numberOfStates-1]!");
+        }
+        if (edges.numberOfStates != numberOfStates) {
+            throw new IllegalArgumentException("Edge graph must have the same number of states!");
+        }
+        if (edges.alphabetSize != alphabetSize) {
+            throw new IllegalArgumentException("Edge graph must have the same alphabet size!");
         }
         for (int i = 0; i < numberOfStates; i++) {
             if (!labelsMap.containsKey(i)) {
@@ -72,20 +78,20 @@ public class NFA {
     public static NFA emptyLanguage(int alphabetSize) {
         return new NFA(
                 1, alphabetSize, 0,
-                new NFAStateGraphBuilder(1).build(),
+                new NFAStateGraphBuilder(1, alphabetSize).build(),
                 Map.of(0, StateTag.NOT_FINAL)
         );
     }
 
     public static NFA emptyStringLanguage(int alphabetSize) {
         return new NFA(1, alphabetSize, 0,
-                new NFAStateGraphBuilder(1).build(),
+                new NFAStateGraphBuilder(1, alphabetSize).build(),
                 Map.of(0, StateTag.FINAL_DUMMY)
         );
     }
 
     public static NFA singleLetterLanguage(int alphabetSize, int letter) {
-        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(2);
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(2, alphabetSize);
         edges.setEdge(0, 1, Set.of(letter));
         return new NFA(2, alphabetSize, 0,
                 edges.build(),
@@ -122,7 +128,7 @@ public class NFA {
         }
         int initialState = numberOfStates - 1;
 
-        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates);
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates, alphabetSize);
         // preserving edges from this automaton
         for (int i = 0; i < this.numberOfStates; i++) {
             for (int j = 0; j < this.numberOfStates; j++) {
@@ -164,7 +170,7 @@ public class NFA {
             labels.put(this.numberOfStates + i, second.labels.get(i));
         }
 
-        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates);
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates, alphabetSize);
         // preserving edges from this automaton
         for (int i = 0; i < this.numberOfStates; i++) {
             for (int j = 0; j < this.numberOfStates; j++) {
@@ -216,7 +222,7 @@ public class NFA {
 
         labels.put(initialState, StateTag.NOT_FINAL); // should fix NFATest1
 
-        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates);
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates, alphabetSize);
         // preserving edges from this automaton
         for (int i = 0; i < this.numberOfStates; i++) {
             for (int j = 0; j < this.numberOfStates; j++) {
@@ -536,7 +542,7 @@ public class NFA {
         int numberOfStates = newStates.size();
         int alphabetSize = this.alphabetSize;
 
-        NFAStateGraphBuilder tempEdges = new NFAStateGraphBuilder(this.numberOfStates); // has more entries!
+        NFAStateGraphBuilder tempEdges = new NFAStateGraphBuilder(this.numberOfStates, alphabetSize); // has more entries!
 
         // Edges
         {
@@ -584,7 +590,7 @@ public class NFA {
 
         int initialState = renaming.get(this.initialState);
 
-        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates);
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates, alphabetSize);
 
         // trying to keep track of state labels
         Map<Integer, StateTag> labels = new HashMap<>();

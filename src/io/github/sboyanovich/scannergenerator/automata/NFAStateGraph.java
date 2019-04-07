@@ -8,8 +8,9 @@ import java.util.*;
 public final class NFAStateGraph extends AbstractNFAStateGraph {
 
     // created only through builder
-    NFAStateGraph(int numberOfStates, List<List<Optional<Set<Integer>>>> edges) {
+    NFAStateGraph(int numberOfStates, int alphabetSize, List<List<Optional<Set<Integer>>>> edges) {
         this.numberOfStates = numberOfStates;
+        this.alphabetSize = alphabetSize;
         this.edges = new ArrayList<>();
         for (int i = 0; i < numberOfStates; i++) {
             this.edges.add(new ArrayList<>());
