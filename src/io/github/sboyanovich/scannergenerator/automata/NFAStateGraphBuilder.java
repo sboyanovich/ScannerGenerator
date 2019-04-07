@@ -2,13 +2,11 @@ package io.github.sboyanovich.scannergenerator.automata;
 
 import java.util.*;
 
-public class NFAStateGraphBuilder {
-    private int numberOfStates;
-    private List<List<Optional<Set<Integer>>>> edges;
+public final class NFAStateGraphBuilder extends AbstractNFAStateGraph {
 
     public NFAStateGraphBuilder(int numberOfStates) {
         this.numberOfStates = numberOfStates;
-        this.edges = new ArrayList<>(numberOfStates);
+        this.edges = new ArrayList<>();
         /* Initializing edge matrix. */
         /*
          * no set means no edge
@@ -23,10 +21,12 @@ public class NFAStateGraphBuilder {
         }
     }
 
-    public int getNumberOfStates() {
-        return numberOfStates;
+    /// BUILDER
+    public NFAStateGraph build() {
+        return new NFAStateGraph(this.numberOfStates, this.edges);
     }
 
+    /// MUTATORS
     public void setEdge(int i, int j, Set<Integer> marker) {
         // validate
         // null marker not allowed
@@ -37,36 +37,5 @@ public class NFAStateGraphBuilder {
     public void removeEdge(int i, int j) {
         //validate
         this.edges.get(i).set(j, Optional.empty());
-    }
-
-    public boolean edgeExists(int i, int j) {
-        // validate
-        return this.edges.get(i).get(j).isPresent();
-    }
-
-    public boolean isLambdaEdge(int i, int j) {
-        // validate
-        Optional<Set<Integer>> marker = getEdgeMarkerAux(i, j);
-        return marker.isPresent() && marker.get().isEmpty();
-    }
-
-    public boolean isNonTrivialEdge(int i, int j) {
-        // validate
-        return edgeExists(i, j) && !isLambdaEdge(i, j);
-    }
-
-    public Optional<Set<Integer>> getEdgeMarker(int i, int j) {
-        // validate
-        Optional<Set<Integer>> marker = getEdgeMarkerAux(i, j);
-        return marker.map(Collections::unmodifiableSet);
-    }
-
-    private Optional<Set<Integer>> getEdgeMarkerAux(int i, int j) {
-        // validate
-        return this.edges.get(i).get(j);
-    }
-
-    public NFAStateGraph build() {
-        return new NFAStateGraph(this.numberOfStates, this.edges);
     }
 }
