@@ -10,10 +10,10 @@ import static io.github.sboyanovich.scannergenerator.utility.Utility.isInRange;
 abstract class AbstractNFAStateGraph {
     int numberOfStates;
     int alphabetSize;
-    List<List<Optional<Set<Integer>>>> edges;
+    List<List<Set<Integer>>> edges;
 
     /*
-     * no set means no edge
+     * null means no edge
      * empty set means lambda-step
      * nonempty set represents letters that enable transition
      */
@@ -30,7 +30,7 @@ abstract class AbstractNFAStateGraph {
     public final boolean edgeExists(int from, int to) {
         // validate
         validateEdge(from, to);
-        return this.edges.get(from).get(to).isPresent();
+        return this.edges.get(from).get(to) != null;
     }
 
     public final boolean isNonTrivialEdge(int from, int to) {
@@ -55,7 +55,7 @@ abstract class AbstractNFAStateGraph {
 
     // is only ever called with valid parameters
     private Optional<Set<Integer>> getEdgeMarkerAux(int from, int to) {
-        return this.edges.get(from).get(to);
+        return Optional.ofNullable(this.edges.get(from).get(to));
     }
 
     void validateEdge(int from, int to) {

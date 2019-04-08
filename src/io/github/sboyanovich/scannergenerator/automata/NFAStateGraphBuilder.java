@@ -8,6 +8,7 @@ public final class NFAStateGraphBuilder extends AbstractNFAStateGraph {
 
     public NFAStateGraphBuilder(int numberOfStates, int alphabetSize) {
         // number of states > 0
+        // alphabet size > 0
         if (!(numberOfStates > 0)) {
             throw new IllegalArgumentException("Number of states must be non-negative!");
         }
@@ -18,16 +19,12 @@ public final class NFAStateGraphBuilder extends AbstractNFAStateGraph {
         this.numberOfStates = numberOfStates;
         this.alphabetSize = alphabetSize;
         this.edges = new ArrayList<>();
+
         /* Initializing edge matrix. */
-        /*
-         * no set means no edge
-         * empty set means lambda-step
-         * nonempty set represents letters that enable transition
-         */
         for (int i = 0; i < numberOfStates; i++) {
             this.edges.add(new ArrayList<>(numberOfStates));
             for (int j = 0; j < numberOfStates; j++) {
-                this.edges.get(i).add(Optional.empty());
+                this.edges.get(i).add(null);
             }
         }
     }
@@ -56,12 +53,12 @@ public final class NFAStateGraphBuilder extends AbstractNFAStateGraph {
         validateEdge(from, to);
         validateMarker(marker);
         // defensive copy
-        this.edges.get(from).set(to, Optional.of(new HashSet<>(marker)));
+        this.edges.get(from).set(to, new HashSet<>(marker));
     }
 
     public void removeEdge(int from, int to) {
         // validate
         validateEdge(from, to);
-        this.edges.get(from).set(to, Optional.empty());
+        this.edges.get(from).set(to, null);
     }
 }
