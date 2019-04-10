@@ -34,14 +34,22 @@ public final class NFAStateGraphBuilder extends AbstractNFAStateGraph {
         return new NFAStateGraph(this.numberOfStates, this.alphabetSize, this.edges);
     }
 
+    private boolean isValidSymbol(int symbol) {
+        return isInRange(symbol, 0, this.alphabetSize - 1);
+    }
+
+    private void validateSymbol(int symbol) {
+        if (!isValidSymbol(symbol)) {
+            throw new IllegalArgumentException(
+                    "Edge marker can only contain symbols in range [0, alphabetSize-1]!"
+            );
+        }
+    }
+
     // only called if we're sure marker is not null
     private void validateMarker(Set<Integer> marker) {
         for (int symbol : marker) {
-            if (!isInRange(symbol, 0, this.alphabetSize - 1)) {
-                throw new IllegalArgumentException(
-                        "Edge marker can only contain symbols in range [0, alphabetSize-1]!"
-                );
-            }
+            validateSymbol(symbol);
         }
     }
 
@@ -54,6 +62,16 @@ public final class NFAStateGraphBuilder extends AbstractNFAStateGraph {
         validateMarker(marker);
         // defensive copy
         this.edges.get(from).set(to, new HashSet<>(marker));
+    }
+
+    public void addSymbolToEdge(int from, int to, int symbol) {
+        // validate
+        validateEdge(from, to);
+        validateSymbol(symbol);
+        if (!edgeExists(from, to)) {
+            this.edges.get(from).set(to, new HashSet<>());
+        }
+        this.edges.get(from).get(to).add(symbol);
     }
 
     public void removeEdge(int from, int to) {
