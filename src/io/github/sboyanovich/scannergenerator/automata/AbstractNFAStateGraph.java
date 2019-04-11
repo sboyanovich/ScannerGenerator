@@ -63,4 +63,6 @@ abstract class AbstractNFAStateGraph {
             throw new IllegalArgumentException("States must be in range [0, numberOfStates-1]!");
         }
     }
+
+    // TODO: Add toString() (with interpretation)
 }

@@ -3,6 +3,7 @@ package io.github.sboyanovich.scannergenerator.automata;
 import io.github.sboyanovich.scannergenerator.lex.StateTag;
 
 import java.util.*;
+import java.util.function.Function;
 
 import static io.github.sboyanovich.scannergenerator.utility.Utility.copyTable;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.isInRange;
@@ -96,5 +97,35 @@ public class DFA {
 
     public int[][] getTransitionTable() {
         return copyTable(transitionTable);
+    }
+
+    public NFA toNFA() {
+        Map<Integer, StateTag> labelsMap = new HashMap<>();
+        for (int i = 0; i < this.numberOfStates; i++) {
+            labelsMap.put(i, this.labels.get(i));
+        }
+
+        // knowing that the method doesn't modify array
+        NFAStateGraph edges = Utility.computeEdgeLabels(this.transitionTable);
+
+        return new NFA(
+                this.numberOfStates,
+                this.alphabetSize,
+                this.initialState,
+                labelsMap,
+                edges
+        );
+    }
+
+    public String toGraphvizDotString() {
+        return toGraphvizDotString(Utility::defaultAlphabetInterpretation, false);
+    }
+
+    // simple delegation to analogous method in NFA
+    public String toGraphvizDotString(
+            Function<Integer, String> alphabetInterpretation,
+            boolean prefixFinalStatesWithTagName
+    ) {
+        return this.toNFA().toGraphvizDotString(alphabetInterpretation, prefixFinalStatesWithTagName);
     }
 }

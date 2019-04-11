@@ -1,10 +1,10 @@
 package io.github.sboyanovich.scannergenerator.automata;
 
 import io.github.sboyanovich.scannergenerator.lex.StateTag;
-import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 
@@ -27,8 +27,8 @@ public class NFA {
 
     private List<StateTag> labels;
 
-    public NFA(int numberOfStates, int alphabetSize, int initialState, NFAStateGraph edges,
-               Map<Integer, StateTag> labelsMap) {
+    public NFA(int numberOfStates, int alphabetSize, int initialState,
+               Map<Integer, StateTag> labelsMap, NFAStateGraph edges) {
         // no NULLs allowed
         Objects.requireNonNull(edges);
         Objects.requireNonNull(labelsMap);
@@ -78,15 +78,13 @@ public class NFA {
     public static NFA emptyLanguage(int alphabetSize) {
         return new NFA(
                 1, alphabetSize, 0,
-                new NFAStateGraphBuilder(1, alphabetSize).build(),
-                Map.of(0, StateTag.NOT_FINAL)
+                Map.of(0, StateTag.NOT_FINAL), new NFAStateGraphBuilder(1, alphabetSize).build()
         );
     }
 
     public static NFA emptyStringLanguage(int alphabetSize) {
         return new NFA(1, alphabetSize, 0,
-                new NFAStateGraphBuilder(1, alphabetSize).build(),
-                Map.of(0, StateTag.FINAL_DUMMY)
+                Map.of(0, StateTag.FINAL_DUMMY), new NFAStateGraphBuilder(1, alphabetSize).build()
         );
     }
 
@@ -94,11 +92,10 @@ public class NFA {
         NFAStateGraphBuilder edges = new NFAStateGraphBuilder(2, alphabetSize);
         edges.setEdge(0, 1, Set.of(letter));
         return new NFA(2, alphabetSize, 0,
-                edges.build(),
                 Map.of(
                         0, StateTag.NOT_FINAL,
                         1, StateTag.FINAL_DUMMY
-                )
+                ), edges.build()
         );
     }
 
@@ -107,8 +104,7 @@ public class NFA {
                 this.numberOfStates,
                 this.alphabetSize,
                 this.initialState,
-                this.edges, // thanks to immutability,
-                relabel
+                relabel, this.edges // thanks to immutability,
         );
     }
 
@@ -154,7 +150,7 @@ public class NFA {
         edges.setEdge(initialState, this.initialState, Set.of());
         edges.setEdge(initialState, second.initialState + this.numberOfStates, Set.of());
 
-        return new NFA(numberOfStates, alphabetSize, initialState, edges.build(), labels);
+        return new NFA(numberOfStates, alphabetSize, initialState, labels, edges.build());
     }
 
     public NFA concatenation(NFA second) {
@@ -200,7 +196,7 @@ public class NFA {
             }
         }
 
-        return new NFA(numberOfStates, alphabetSize, initialState, edges.build(), labels);
+        return new NFA(numberOfStates, alphabetSize, initialState, labels, edges.build());
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -243,7 +239,7 @@ public class NFA {
             }
         }
 
-        return new NFA(numberOfStates, alphabetSize, initialState, edges.build(), labels);
+        return new NFA(numberOfStates, alphabetSize, initialState, labels, edges.build());
     }
 
     public NFA positiveIteration() {
@@ -266,7 +262,7 @@ public class NFA {
 
     @Override
     public String toString() {
-        return toString(Utility::defaultAlphabetInterpretation);
+        return toString(io.github.sboyanovich.scannergenerator.automata.Utility::defaultAlphabetInterpretation);
     }
 
     private boolean isStateAccepting(int n) {
@@ -339,7 +335,7 @@ public class NFA {
     }
 
     public String toGraphvizDotString() {
-        return toGraphvizDotString(Utility::defaultAlphabetInterpretation, false);
+        return toGraphvizDotString(io.github.sboyanovich.scannergenerator.automata.Utility::defaultAlphabetInterpretation, false);
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -395,7 +391,7 @@ public class NFA {
                     result.append(SPACE);
                     result.append(SPACE + "[label=\"");
                     Set<Integer> marker = this.edges.getEdgeMarker(i, j).get();
-                    String markerString = Utility.edgeLabelAsString(marker, alphabetInterpretation);
+                    String markerString = io.github.sboyanovich.scannergenerator.automata.Utility.edgeLabelAsString(marker, alphabetInterpretation);
                     result.append(markerString);
                     result.append("\"]");
                     result.append(SEMICOLON + NEWLINE);
@@ -406,55 +402,6 @@ public class NFA {
 
         return result.toString();
     }
-    // EXPERIMENTAL
-    /* NOTE: If there are lambda-cycles in the state graph and the string doesn't belong to the
-       automaton language, this method WILL get stuck. This is because it brute force searches
-       all possible paths from the initial state and repeated edge traversal is allowed.
-    */
-
-/*    public boolean isAccepted(List<Integer> string) {
-        class StateLetterNoPair {
-            private int state;
-            private int letterNo;
-
-            public StateLetterNoPair(int state, int letterNo) {
-                this.state = state;
-                this.letterNo = letterNo;
-            }
-
-            public int getState() {
-                return state;
-            }
-
-            public int getLetterNo() {
-                return letterNo;
-            }
-        }
-
-        Queue<StateLetterNoPair> bfs = new LinkedList<>();
-        bfs.add(new StateLetterNoPair(this.initialState, 0));
-
-        while (!bfs.isEmpty()) {
-            StateLetterNoPair curr = bfs.remove();
-            int letterNo = curr.getLetterNo();
-            int state = curr.getState();
-            if (letterNo == string.size() && this.acceptingStates.contains(state)) {
-                return true;
-            }
-            int currLetter = (letterNo < string.size()) ? string.get(letterNo) : -1;
-            for (int i = 0; i < this.numberOfStates; i++) {
-                if (this.edges.edgeExists(state, i)) {
-                    Set<Integer> marker = this.edges.getEdgeMarker(state, i);
-                    if (marker.isEmpty()) {
-                        bfs.add(new StateLetterNoPair(i, letterNo));
-                    } else if (currLetter > -1 && marker.contains(currLetter)) {
-                        bfs.add(new StateLetterNoPair(i, letterNo + 1));
-                    }
-                }
-            }
-        }
-        return false;
-    }*/
 
     // This is a TRAINWRECK, might need to rewrite according to lecture materials in the future
     @SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -612,25 +559,26 @@ public class NFA {
             }
         }
 
-        return new NFA(numberOfStates, alphabetSize, initialState, edges.build(), labels);
+        return new NFA(numberOfStates, alphabetSize, initialState, labels, edges.build());
     }
 
     // TODO: Lot of work here too.
-    /*
+
     // EXPERIMENTAL
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     private Set<Integer> superState(int state, int letter) {
         Set<Integer> result = new HashSet<>();
         for (int i = 0; i < this.numberOfStates; i++) {
             if (this.edges.isNonTrivialEdge(state, i)) {
-                if (this.edges.getEdgeMarker(state, i).contains(letter)) {
+                if (this.edges.getEdgeMarker(state, i).get().contains(letter)) {
                     result.add(i);
                 }
             }
         }
         return result;
     }
-    // EXPERIMENTAL
 
+    // EXPERIMENTAL
     private Set<Integer> closure(Set<Integer> superstate, int letter) {
         Set<Integer> result = new HashSet<>();
 
@@ -640,8 +588,10 @@ public class NFA {
 
         return result;
     }
-    // VERY DIRTY HACK
 
+    // VERY DIRTY HACK
+    //  is useful because it's a LinkedHashSet that is passed as family
+    //  problematic as traversing all k's has quadratic complexity
     private Set<Integer> get(Set<Set<Integer>> family, int k) {
         int i = 0;
         for (Set<Integer> set : family) {
@@ -652,10 +602,15 @@ public class NFA {
         }
         return Set.of();
     }
-    // EXPERIMENTAL
 
-    public NFA determinize() {
+    // EXPERIMENTAL
+    public DFA determinize(Map<StateTag, Integer> priorities) {
+        // priorities map must contain mapping for every present StateTag
+
+        // first we make sure there are no lambda steps
         NFA lambdaless = this.removeLambdaSteps();
+
+        // initial superstate
         Set<Set<Integer>> superstates = new LinkedHashSet<>();
         Set<Integer> initialSuperstate = Set.of(lambdaless.initialState);
         superstates.add(initialSuperstate);
@@ -667,11 +622,12 @@ public class NFA {
 
         {
             int i = 0;
-            int k = 1;
+            int k = 1; // current free name to be assigned to a new superstate
             do {
+                // TODO: This get() could be replaced with a parallel list (much better performance)
                 Set<Integer> currentSuperstate = get(superstates, i);
 
-                transitionFunction.add(new ArrayList<>(alphabetSize));
+                transitionFunction.add(new ArrayList<>());
 
                 for (int j = 0; j < alphabetSize; j++) {
                     Set<Integer> image = lambdaless.closure(currentSuperstate, j);
@@ -690,32 +646,38 @@ public class NFA {
         int alphabetSize = this.alphabetSize;
         int numberOfStates = superstates.size();
         int initialState = 0;
-        Set<Integer> acceptingStates = new HashSet<>();
+
+        // time to handle accepting states (state tags)
+        // maybe use copy of priorities, to prevent race conditions
+        Map<Integer, StateTag> labelsMap = new HashMap<>();
         for (int j = 0; j < numberOfStates; j++) {
-            Set<Integer> intersection = new HashSet<>(lambdaless.acceptingStates);
-            intersection.retainAll(statesList.get(j));
-            if (!intersection.isEmpty()) {
-                acceptingStates.add(j);
+            Set<Integer> currentSuperstate = statesList.get(j);
+            List<StateTag> candidateTags = List.of(StateTag.NOT_FINAL);
+            if (!currentSuperstate.isEmpty()) {
+                candidateTags =
+                        currentSuperstate.stream()
+                                .map(s -> lambdaless.labels.get(s))
+                                .collect(Collectors.toList());
             }
+            StateTag label =
+                    Collections.min(
+                            candidateTags,
+                            Comparator.comparingInt(priorities::get)
+                    );
+            labelsMap.put(j, label);
         }
 
-        NFAStateGraph edges = new NFAStateGraph(numberOfStates);
-
+        // writing transition table
+        int[][] transitionTable = new int[numberOfStates][alphabetSize];
         for (int i = 0; i < numberOfStates; i++) {
             for (int j = 0; j < alphabetSize; j++) {
-                int targetState = transitionFunction.get(i).get(j);
-                if (!edges.edgeExists(i, targetState)) {
-                    edges.setEdge(i, targetState, new HashSet<>());
-                }
-                Set<Integer> marker = new HashSet<>(edges.getEdgeMarker(i, targetState));
-                marker.add(j);
-                edges.setEdge(i, targetState, marker);
+                transitionTable[i][j] = transitionFunction.get(i).get(j);
             }
         }
 
-        return new NFA(numberOfStates, alphabetSize, initialState, acceptingStates, edges);
+        return new DFA(numberOfStates, alphabetSize, initialState, labelsMap, transitionTable);
     }
-
+/*
     private static DisjointSetForest finestPartition(int n) {
         DisjointSetForest result = new DisjointSetForest();
         for (int i = 0; i < n; i++) {
