@@ -562,9 +562,6 @@ public class NFA {
         return new NFA(numberOfStates, alphabetSize, initialState, labels, edges.build());
     }
 
-    // TODO: Lot of work here too.
-
-    // EXPERIMENTAL
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     private Set<Integer> superState(int state, int letter) {
         Set<Integer> result = new HashSet<>();
@@ -578,7 +575,6 @@ public class NFA {
         return result;
     }
 
-    // EXPERIMENTAL
     private Set<Integer> closure(Set<Integer> superstate, int letter) {
         Set<Integer> result = new HashSet<>();
 
@@ -589,21 +585,6 @@ public class NFA {
         return result;
     }
 
-    // VERY DIRTY HACK
-    //  is useful because it's a LinkedHashSet that is passed as family
-    //  problematic as traversing all k's has quadratic complexity
-    private Set<Integer> get(Set<Set<Integer>> family, int k) {
-        int i = 0;
-        for (Set<Integer> set : family) {
-            if (i == k) {
-                return set;
-            }
-            i++;
-        }
-        return Set.of();
-    }
-
-    // EXPERIMENTAL
     public DFA determinize(Map<StateTag, Integer> priorities) {
         // priorities map must contain mapping for every present StateTag
 
@@ -611,6 +592,7 @@ public class NFA {
         NFA lambdaless = this.removeLambdaSteps();
 
         // initial superstate
+        // maybe replace this with ordinary HashSet later
         Set<Set<Integer>> superstates = new LinkedHashSet<>();
         Set<Integer> initialSuperstate = Set.of(lambdaless.initialState);
         superstates.add(initialSuperstate);
@@ -618,14 +600,14 @@ public class NFA {
         Map<Set<Integer>, Integer> names = new HashMap<>();
         names.put(initialSuperstate, 0);
 
+        List<Set<Integer>> statesList = new ArrayList<>(superstates);
         List<List<Integer>> transitionFunction = new ArrayList<>();
 
         {
             int i = 0;
             int k = 1; // current free name to be assigned to a new superstate
             do {
-                // TODO: This get() could be replaced with a parallel list (much better performance)
-                Set<Integer> currentSuperstate = get(superstates, i);
+                Set<Integer> currentSuperstate = statesList.get(i);
 
                 transitionFunction.add(new ArrayList<>());
 
@@ -633,6 +615,7 @@ public class NFA {
                     Set<Integer> image = lambdaless.closure(currentSuperstate, j);
                     boolean newState = superstates.add(image);
                     if (newState) {
+                        statesList.add(image);
                         names.put(image, k);
                         k++;
                     }
@@ -641,7 +624,6 @@ public class NFA {
                 i++;
             } while (i < superstates.size());
         }
-        List<Set<Integer>> statesList = new ArrayList<>(superstates);
 
         int alphabetSize = this.alphabetSize;
         int numberOfStates = superstates.size();
