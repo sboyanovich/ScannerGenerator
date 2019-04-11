@@ -91,12 +91,11 @@ public class DFATest3 {
         NFA nfa = new NFA(numberOfStates, alphabetSize, 0, labelsMap, edges.build());
 
         List<StateTag> priorityList = List.of(
-                KEYWORD,
-                IDENTIFIER,
-                INTEGER_LITERAL,
-                OPERATION,
                 WHITESPACE,
-                NOT_FINAL
+                OPERATION,
+                INTEGER_LITERAL,
+                IDENTIFIER,
+                KEYWORD
         );
 
         Map<StateTag, Integer> priorityMap = new HashMap<>();

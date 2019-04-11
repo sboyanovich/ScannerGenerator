@@ -30,12 +30,7 @@ public class DFATest2 {
         );
         NFA nfa = new NFA(numberOfStates, alphabetSize, 0, labelsMap, edges.build());
 
-        DFA dfa = nfa.determinize(
-                Map.of(
-                    StateTag.FINAL_DUMMY, 0,
-                    StateTag.NOT_FINAL, 1 // general comment: NOT_FINAL should always have lowest priority
-                )
-        );
+        DFA dfa = nfa.determinize(Map.of());
 
         String dot = dfa.toGraphvizDotString(interpretation, true);
         System.out.println(dot);

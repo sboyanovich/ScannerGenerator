@@ -585,8 +585,18 @@ public class NFA {
         return result;
     }
 
+    private static final int NOT_FINAL_PRIORITY_RANK = -2;
+    private static final int FINAL_DUMMY_PRIORITY_RANK = -1;
+
     public DFA determinize(Map<StateTag, Integer> priorities) {
-        // priorities map must contain mapping for every present StateTag
+        // priorities map must contain mapping for every present StateTag (bigger number -> higher priority)
+        // (except NOT_FINAL and FINAL_DUMMY) (these are most likely going to be overwritten anyway)
+        // client-defined priority ranks must be non-negative
+
+        priorities = new HashMap<>(priorities);
+        // TODO: Validate priorities Map
+        priorities.put(StateTag.NOT_FINAL, NOT_FINAL_PRIORITY_RANK);
+        priorities.put(StateTag.FINAL_DUMMY, FINAL_DUMMY_PRIORITY_RANK);
 
         // first we make sure there are no lambda steps
         NFA lambdaless = this.removeLambdaSteps();
@@ -642,7 +652,7 @@ public class NFA {
                                 .collect(Collectors.toList());
             }
             StateTag label =
-                    Collections.min(
+                    Collections.max(
                             candidateTags,
                             Comparator.comparingInt(priorities::get)
                     );
