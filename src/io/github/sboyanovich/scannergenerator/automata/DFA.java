@@ -33,7 +33,6 @@ public class DFA {
         //  numberOfStates > 0
         //  alphabetSize > 0
         //  initialState in [0, numberOfStates - 1]
-        //  labelsMap [0, numberOfStates - 1] -> StateTag (must be defined at these)
         //  transitionTable [numberOfStates][alphabetSize]
         //  transitionTable elements in [0, numberOfStates - 1]
 
@@ -45,12 +44,6 @@ public class DFA {
         }
         if (!isInRange(initialState, 0, numberOfStates - 1)) {
             throw new IllegalArgumentException("Initial state must be in range [0, numberOfStates-1]!");
-        }
-        // TODO: Might change this to automatically label unlabeled states with NOT_FINAL.
-        for (int i = 0; i < numberOfStates; i++) {
-            if (!labelsMap.containsKey(i)) {
-                throw new IllegalArgumentException("All states should be labeled!");
-            }
         }
         if (transitionTable.length != numberOfStates) {
             throw new IllegalArgumentException("Transition table should have 'numberOfStates' rows!");
@@ -76,7 +69,9 @@ public class DFA {
         this.initialState = initialState;
         this.labels = new ArrayList<>();
         for (int i = 0; i < this.numberOfStates; i++) {
-            this.labels.add(labelsMap.get(i));
+            StateTag tag = labelsMap.get(i);
+            tag = (tag != null) ? tag : StateTag.NOT_FINAL;
+            this.labels.add(tag);
         }
         this.transitionTable = transitionTable;
     }

@@ -45,7 +45,6 @@ public class NFA {
         //  initialState in [0, numberOfStates - 1]
         //  edges.numberOfStates = numberOfStates
         //  edges.alphabetSize  = alphabetSize
-        //  labelsMap [0, numberOfStates - 1] -> StateTag (must be defined at these)
         if (!(numberOfStates > 0)) {
             throw new IllegalArgumentException("Number of states must be non-negative!");
         }
@@ -61,12 +60,6 @@ public class NFA {
         if (edges.alphabetSize != alphabetSize) {
             throw new IllegalArgumentException("Edge graph must have the same alphabet size!");
         }
-        // TODO: Might change this to automatically label unlabeled states with NOT_FINAL.
-        for (int i = 0; i < numberOfStates; i++) {
-            if (!labelsMap.containsKey(i)) {
-                throw new IllegalArgumentException("All states should be labeled!");
-            }
-        }
 
         this.numberOfStates = numberOfStates;
         this.alphabetSize = alphabetSize;
@@ -74,7 +67,9 @@ public class NFA {
         this.edges = edges;
         this.labels = new ArrayList<>();
         for (int i = 0; i < this.numberOfStates; i++) {
-            this.labels.add(labelsMap.get(i));
+            StateTag tag = labelsMap.get(i);
+            tag = (tag != null) ? tag : StateTag.NOT_FINAL;
+            this.labels.add(tag);
         }
     }
 

@@ -25,7 +25,6 @@ public class DFATest2 {
         edges.setEdge(0, 1, Set.of(0, 1));
         edges.setEdge(1, 1, Set.of(0, 1, 2, 3));
         Map<Integer, StateTag> labelsMap = Map.of(
-                0, StateTag.NOT_FINAL,
                 1, StateTag.FINAL_DUMMY
         );
         NFA nfa = new NFA(numberOfStates, alphabetSize, 0, labelsMap, edges.build());

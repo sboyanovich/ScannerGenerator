@@ -29,29 +29,15 @@ public class DFATest3 {
         Function<Integer, String> interpretation = interpretationMap::get;
 
         int alphabetSize = interpretationMap.size();
-        List<StateTag> labelsList = List.of(
-                StateTag.NOT_FINAL,
-                StateTag.NOT_FINAL,
-                WHITESPACE,
-                StateTag.NOT_FINAL,
-                StateTag.NOT_FINAL,
-                StateTag.NOT_FINAL,
-                IDENTIFIER,
-                StateTag.NOT_FINAL,
-                INTEGER_LITERAL,
-                StateTag.NOT_FINAL,
-                StateTag.NOT_FINAL,
-                KEYWORD,
-                StateTag.NOT_FINAL,
-                StateTag.NOT_FINAL,
-                StateTag.NOT_FINAL,
-                OPERATION
+
+        int numberOfStates = 16;
+        Map<Integer, StateTag> labelsMap = Map.of(
+                2, WHITESPACE,
+                6, IDENTIFIER,
+                8, INTEGER_LITERAL,
+                11, KEYWORD,
+                15, OPERATION
         );
-        int numberOfStates = labelsList.size();
-        Map<Integer, StateTag> labelsMap = new HashMap<>();
-        for (int i = 0; i < labelsList.size(); i++) {
-            labelsMap.put(i, labelsList.get(i));
-        }
 
         NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates, alphabetSize);
         edges.setEdge(0, 1, Set.of());
