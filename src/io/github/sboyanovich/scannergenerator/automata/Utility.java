@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
-class Utility {
+public class Utility {
     static final int NOT_FINAL_PRIORITY_RANK = -2;
     static final int FINAL_DUMMY_PRIORITY_RANK = -1;
     /**

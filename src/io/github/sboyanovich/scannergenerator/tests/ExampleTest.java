@@ -51,7 +51,7 @@ public class ExampleTest {
 
         // note, Integer.parseInt guards against overflow
 
-        LexicalRecognizer dfa = new LexicalRecognizer(map, finalTransitionTable, stateLabels);
+        LexicalRecognizer dfa = new LexicalRecognizer(map, finalTransitionTable, 0, stateLabels);
 
         String text = Utility.getText("testWin.txt");
         //text = text.replace("\n","\r");

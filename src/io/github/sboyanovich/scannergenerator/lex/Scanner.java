@@ -17,12 +17,12 @@ public class Scanner {
     private Compiler compiler;
 
     private Position currPos;
-    private LexicalRecognizer dfa;
+    private LexicalRecognizer recognizer;
 
-    Scanner(String program, Compiler compiler, LexicalRecognizer dfa) {
+    Scanner(String program, Compiler compiler, LexicalRecognizer recognizer) {
         this.program = new Text(program);
         this.compiler = compiler;
-        this.dfa = dfa;
+        this.recognizer = recognizer;
         this.currPos = new Position();
     }
 
@@ -60,20 +60,20 @@ public class Scanner {
      */
     private boolean atPotentialTokenStart() {
         int currCodePoint = getCurrentCodePoint();
-        int nextState = this.dfa.transition(0, currCodePoint);
+        int nextState = this.recognizer.transition(this.recognizer.getInitialState(), currCodePoint);
         return nextState != LexicalRecognizer.DEAD_END_STATE;
     }
 
     private boolean isFinal(int currState) {
-        return StateTag.isFinal(this.dfa.getStateTag(currState));
+        return StateTag.isFinal(this.recognizer.getStateTag(currState));
     }
 
     public Token nextToken() {
         if (getCurrentCodePoint() == Text.EOI) {
             return new TEndOfProgram(new Fragment(currPos, currPos));
         }
-        // state 0 initial by default
-        int currState = 0;
+
+        int currState = this.recognizer.getInitialState();
 
         Position start = currPos;
 
@@ -83,7 +83,7 @@ public class Scanner {
 
         while (true) {
             int currCodePoint = getCurrentCodePoint();
-            int nextState = this.dfa.transition(currState, currCodePoint);
+            int nextState = this.recognizer.transition(currState, currCodePoint);
 
             if (isFinal(currState)) {
                 lastFinalState = OptionalInt.of(currState);
@@ -116,7 +116,7 @@ public class Scanner {
 
                     Fragment scannedFragment = new Fragment(start, this.currPos);
 
-                    StateTag tag = this.dfa.getStateTag(currState);
+                    StateTag tag = this.recognizer.getStateTag(currState);
 
                     return tag.getDomain().createToken(this.program, scannedFragment);
                 }
