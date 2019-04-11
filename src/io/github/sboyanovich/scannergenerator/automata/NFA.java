@@ -17,7 +17,7 @@ public class NFA {
     private static final String DOT_ARROW = "->";
     private static final String DOT_ACCEPTING_STATE_SHAPE = "doublecircle";
     private static final String DOT_REGULAR_STATE_SHAPE = "circle";
-    private static final String DOT_MAXSIZE_INCHES = "50,0";
+    private static final String DOT_MAXSIZE_INCHES = "70,0";
     private static final String DOT_AUX_INPUT_STATE_NAME = "input";
 
     private int numberOfStates;
@@ -353,7 +353,7 @@ public class NFA {
         result.append(TAB + "size=\"" + DOT_MAXSIZE_INCHES + "\";" + NEWLINE);
 
         // "Fake" input state
-        result.append(TAB + "node [shape = point ]; "
+        result.append(TAB + "node [shape = point];" + NEWLINE + TAB
                 + DOT_AUX_INPUT_STATE_NAME + SEMICOLON + NEWLINE);
 
         // Accepting states
