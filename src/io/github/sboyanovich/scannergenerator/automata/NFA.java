@@ -6,6 +6,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static io.github.sboyanovich.scannergenerator.automata.Utility.FINAL_DUMMY_PRIORITY_RANK;
+import static io.github.sboyanovich.scannergenerator.automata.Utility.NOT_FINAL_PRIORITY_RANK;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 
 // TODO: Make separate class for DFA. determinize() should return a DFA then
@@ -585,9 +587,6 @@ public class NFA {
 
         return result;
     }
-
-    private static final int NOT_FINAL_PRIORITY_RANK = -2;
-    private static final int FINAL_DUMMY_PRIORITY_RANK = -1;
 
     public DFA determinize(Map<StateTag, Integer> priorities) {
         // priorities map must contain mapping for every present StateTag (bigger number -> higher priority)

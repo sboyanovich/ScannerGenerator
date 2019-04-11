@@ -1,6 +1,7 @@
 package io.github.sboyanovich.scannergenerator.automata;
 
 import io.github.sboyanovich.scannergenerator.lex.StateTag;
+import io.github.sboyanovich.scannergenerator.utility.unionfind.DisjointSetForest;
 
 import java.util.*;
 import java.util.function.Function;
@@ -130,7 +131,16 @@ public class DFA {
         return this.toNFA().toGraphvizDotString(alphabetInterpretation, prefixFinalStatesWithTagName);
     }
 
-    /*
+    public StateTag getStateTag(int state) {
+        // validate
+        return this.labels.get(state);
+    }
+
+    /// MINIMIZATION
+    //  Methods in this section prioritize correctness over performance.
+    //  Therefore, their implementations are subject to further improvement.
+
+    // returns DisjointSetForest over [0, n-1] with n equivalence classes
     private static DisjointSetForest finestPartition(int n) {
         DisjointSetForest result = new DisjointSetForest();
         for (int i = 0; i < n; i++) {
@@ -139,6 +149,7 @@ public class DFA {
         return result;
     }
 
+    // checks if two states are equivalent
     private static boolean areEquivalent(int state1, int state2, int alphabetSize,
                                          int[][] transitionFunction, DisjointSetForest dsf) {
         for (int i = 0; i < alphabetSize; i++) {
@@ -151,6 +162,7 @@ public class DFA {
         return true;
     }
 
+    // breaking up some coarse equivalence classes
     private static DisjointSetForest refine(DisjointSetForest dsf, int nElements,
                                             int alphabetSize, int[][] transitionFunction) {
         DisjointSetForest result = finestPartition(nElements);
@@ -166,54 +178,38 @@ public class DFA {
         return result;
     }
 
-    public NFA minimize() {
-        NFA dfa = this.determinize();
+    // EXPERIMENTAL
+    //      does tag priority play a role here?
+    public DFA minimize() {
 
-        boolean[] accepting = new boolean[dfa.numberOfStates];
-        dfa.acceptingStates.forEach(n -> accepting[n] = true);
+        DisjointSetForest dsf = finestPartition(this.numberOfStates);
 
-        DisjointSetForest dsf = finestPartition(dfa.numberOfStates);
+        Set<StateTag> allTags = new HashSet<>(this.labels);
 
-        int firstAccepting = 0;
-        int firstNonAccepting = 0;
-        for (int i = 0; i < dfa.numberOfStates; i++) {
-            if (accepting[i]) {
-                firstAccepting = i;
-                break;
-            }
-        }
-        for (int i = 0; i < dfa.numberOfStates; i++) {
-            if (!accepting[i]) {
-                firstNonAccepting = i;
-                break;
-            }
-        }
-        for (int i = 0; i < dfa.numberOfStates; i++) {
-            if (accepting[i]) {
-                dsf.union(i, firstAccepting);
-            } else {
-                dsf.union(i, firstNonAccepting);
-            }
-        }
-        // Now we have two classes (0-equivalent)
-
-        int[][] transitionFunction = new int[dfa.numberOfStates][dfa.alphabetSize];
-        for (int i = 0; i < dfa.numberOfStates; i++) {
-            for (int j = 0; j < dfa.numberOfStates; j++) {
-                if (dfa.edges.edgeExists(i, j)) {
-                    Set<Integer> marker = dfa.edges.getEdgeMarker(i, j);
-                    for (Integer letter : marker) {
-                        transitionFunction[i][letter] = j;
-                    }
+        // find first state for all tags
+        Map<StateTag, Integer> represents = new HashMap<>();
+        for (StateTag tag : allTags) {
+            for (int i = 0; i < this.numberOfStates; i++) {
+                if (getStateTag(i) == tag) {
+                    represents.put(tag, i);
+                    break;
                 }
             }
         }
 
-        int alphabetSize = dfa.alphabetSize;
+        // all states with same tag are now equivalent
+        for (int i = 0; i < this.numberOfStates; i++) {
+            StateTag tag = getStateTag(i);
+            dsf.union(i, represents.get(tag));
+        }
+
+        int[][] transitionFunction = this.getTransitionTable();
+
+        int alphabetSize = this.alphabetSize;
         int numberOfStates;
         do {
             numberOfStates = dsf.numberOfClasses();
-            dsf = NFA.refine(dsf, dfa.numberOfStates, alphabetSize, transitionFunction);
+            dsf = refine(dsf, this.numberOfStates, alphabetSize, transitionFunction);
         } while (dsf.numberOfClasses() > numberOfStates);
 
         List<Integer> states = dsf.getRepresentatives();
@@ -223,34 +219,33 @@ public class DFA {
             renaming.put(states.get(i), i);
         }
 
-        int initialState = renaming.get(dsf.find(dfa.initialState));
-        Set<Integer> acceptingStates = new HashSet<Integer>();
-        for (Integer state : dfa.acceptingStates) {
-            acceptingStates.add(
-                    renaming.get(dsf.find(state))
-            );
+        // initial state
+        int initialState = renaming.get(dsf.find(this.initialState));
+
+        // state labels
+        Map<Integer, StateTag> labelsMap = new HashMap<>();
+        for (int i = 0; i < states.size(); i++) {
+            int state = states.get(i); // this is a representative
+            StateTag tag = getStateTag(state);
+            int nState = renaming.get(state); // state in minimal DFA represented
+            labelsMap.put(nState, tag);
         }
 
-        NFAStateGraph edges = new NFAStateGraph(numberOfStates);
+        int[][] transitionTable = new int[numberOfStates][alphabetSize];
 
+        // writing transition table
         for (int i = 0; i < numberOfStates; i++) {
             int dfaStateNo = states.get(i);
             for (int j = 0; j < alphabetSize; j++) {
                 int targetState = transitionFunction[dfaStateNo][j];
                 targetState = dsf.find(targetState);
                 targetState = renaming.get(targetState);
-                if (!edges.edgeExists(i, targetState)) {
-                    edges.setEdge(i, targetState, new HashSet<>());
-                }
-                Set<Integer> marker = new HashSet<>(edges.getEdgeMarker(i, targetState));
-                marker.add(j);
-                edges.setEdge(i, targetState, marker);
+                transitionTable[i][j] = targetState;
             }
         }
 
-        return new NFA(numberOfStates, alphabetSize, initialState, acceptingStates, edges);
+        return new DFA(numberOfStates, alphabetSize, initialState, labelsMap, transitionTable);
     }
-*/
 
     /**
      * Accepting states of the result are labeled with FINAL_DUMMY!

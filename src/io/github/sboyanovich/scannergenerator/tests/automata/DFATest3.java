@@ -103,7 +103,7 @@ public class DFATest3 {
             priorityMap.put(priorityList.get(i), i);
         }
 
-        DFA dfa = nfa.determinize(priorityMap);
+        DFA dfa = nfa.determinize(priorityMap).minimize();
 
         String dot = dfa.toGraphvizDotString(interpretation, true);
         System.out.println(dot);
