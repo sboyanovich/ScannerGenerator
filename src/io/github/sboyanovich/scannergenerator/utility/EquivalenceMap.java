@@ -1,9 +1,13 @@
 package io.github.sboyanovich.scannergenerator.utility;
 
+import java.util.Arrays;
+import java.util.Objects;
+
+import static io.github.sboyanovich.scannergenerator.utility.Utility.isInRange;
+
 /**
- *  Represents mapping of [0, domain - 1] to equivalence class [0, eqClassDomain - 1]
- *
-  */
+ * Represents mapping of [0, domain - 1] to equivalence class [0, eqClassDomain - 1]
+ */
 public class EquivalenceMap {
     private int domain;
     private int eqClassDomain;
@@ -11,6 +15,26 @@ public class EquivalenceMap {
     private int[] map;
 
     public EquivalenceMap(int domain, int eqClassDomain, int[] map) {
+        // validation
+        Objects.requireNonNull(map);
+        // domain > 0
+        // 0 < eqClassDomain <= domain
+        if (!(domain > 0)) {
+            throw new IllegalArgumentException("Domain must be non-negative!");
+        }
+        if (!isInRange(eqClassDomain, 1, domain)) {
+            throw new IllegalArgumentException("EqClassDomain must be in range [1, domain]!");
+        }
+        map = Arrays.copyOf(map, map.length);
+        if (map.length != domain) {
+            throw new IllegalArgumentException("Parameter map[] should have domain length!");
+        }
+        for (int i = 0; i < map.length; i++) {
+            if (!isInRange(map[i], 0, eqClassDomain - 1)) {
+                throw new IllegalArgumentException("Mappings should lie in range [0, eqClassDomain-1]!");
+            }
+        }
+
         this.domain = domain;
         this.eqClassDomain = eqClassDomain;
         this.map = map;
