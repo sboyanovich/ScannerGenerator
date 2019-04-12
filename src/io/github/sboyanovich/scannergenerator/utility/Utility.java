@@ -2,6 +2,10 @@ package io.github.sboyanovich.scannergenerator.utility;
 
 import io.github.sboyanovich.scannergenerator.Fragment;
 import io.github.sboyanovich.scannergenerator.automata.DFA;
+import io.github.sboyanovich.scannergenerator.automata.NFA;
+import io.github.sboyanovich.scannergenerator.automata.NFAStateGraph;
+import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
+import io.github.sboyanovich.scannergenerator.lex.LexicalRecognizer;
 import io.github.sboyanovich.scannergenerator.lex.StateTag;
 import io.github.sboyanovich.scannergenerator.lex.Text;
 
@@ -10,6 +14,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static io.github.sboyanovich.scannergenerator.lex.StateTag.FINAL_DUMMY;
 
 public class Utility {
 
@@ -215,30 +222,6 @@ public class Utility {
         return result;
     }
 
-    // modifies transition table, adding transition from <from> to <to> for <symbols>,
-
-    public static void addEdge(int[][] transitionTable, int from, int to, EquivalenceMap map, Set<String> symbols) {
-        for (String symbol : symbols) {
-            int eqClass = map.getEqClass(asCodePoint(symbol));
-            transitionTable[from][eqClass] = to;
-        }
-    }
-
-    public static void addEdgeSubtractive(int[][] transitionTable, int from, int to, EquivalenceMap map, Set<String> exceptions) {
-        Set<Integer> aux = new HashSet<>();
-        exceptions.forEach(s -> aux.add(
-                map.getEqClass(
-                        asCodePoint(s)
-                )
-        ));
-
-        for (int i = 0; i < transitionTable[from].length; i++) {
-            if (!aux.contains(i)) {
-                transitionTable[from][i] = to;
-            }
-        }
-    }
-
     public static String getTextFragmentAsString(Text text, Fragment span) {
         return text.subtext(
                 span.getStarting().getIndex(),
@@ -305,5 +288,89 @@ public class Utility {
             result.append(" ");
         }
         return result.toString();
+    }
+
+    /// EXPERIMENTAL METHODS SECTION
+
+    public static NFA acceptsAllTheseSymbols(int alphabetSize, Set<String> symbols) {
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(2, alphabetSize);
+        Set<Integer> codePoints = symbols.stream().map(Utility::asCodePoint).collect(Collectors.toSet());
+        edges.setEdge(0, 1, codePoints);
+        return new NFA(2, alphabetSize, 0, Map.of(1, FINAL_DUMMY), edges.build());
+    }
+
+    public static NFA acceptThisWord(int alphabetSize, List<String> symbols) {
+        int n = symbols.size();
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(n + 1, alphabetSize);
+        for (int i = 0; i < n; i++) {
+            int codePoint = asCodePoint(symbols.get(i));
+            edges.addSymbolToEdge(i, i + 1, codePoint);
+        }
+        return new NFA(n + 1, alphabetSize, 0, Map.of(n, StateTag.FINAL_DUMMY), edges.build());
+    }
+
+    public static void addEdge(NFAStateGraphBuilder edges, int from, int to, Set<String> edge) {
+        for (String symbol : edge) {
+            edges.addSymbolToEdge(from, to, asCodePoint(symbol));
+        }
+    }
+
+    public static void addEdgeSubtractive(NFAStateGraphBuilder edges, int from, int to, Set<String> edge) {
+        int alphabetSize = edges.getAlphabetSize();
+        Set<Integer> codePoints = edge.stream().map(Utility::asCodePoint).collect(Collectors.toSet());
+        for (int i = 0; i < alphabetSize; i++) {
+            if (!codePoints.contains(i)) {
+                edges.addSymbolToEdge(from, to, i);
+            }
+        }
+    }
+
+    static boolean isSubtractive(Set<Integer> marker, int alphabetSize, int limit) {
+        return (alphabetSize - marker.size()) < limit;
+    }
+
+    static boolean isMentioned(NFAStateGraph edges, int symbol) {
+        int numberOfStates = edges.getNumberOfStates();
+        int alphabetSize = edges.getAlphabetSize();
+
+        for (int j = 0; j < numberOfStates; j++) {
+            for (int k = 0; k < numberOfStates; k++) {
+                Optional<Set<Integer>> marker = edges.getEdgeMarker(j, k);
+                if (marker.isPresent()) {
+                    Set<Integer> markerSet = marker.get();
+                    if (isSubtractive(markerSet, alphabetSize, 5)) {
+                        if (!markerSet.contains(symbol)) {
+                            return true;
+                        }
+                    } else if (markerSet.contains(symbol)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public static List<Integer> mentioned(NFA nfa) {
+        int alphabetSize = nfa.getAlphabetSize();
+        List<Integer> result = new ArrayList<>();
+        NFAStateGraph edges = nfa.getEdges();
+
+        for (int i = 0; i < alphabetSize; i++) {
+            if (isMentioned(edges, i)) {
+                result.add(i);
+            }
+        }
+
+        return result;
+    }
+
+    // with hint heuristic
+    public static LexicalRecognizer createRecognizer(NFA lang, Map<StateTag, Integer> priorityMap) {
+        int alphabetSize = lang.getAlphabetSize();
+        lang = lang.removeLambdaSteps();
+        EquivalenceMap hint = getCoarseSymbolClassMap(mentioned(lang), alphabetSize);
+        DFA dfa = lang.determinize(priorityMap);
+        return new LexicalRecognizer(hint, dfa);
     }
 }
