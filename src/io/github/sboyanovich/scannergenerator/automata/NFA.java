@@ -73,6 +73,27 @@ public class NFA {
         }
     }
 
+    public int getNumberOfStates() {
+        return numberOfStates;
+    }
+
+    public int getAlphabetSize() {
+        return alphabetSize;
+    }
+
+    public int getInitialState() {
+        return initialState;
+    }
+
+    public NFAStateGraph getEdges() {
+        return edges;
+    }
+
+    public StateTag getStateTag(int state) {
+        // validate
+        return this.labels.get(state);
+    }
+
     public static NFA emptyLanguage(int alphabetSize) {
         return new NFA(
                 1, alphabetSize, 0,
@@ -104,6 +125,15 @@ public class NFA {
                 this.initialState,
                 relabel, this.edges // thanks to immutability,
         );
+    }
+
+    public NFA setAllFinalStatesTo(StateTag tag) {
+        Map<Integer, StateTag> relabel = new HashMap<>();
+        for (int i = 0; i < this.numberOfStates; i++) {
+            StateTag stag = this.labels.get(i);
+            relabel.put(i, StateTag.isFinal(stag) ? tag : stag);
+        }
+        return relabelStates(relabel);
     }
 
     public NFA union(NFA second) {
