@@ -1,6 +1,8 @@
 package io.github.sboyanovich.scannergenerator.utility;
 
 import io.github.sboyanovich.scannergenerator.Fragment;
+import io.github.sboyanovich.scannergenerator.automata.DFA;
+import io.github.sboyanovich.scannergenerator.lex.StateTag;
 import io.github.sboyanovich.scannergenerator.lex.Text;
 
 import java.io.BufferedReader;
@@ -30,21 +32,26 @@ public class Utility {
         return new String(new int[]{codePoint}, 0, 1);
     }
 
-    // all pivots are distinct valid code points
-    public static EquivalenceMap getCoarseSymbolClassMap(List<Integer> pivots) {
-        int totalValidCodePoints = Character.MAX_CODE_POINT - Character.MIN_CODE_POINT + 1;
-
-        int[] resultMap = new int[totalValidCodePoints];
+    /**
+     * Assigns distinct equivalence classes to all pivots. Each interval between two closest pivots
+     * (left and right alphabet border act as implicit pivots) is assigned its own equivalence class.
+     */
+    public static EquivalenceMap getCoarseSymbolClassMap(List<Integer> pivots, int alphabetSize) {
+        int[] resultMap = new int[alphabetSize];
         List<Integer> sortedPivots = new ArrayList<>(pivots);
         Collections.sort(sortedPivots);
 
         int classCounter = 0;
         int start = 0;
         for (int pivot : sortedPivots) {
-            for (int i = start; i < pivot; i++) {
+            int i;
+            for (i = start; i < pivot; i++) {
                 resultMap[i] = classCounter;
             }
-            classCounter++;
+            // covers if there is nothing between prev and curr pivot
+            if (i > start) {
+                classCounter++;
+            }
             resultMap[pivot] = classCounter;
             classCounter++;
             start = pivot + 1;
@@ -53,10 +60,13 @@ public class Utility {
         for (int i = start; i < resultMap.length; i++) {
             resultMap[i] = classCounter;
         }
+        int classNo = resultMap[alphabetSize - 1] + 1;
 
-        int classNo = resultMap[Character.MAX_CODE_POINT] + 1;
+        return new EquivalenceMap(alphabetSize, classNo, resultMap);
+    }
 
-        return new EquivalenceMap(Character.MAX_CODE_POINT + 1, classNo, resultMap);
+    public static EquivalenceMap getCoarseSymbolClassMap(List<Integer> pivots) {
+        return getCoarseSymbolClassMap(pivots, Character.MAX_CODE_POINT + 1);
     }
 
     private static boolean areSymbolsEquivalent(int a, int b, int[][] transitionTable) {
@@ -97,6 +107,7 @@ public class Utility {
         return new EquivalenceMap(m, map2.getEqClassDomain(), resultMap);
     }
 
+    // map eqDomain == transitionTable alphabet
     public static EquivalenceMap refineEquivalenceMap(EquivalenceMap map, int[][] transitionTable) {
         int n = map.getEqClassDomain();
 
@@ -125,37 +136,18 @@ public class Utility {
         return new EquivalenceMap(n, c, auxMap);
     }
 
-    /**
-     * reads text from file res/filename
-     */
-    public static String getText(String filename) {
-        StringBuilder lines = new StringBuilder();
-
-        FileReader fr;
-        try {
-            fr = new FileReader("res/" + filename);
-            BufferedReader br = new BufferedReader(fr);
-            String currLine = br.readLine();
-            while (currLine != null) {
-                lines.append(currLine).append("\n");
-                currLine = br.readLine();
+    // map maps alphabetSize -> eqDomain, where alphabetSize = transitionTable[0].length
+    public static int[][] compressTransitionTable(int[][] transitionTable, EquivalenceMap map) {
+        Objects.requireNonNull(transitionTable);
+        Objects.requireNonNull(map);
+        for (int i = 0; i < transitionTable.length; i++) {
+            Objects.requireNonNull(transitionTable[i]);
+            if (transitionTable[i].length != map.getDomain()) {
+                throw new IllegalArgumentException("Map domain must be  [0, alphabetSize-1]!");
             }
-
-            br.close();
-            fr.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            System.out.println("FILE NOT FOUND");
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
-        return lines.toString().substring(0, lines.length() - 1);
-    }
-
-    // no validation for now
-    public static int[][] compressTransitionTable(int[][] transitionTable, EquivalenceMap map) {
-        int n = transitionTable.length;
+        int n = transitionTable.length; // number of states
         int m = map.getEqClassDomain();
 
         int[][] result = new int[n][m];
@@ -167,8 +159,47 @@ public class Utility {
                 result[state][symbol] = transitionTable[i][j];
             }
         }
-
         return result;
+    }
+
+    // EXPERIMENTAL
+    //  hint domain must be equal to alphabetSize
+    public static Pair<EquivalenceMap, DFA> compressAutomaton(EquivalenceMap hint, DFA automaton) {
+        int[][] transitionTable = automaton.getTransitionTable();
+
+        int numberOfStates = automaton.getNumberOfStates();
+        int initialState = automaton.getInitialState();
+
+        int[][] table = compressTransitionTable(transitionTable, hint);
+
+        EquivalenceMap rmap = refineEquivalenceMap(
+                hint,
+                table
+        );
+
+        int newAlphabetSize = rmap.getEqClassDomain();
+        Map<Integer, StateTag> labelsMap = new HashMap<>();
+        for (int i = 0; i < numberOfStates; i++) {
+            labelsMap.put(i, automaton.getStateTag(i));
+        }
+
+        EquivalenceMap emap = composeEquivalenceMaps(hint, rmap);
+
+        int[][] newTransitionTable = compressTransitionTable(
+                table,
+                rmap
+        );
+
+        DFA dfa = new DFA(numberOfStates, newAlphabetSize, initialState, labelsMap, newTransitionTable);
+
+        return new Pair<>(emap, dfa);
+    }
+
+    public static Pair<EquivalenceMap, DFA> compressAutomaton(DFA automaton) {
+        return compressAutomaton(
+                EquivalenceMap.identityMap(automaton.getAlphabetSize()),
+                automaton
+        );
     }
 
     public static <T> Set<T> union(Set<T> s1, Set<T> s2) {
@@ -185,6 +216,7 @@ public class Utility {
     }
 
     // modifies transition table, adding transition from <from> to <to> for <symbols>,
+
     public static void addEdge(int[][] transitionTable, int from, int to, EquivalenceMap map, Set<String> symbols) {
         for (String symbol : symbols) {
             int eqClass = map.getEqClass(asCodePoint(symbol));
@@ -225,5 +257,53 @@ public class Utility {
 
     public static boolean isInRange(int x, int n, int m) {
         return (x >= n && x <= m);
+    }
+
+    /**
+     * reads text from file res/filename
+     */
+    public static String getText(String filename) {
+        StringBuilder lines = new StringBuilder();
+
+        FileReader fr;
+        try {
+            fr = new FileReader("res/" + filename);
+            BufferedReader br = new BufferedReader(fr);
+            String currLine = br.readLine();
+            while (currLine != null) {
+                lines.append(currLine).append("\n");
+                currLine = br.readLine();
+            }
+
+            br.close();
+            fr.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            System.out.println("FILE NOT FOUND");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return lines.toString().substring(0, lines.length() - 1);
+    }
+
+    // for DEBUG
+    public static void printTransitionTable(int[][] transitionTable, int paddingTo) {
+        for (int[] aTransitionTable : transitionTable) {
+            for (int anATransitionTable : aTransitionTable) {
+                System.out.print(pad(anATransitionTable, paddingTo) + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    private static String pad(int arg, int paddingTo) {
+        StringBuilder result = new StringBuilder();
+        int n = paddingTo - String.valueOf(arg).length();
+        result.append(arg);
+        for (int i = 0; i < n; i++) {
+            result.append(" ");
+        }
+        return result.toString();
     }
 }
