@@ -4,6 +4,8 @@ import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
 import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
+import io.github.sboyanovich.scannergenerator.utility.Pair;
+import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.util.*;
 import java.util.function.Function;
@@ -16,16 +18,6 @@ public class LexicalRecognizer {
     private int[][] transitionTable;
     private List<StateTag> labels;
     private int initialState;
-
-    // TODO: Probably will be removed.
-    public LexicalRecognizer(EquivalenceMap generalizedSymbolsMap, int[][] transitionTable,
-                             int initialState,
-                             List<StateTag> labels) {
-        this.generalizedSymbolsMap = generalizedSymbolsMap;
-        this.transitionTable = transitionTable;
-        this.initialState = initialState;
-        this.labels = new ArrayList<>(labels);
-    }
 
     private static boolean isStateADrain(DFA dfa, int state) {
         if (StateTag.isFinal(dfa.getStateTag(state))) {
@@ -54,10 +46,14 @@ public class LexicalRecognizer {
         return OptionalInt.empty();
     }
 
-    public LexicalRecognizer(EquivalenceMap generalizedSymbolsMap, DFA automaton) {
-        this.generalizedSymbolsMap = generalizedSymbolsMap;
-
+    public LexicalRecognizer(EquivalenceMap hint, DFA automaton) {
         automaton = automaton.minimize();
+
+        Pair<EquivalenceMap, DFA> compressed = Utility.compressAutomaton(hint, automaton);
+        EquivalenceMap emap = compressed.getFirst();
+        automaton = compressed.getSecond();
+
+        this.generalizedSymbolsMap = emap;
 
         int numberOfStates = automaton.getNumberOfStates();
         int alphabetSize = automaton.getAlphabetSize();

@@ -14,6 +14,14 @@ public class EquivalenceMap {
 
     private int[] map;
 
+    public static EquivalenceMap identityMap(int domain) {
+        int[] map = new int[domain];
+        for (int i = 0; i < domain; i++) {
+            map[i] = i;
+        }
+        return new EquivalenceMap(domain, domain, map);
+    }
+
     public EquivalenceMap(int domain, int eqClassDomain, int[] map) {
         // validation
         Objects.requireNonNull(map);

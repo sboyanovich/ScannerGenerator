@@ -98,7 +98,7 @@ public class LexicalRecognizerTest1 {
             map[i] = i;
         }
         EquivalenceMap emap = new EquivalenceMap(alphabetSize, alphabetSize, map);
-        LexicalRecognizer recognizer = new LexicalRecognizer(emap, dfa);
+        LexicalRecognizer recognizer = new LexicalRecognizer(dfa);
 
         String dot = recognizer.toGraphvizDotString(interpretation, true);
         System.out.println(dot);
