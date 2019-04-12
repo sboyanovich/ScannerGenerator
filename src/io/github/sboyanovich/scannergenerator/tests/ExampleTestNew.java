@@ -51,7 +51,7 @@ public class ExampleTestNew {
             basically, n^2 complexity of brute force emap building is prohibitive
             when dealing with entire Unicode span
         */
-        alphabetSize = 128;
+        alphabetSize = 2 * Short.MAX_VALUE + 1;
 
         NFA spaceNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint(" "));
         NFA tabNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("\t"));
@@ -76,20 +76,16 @@ public class ExampleTestNew {
         NFA integerLiteralNFA = digitNFA.positiveIteration()
                 .setAllFinalStatesTo(INTEGER_LITERAL);
 
-        NFA kwIfNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("i"))
-                .concatenation(NFA.singleLetterLanguage(alphabetSize, asCodePoint("f")));
+        NFA kwIfNFA = acceptThisWord(alphabetSize, List.of("i", "f"))
+                .setAllFinalStatesTo(KEYWORD_IF);
 
-        NFA kwElifNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("e"))
-                .concatenation(NFA.singleLetterLanguage(alphabetSize, asCodePoint("l")))
-                .concatenation(NFA.singleLetterLanguage(alphabetSize, asCodePoint("i")))
-                .concatenation(NFA.singleLetterLanguage(alphabetSize, asCodePoint("f")));
+        NFA kwElifNFA = acceptThisWord(alphabetSize, List.of("e", "l", "i", "f"))
+                .setAllFinalStatesTo(KEYWORD_ELIF);
 
-        NFA keywordNFA = kwIfNFA.union(kwElifNFA)
-                .setAllFinalStatesTo(KEYWORD);
-
-        NFA operationNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("*"))
-                .union(NFA.singleLetterLanguage(alphabetSize, asCodePoint("/")))
-                .setAllFinalStatesTo(OPERATION);
+        NFA opDivideNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("/"))
+                .setAllFinalStatesTo(OP_DIVIDE);
+        NFA opMultiplyNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("*"))
+                .setAllFinalStatesTo(OP_MULTIPLY);
 
         NFAStateGraphBuilder commentNFAEdges = new NFAStateGraphBuilder(6, alphabetSize);
         addEdge(commentNFAEdges, 0, 1, Set.of("/"));
@@ -107,10 +103,12 @@ public class ExampleTestNew {
         List<StateTag> priorityList = List.of(
                 WHITESPACE,
                 COMMENT,
-                OPERATION,
+                OP_DIVIDE,
+                OP_MULTIPLY,
                 INTEGER_LITERAL,
                 IDENTIFIER,
-                KEYWORD
+                KEYWORD_ELIF,
+                KEYWORD_IF
         );
 
         Map<StateTag, Integer> priorityMap = new HashMap<>();
@@ -121,8 +119,10 @@ public class ExampleTestNew {
         NFA lang = whitespaceNFA
                 .union(identifierNFA)
                 .union(integerLiteralNFA)
-                .union(keywordNFA)
-                .union(operationNFA)
+                .union(kwIfNFA)
+                .union(kwElifNFA)
+                .union(opDivideNFA)
+                .union(opMultiplyNFA)
                 .union(commentNFA);
 
         System.out.println(lang.getNumberOfStates());
@@ -131,10 +131,9 @@ public class ExampleTestNew {
 
         // EXPERIMENTAL
         List<Integer> mentioned = mentioned(lang);
-        System.out.println(mentioned.size());
+        System.out.println(mentioned.size() + " mentioned symbols");
         EquivalenceMap hint = Utility.getCoarseSymbolClassMap(mentioned, alphabetSize);
         System.out.println(hint.getDomain() + " -> " + hint.getEqClassDomain());
-        // hint = EquivalenceMap.identityMap(alphabetSize); // MW
 
         DFA dfa = lang.determinize(priorityMap);
 
@@ -192,6 +191,16 @@ public class ExampleTestNew {
         Set<Integer> codePoints = symbols.stream().map(Utility::asCodePoint).collect(Collectors.toSet());
         edges.setEdge(0, 1, codePoints);
         return new NFA(2, alphabetSize, 0, Map.of(1, FINAL_DUMMY), edges.build());
+    }
+
+    static NFA acceptThisWord(int alphabetSize, List<String> symbols) {
+        int n = symbols.size();
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(n + 1, alphabetSize);
+        for (int i = 0; i < n; i++) {
+            int codePoint = asCodePoint(symbols.get(i));
+            edges.addSymbolToEdge(i, i + 1, codePoint);
+        }
+        return new NFA(n + 1, alphabetSize, 0, Map.of(n, StateTag.FINAL_DUMMY), edges.build());
     }
 
     static void addEdge(NFAStateGraphBuilder edges, int from, int to, Set<String> edge) {

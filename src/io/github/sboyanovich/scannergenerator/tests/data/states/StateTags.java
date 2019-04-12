@@ -25,16 +25,28 @@ public enum StateTags implements StateTag {
             return DomainsWithIntegerAttribute.INTEGER_LITERAL;
         }
     },
-    KEYWORD {
+    KEYWORD_IF {
         @Override
         public Domain getDomain() {
-            return DomainsWithStringAttribute.KEYWORD;
+            return SimpleDomains.KEYWORD_IF;
         }
     },
-    OPERATION {
+    KEYWORD_ELIF {
         @Override
         public Domain getDomain() {
-            return DomainsWithStringAttribute.OPERATION;
+            return SimpleDomains.KEYWORD_ELIF;
+        }
+    },
+    OP_DIVIDE {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.OP_DIVIDE;
+        }
+    },
+    OP_MULTIPLY {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.OP_MULTIPLY;
         }
     },
     COMMENT {
