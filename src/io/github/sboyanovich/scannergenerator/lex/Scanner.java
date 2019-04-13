@@ -11,6 +11,7 @@ import java.util.OptionalInt;
 
 public class Scanner {
     private static final int NEWLINE = Utility.asCodePoint("\n");
+    private static final int CARRET = Utility.asCodePoint("\r");
 
     private Text program;
 
@@ -30,14 +31,15 @@ public class Scanner {
         return program.toString();
     }
 
-    // TODO: Might add \r as line break support
     private void advanceCurrentPosition() {
         int index = this.currPos.getIndex();
         int codePoint = this.program.codePointAt(index);
+        int nextCodePoint = this.program.codePointAt(index + 1);
 
         if (codePoint != Text.EOI) {
             int line = this.currPos.getLine();
-            if (codePoint == NEWLINE) {
+            // CARRET not followed by NEWLINE will also count as line break
+            if ((codePoint == NEWLINE) || ((codePoint == CARRET) && (nextCodePoint != NEWLINE))) {
                 this.currPos = new Position(line + 1, 1, index + 1);
             } else {
                 int pos = this.currPos.getPos();
