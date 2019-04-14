@@ -29,7 +29,7 @@ public class L7TestV3 {
             when dealing with entire Unicode span
         */
         //alphabetSize = 2 * Short.MAX_VALUE + 1;
-        alphabetSize = 255; // special case hack for faster recognizer generation
+        alphabetSize = 256; // special case hack for faster recognizer generation
 
         NFA spaceNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint(" "));
         NFA tabNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("\t"));
@@ -121,10 +121,10 @@ public class L7TestV3 {
             priorityMap.put(priorityList.get(i), i);
         }
 
-        System.out.println(lang.getNumberOfStates());
+        System.out.println("NFA has " + lang.getNumberOfStates() + " states.");
 
         LexicalRecognizer recognizer = Utility.createRecognizer(lang, priorityMap);
-        System.out.println("Recognizer built!");
+        System.out.println("Recognizer built!\n");
 
         String dot = recognizer.toGraphvizDotString(Object::toString, true);
         System.out.println(dot);
@@ -166,19 +166,6 @@ public class L7TestV3 {
             System.out.println(entry.getValue() + " at " + entry.getKey());
         }
 
-        List<Domain> columns = List.of(
-                DomainsWithStringAttribute.AXM_DECL,
-                DomainsWithStringAttribute.IDENTIFIER,
-                DomainsWithStringAttribute.NON_TERMINAL,
-                SimpleDomains.EQUALS,
-                SimpleDomains.VERTICAL_BAR,
-                SimpleDomains.DOT,
-                SimpleDomains.OP_PLUS,
-                SimpleDomains.OP_MULTIPLY,
-                SimpleDomains.ESCAPED_LPAREN,
-                SimpleDomains.ESCAPED_RPAREN,
-                DomainEOP.END_OF_PROGRAM
-        );
 
         List<String> nonTerminalNames = List.of(
                 "<lang>",
@@ -191,6 +178,21 @@ public class L7TestV3 {
                 "<t>",
                 "<lhs>"
         );
+
+        /// HARDCODING PREDICTION TABLE AND PRODUCTION RULES
+
+        // GRAMMAR
+        /*
+            0	<lang> 		    := <rule> <rule_list> .
+            1	<rule_list>	    := <rule> <rule_list> | .
+            2	<rule>		    := <lhs> EQUALS <rhs_list> DOT .
+            3	<rhs_list>	    := <rhs> <rhs_list_c> .
+            4	<rhs_list_c>	:= VERTICAL_BAR <rhs_l	ist> | .
+            5	<rhs>		    := <t> <tl> | .
+            6	<tl>		    := <t> <tl> | .
+            7	<t>		        := IDENTIFIER | NON_TERMINAL | ESCAPED_LPAREN | ESCAPED_RPAREN | OP_PLUS | OP_MULTIPLY .
+            8	<lhs>		    := NON_TERMINAL | AXM_DECL .
+        */
 
         Map<Integer, Map<Domain, Integer>> table = new HashMap<>();
         Map<Integer, Map<Integer, List<Pair<Integer, Domain>>>> rules = new HashMap<>();
@@ -348,9 +350,19 @@ public class L7TestV3 {
                 )
         ));
 
-        ParseTree derivation = parse(tokensToParse, nonTerminalNames, table, rules);
-        dot = derivation.toGraphvizDotString(nonTerminalNames::get);
-        System.out.println(dot);
+        if (errCount == 0) {
+            try {
+                ParseTree derivation = parse(tokensToParse, nonTerminalNames, table, rules);
+                dot = derivation.toGraphvizDotString(nonTerminalNames::get);
+                System.out.println();
+                System.out.println(dot);
+            } catch (ParseException e) {
+                System.out.println(e.getMessage());
+                System.out.println("There is a syntax error in the input. Parsing cannot proceed.");
+            }
+        } else {
+            System.out.println("There are lexical errors in the input. Parsing cannot begin.");
+        }
     }
 
     static boolean isTerminal(Pair<Integer, Domain> genSymbol) {
@@ -362,11 +374,11 @@ public class L7TestV3 {
             List<String> nonTerminalNames,
             Map<Integer, Map<Domain, Integer>> predictionTable,
             Map<Integer, Map<Integer, List<Pair<Integer, Domain>>>> rules
-    ) {
+    ) throws ParseException {
         ParseTree result = new ParseTree(0); // knowing axiom is 0 here
 
         Deque<Pair<Integer, Domain>> stack = new ArrayDeque<>();
-        Deque<ParseTree.Node> nodeStack = new ArrayDeque<>();
+        Deque<ParseTree.Node> nodeStack = new ArrayDeque<>(); // for building parse tree
 
         stack.push(new Pair<>(null, DomainEOP.END_OF_PROGRAM));
         stack.push(new Pair<>(0, null));
@@ -384,20 +396,22 @@ public class L7TestV3 {
                 ParseTree.TerminalNode leaf = (ParseTree.TerminalNode) nodeStack.pop();
                 Domain expected = genSymbol.getSecond();
                 if (expected != curr.getTag()) {
-                    throw new IllegalArgumentException("Unexpected token encountered: expected type " +
+                    throw new ParseException("Unexpected token encountered: expected type " +
                             expected + ", got " + curr
                     );
                 } else {
+                    // setting successfully recognized token in the parse tree
                     leaf.setSymbol(curr);
                     cnt++;
                 }
             } else {
                 Integer nonTerminal = genSymbol.getFirst();
                 Integer ruleNo = predictionTable.get(nonTerminal).get(curr.getTag());
+
+                // null symbolizes ERR in prediction table
                 if (ruleNo == null) {
-                    throw new IllegalArgumentException("Token type " + curr.getTag() +
-                            " not allowed here!\n" +
-                            "Violating (token, nonTerminal) pair: " +
+                    throw new ParseException("Token type " + curr.getTag() + " not allowed here!\n" +
+                            "Offending (token, nonTerminal) pair: " +
                             "(" + curr + ", " + nonTerminalNames.get(nonTerminal) + ")");
                 } else {
                     ParseTree.NonTerminalNode subtree = (ParseTree.NonTerminalNode) nodeStack.pop();
@@ -435,7 +449,6 @@ public class L7TestV3 {
                 }
             }
         }
-
         return result;
     }
 }
