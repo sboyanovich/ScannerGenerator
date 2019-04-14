@@ -3,6 +3,7 @@ package io.github.sboyanovich.scannergenerator.tests.data.domains;
 import io.github.sboyanovich.scannergenerator.Fragment;
 import io.github.sboyanovich.scannergenerator.lex.Text;
 import io.github.sboyanovich.scannergenerator.tests.data.tokens.*;
+import io.github.sboyanovich.scannergenerator.token.BasicToken;
 import io.github.sboyanovich.scannergenerator.token.Domain;
 import io.github.sboyanovich.scannergenerator.token.Token;
 
@@ -35,6 +36,60 @@ public enum SimpleDomains implements Domain {
         @Override
         public Token createToken(Text text, Fragment fragment) {
             return new TOpMultiply(fragment);
+        }
+    },
+    OP_PLUS {
+        @Override
+        public Token createToken(Text text, Fragment fragment) {
+            return new BasicToken(fragment, OP_PLUS);
+        }
+    },
+    KEYWORD_AXIOM {
+        @Override
+        public Token createToken(Text text, Fragment fragment) {
+            return new BasicToken(fragment, KEYWORD_AXIOM);
+        }
+    },
+    LPAREN {
+        @Override
+        public Token createToken(Text text, Fragment fragment) {
+            return new BasicToken(fragment, LPAREN);
+        }
+    },
+    RPAREN {
+        @Override
+        public Token createToken(Text text, Fragment fragment) {
+            return new BasicToken(fragment, RPAREN);
+        }
+    },
+    DOT {
+        @Override
+        public Token createToken(Text text, Fragment fragment) {
+            return new BasicToken(fragment, DOT);
+        }
+    },
+    VERTICAL_BAR {
+        @Override
+        public Token createToken(Text text, Fragment fragment) {
+            return new BasicToken(fragment, VERTICAL_BAR);
+        }
+    },
+    EQUALS {
+        @Override
+        public Token createToken(Text text, Fragment fragment) {
+            return new BasicToken(fragment, EQUALS);
+        }
+    },
+    ESCAPED_LPAREN {
+        @Override
+        public Token createToken(Text text, Fragment fragment) {
+            return new BasicToken(fragment, ESCAPED_LPAREN);
+        }
+    },
+    ESCAPED_RPAREN {
+        @Override
+        public Token createToken(Text text, Fragment fragment) {
+            return new BasicToken(fragment, ESCAPED_RPAREN);
         }
     }
 }

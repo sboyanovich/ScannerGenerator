@@ -3,11 +3,11 @@ package io.github.sboyanovich.scannergenerator.tests;
 import io.github.sboyanovich.scannergenerator.Position;
 import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
-import io.github.sboyanovich.scannergenerator.automata.NFAStateGraph;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
 import io.github.sboyanovich.scannergenerator.lex.Compiler;
 import io.github.sboyanovich.scannergenerator.lex.*;
 import io.github.sboyanovich.scannergenerator.lex.Scanner;
+import io.github.sboyanovich.scannergenerator.tests.data.domains.SimpleDomains;
 import io.github.sboyanovich.scannergenerator.token.Domain;
 import io.github.sboyanovich.scannergenerator.token.DomainEOP;
 import io.github.sboyanovich.scannergenerator.token.DomainError;
@@ -16,42 +16,19 @@ import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
+import static io.github.sboyanovich.scannergenerator.tests.data.CommonCharClasses.*;
 import static io.github.sboyanovich.scannergenerator.tests.data.states.StateTags.*;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 
 public class ExampleTestNew {
     public static void main(String[] args) {
-
-        Set<String> digits = new HashSet<>();
-        for (int i = 0; i < 10; i++) {
-            digits.add(String.valueOf(i));
-        }
-
-        Set<String> capitalLatins = new HashSet<>();
-        int capA = asCodePoint("A");
-        int capZ = asCodePoint("Z");
-        for (int i = capA; i <= capZ; i++) {
-            capitalLatins.add(asString(i));
-        }
-
-        Set<String> lowercaseLatins = new HashSet<>();
-        int lcA = asCodePoint("a");
-        int lcZ = asCodePoint("z");
-        for (int i = lcA; i <= lcZ; i++) {
-            lowercaseLatins.add(asString(i));
-        }
-
-        Set<String> letters = union(capitalLatins, lowercaseLatins);
-        Set<String> alphanumerics = union(letters, digits);
-
         int alphabetSize = Character.MAX_CODE_POINT + 1;
         /*
             basically, n^2 complexity of brute force emap building is prohibitive
             when dealing with entire Unicode span
         */
-        alphabetSize = 2 * Short.MAX_VALUE + 1;
+        // alphabetSize = 2 * Short.MAX_VALUE + 1;
 
         NFA spaceNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint(" "));
         NFA tabNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("\t"));
@@ -140,12 +117,6 @@ public class ExampleTestNew {
         System.out.println("Determinized!");
         System.out.println(dfa.getNumberOfStates());
 
-        dfa = dfa.minimize();
-        System.out.println("Minimized!");
-        System.out.println(dfa.getNumberOfStates());
-        System.out.println();
-
-
         LexicalRecognizer recognizer = new LexicalRecognizer(hint, dfa);
         System.out.println("Recognizer built!");
 
@@ -158,6 +129,7 @@ public class ExampleTestNew {
         Scanner scanner = compiler.getScanner(text);
 
         Set<Domain> ignoredTokenTypes = Set.of(
+                SimpleDomains.WHITESPACE,
                 DomainEOP.END_OF_PROGRAM,
                 DomainError.ERROR
         );
@@ -184,78 +156,5 @@ public class ExampleTestNew {
             System.out.println(entry.getValue() + " at " + entry.getKey());
         }
 
-    }
-
-    static NFA acceptsAllTheseSymbols(int alphabetSize, Set<String> symbols) {
-        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(2, alphabetSize);
-        Set<Integer> codePoints = symbols.stream().map(Utility::asCodePoint).collect(Collectors.toSet());
-        edges.setEdge(0, 1, codePoints);
-        return new NFA(2, alphabetSize, 0, Map.of(1, FINAL_DUMMY), edges.build());
-    }
-
-    static NFA acceptThisWord(int alphabetSize, List<String> symbols) {
-        int n = symbols.size();
-        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(n + 1, alphabetSize);
-        for (int i = 0; i < n; i++) {
-            int codePoint = asCodePoint(symbols.get(i));
-            edges.addSymbolToEdge(i, i + 1, codePoint);
-        }
-        return new NFA(n + 1, alphabetSize, 0, Map.of(n, StateTag.FINAL_DUMMY), edges.build());
-    }
-
-    static void addEdge(NFAStateGraphBuilder edges, int from, int to, Set<String> edge) {
-        for (String symbol : edge) {
-            edges.addSymbolToEdge(from, to, asCodePoint(symbol));
-        }
-    }
-
-    static void addEdgeSubtractive(NFAStateGraphBuilder edges, int from, int to, Set<String> edge) {
-        int alphabetSize = edges.getAlphabetSize();
-        Set<Integer> codePoints = edge.stream().map(Utility::asCodePoint).collect(Collectors.toSet());
-        for (int i = 0; i < alphabetSize; i++) {
-            if (!codePoints.contains(i)) {
-                edges.addSymbolToEdge(from, to, i);
-            }
-        }
-    }
-
-    static boolean isSubtractive(Set<Integer> marker, int alphabetSize, int limit) {
-        return (alphabetSize - marker.size()) < limit;
-    }
-
-    static boolean isMentioned(NFAStateGraph edges, int symbol) {
-        int numberOfStates = edges.getNumberOfStates();
-        int alphabetSize = edges.getAlphabetSize();
-
-        for (int j = 0; j < numberOfStates; j++) {
-            for (int k = 0; k < numberOfStates; k++) {
-                Optional<Set<Integer>> marker = edges.getEdgeMarker(j, k);
-                if (marker.isPresent()) {
-                    Set<Integer> markerSet = marker.get();
-                    if (isSubtractive(markerSet, alphabetSize, 5)) {
-                        if (!markerSet.contains(symbol)) {
-                            return true;
-                        }
-                    } else if (markerSet.contains(symbol)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    static List<Integer> mentioned(NFA nfa) {
-        int alphabetSize = nfa.getAlphabetSize();
-        List<Integer> result = new ArrayList<>();
-        NFAStateGraph edges = nfa.getEdges();
-
-        for (int i = 0; i < alphabetSize; i++) {
-            if (isMentioned(edges, i)) {
-                result.add(i);
-            }
-        }
-
-        return result;
     }
 }
