@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <excludeFromCompile>
+      <file url="file://$PROJECT_DIR$/src/io/github/sboyanovich/scannergenerator/tests/automata/LexicalRecognizerTest1.java" />
+      <file url="file://$PROJECT_DIR$/src/io/github/sboyanovich/scannergenerator/tests/automata/DFATest3.java" />
+    </excludeFromCompile>
+  </component>
+</project>
