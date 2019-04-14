@@ -110,7 +110,7 @@ public class ParseTree {
     }
 
     public String toGraphvizDotString(Function<Integer, String> nonTerminalAlphabetInterpretation) {
-        String result = "digraph automaton {" +
+        String result = "digraph parseTree {" +
                 NEWLINE +
                 TAB + "rankdir=TD;" + NEWLINE +
                 visit(this.root, new StringBuilder(), nonTerminalAlphabetInterpretation) +

@@ -90,6 +90,21 @@ public class L7TestV3 {
         NFA esrpNFA = acceptThisWord(alphabetSize, List.of("\\", ")"))
                 .setAllFinalStatesTo(ESCAPED_RPAREN);
 
+        /// LEXICAL STRUCTURE
+
+        /*
+            IDENTIFIER      = ([a-z][A-Z])([a-z][A-Z][0-9])*
+            AXM_DECL        = \(axiom[ \t]+{IDENTIFIER}]\)
+            NON_TERMINAL    = \({IDENTIFIER}\)
+            OP_PLUS         = \+
+            OP_MULTIPLY     = \*
+            EQUALS          = =
+            VERTICAL_BAR    = |
+            DOT             = \.
+            ESCAPED_LPAREN  = \\(
+            ESCAPED_RPAREN  = \\)
+        */
+
         NFA lang = whitespaceNFA
                 .union(identifierNFA)
                 .union(axmDeclNFA)
@@ -165,7 +180,6 @@ public class L7TestV3 {
         for (Map.Entry<Position, Message> entry : messages.entrySet()) {
             System.out.println(entry.getValue() + " at " + entry.getKey());
         }
-
 
         List<String> nonTerminalNames = List.of(
                 "<lang>",
