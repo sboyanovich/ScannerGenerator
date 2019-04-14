@@ -10,11 +10,7 @@ import static io.github.sboyanovich.scannergenerator.automata.Utility.FINAL_DUMM
 import static io.github.sboyanovich.scannergenerator.automata.Utility.NOT_FINAL_PRIORITY_RANK;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 
-// TODO: Make separate class for DFA. determinize() should return a DFA then
-// TODO: A lot of work here
-
 public class NFA {
-    private static final String DOT_ARROW = "->";
     private static final String DOT_ACCEPTING_STATE_SHAPE = "doublecircle";
     private static final String DOT_REGULAR_STATE_SHAPE = "circle";
     private static final String DOT_MAXSIZE_INCHES = "70,0";
