@@ -8,9 +8,4 @@ public class TOpMultiply extends Token {
     public TOpMultiply(Fragment coords) {
         super(coords, SimpleDomains.OP_MULTIPLY);
     }
-
-    @Override
-    public String toString() {
-        return super.toString();
-    }
 }

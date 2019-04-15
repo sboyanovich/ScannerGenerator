@@ -8,9 +8,4 @@ public class TOpDivide extends Token {
     public TOpDivide(Fragment coords) {
         super(coords, SimpleDomains.OP_DIVIDE);
     }
-
-    @Override
-    public String toString() {
-        return super.toString();
-    }
 }
