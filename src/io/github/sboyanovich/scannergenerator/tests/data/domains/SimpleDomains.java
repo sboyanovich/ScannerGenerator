@@ -2,7 +2,6 @@ package io.github.sboyanovich.scannergenerator.tests.data.domains;
 
 import io.github.sboyanovich.scannergenerator.Fragment;
 import io.github.sboyanovich.scannergenerator.lex.Text;
-import io.github.sboyanovich.scannergenerator.tests.data.tokens.*;
 import io.github.sboyanovich.scannergenerator.token.BasicToken;
 import io.github.sboyanovich.scannergenerator.token.Domain;
 import io.github.sboyanovich.scannergenerator.token.Token;
@@ -11,31 +10,31 @@ public enum SimpleDomains implements Domain {
     WHITESPACE {
         @Override
         public Token createToken(Text text, Fragment fragment) {
-            return new TWhitespace(fragment);
+            return new BasicToken(fragment, SimpleDomains.WHITESPACE);
         }
     },
     KEYWORD_IF {
         @Override
         public Token createToken(Text text, Fragment fragment) {
-            return new TKwdIf(fragment);
+            return new BasicToken(fragment, SimpleDomains.KEYWORD_IF);
         }
     },
     KEYWORD_ELIF {
         @Override
         public Token createToken(Text text, Fragment fragment) {
-            return new TKwdElif(fragment);
+            return new BasicToken(fragment, SimpleDomains.KEYWORD_ELIF);
         }
     },
     OP_DIVIDE {
         @Override
         public Token createToken(Text text, Fragment fragment) {
-            return new TOpDivide(fragment);
+            return new BasicToken(fragment, SimpleDomains.OP_DIVIDE);
         }
     },
     OP_MULTIPLY {
         @Override
         public Token createToken(Text text, Fragment fragment) {
-            return new TOpMultiply(fragment);
+            return new BasicToken(fragment, SimpleDomains.OP_MULTIPLY);
         }
     },
     OP_PLUS {
