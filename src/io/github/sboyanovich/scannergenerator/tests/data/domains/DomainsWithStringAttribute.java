@@ -2,6 +2,7 @@ package io.github.sboyanovich.scannergenerator.tests.data.domains;
 
 import io.github.sboyanovich.scannergenerator.scanner.Fragment;
 import io.github.sboyanovich.scannergenerator.scanner.Text;
+import io.github.sboyanovich.scannergenerator.scanner.token.TokenWithAttribute;
 import io.github.sboyanovich.scannergenerator.tests.data.tokens.*;
 import io.github.sboyanovich.scannergenerator.scanner.token.DomainWithAttribute;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
@@ -44,6 +45,12 @@ public enum DomainsWithStringAttribute implements DomainWithAttribute<String> {
         @Override
         public Token createToken(Text text, Fragment fragment) {
             return new TNonTerminal(fragment, attribute(text, fragment));
+        }
+    },
+    TERMINAL {
+        @Override
+        public Token createToken(Text text, Fragment fragment) {
+            return new TokenWithAttribute<String>(fragment, TERMINAL, attribute(text, fragment));
         }
     };
 

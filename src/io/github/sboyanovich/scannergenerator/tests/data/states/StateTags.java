@@ -133,5 +133,11 @@ public enum StateTags implements StateTag {
         public Domain getDomain() {
             return SimpleDomains.KEYWORD;
         }
+    },
+    TERMINAL {
+        @Override
+        public Domain getDomain() {
+            return DomainsWithStringAttribute.TERMINAL;
+        }
     }
 }

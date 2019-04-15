@@ -1,6 +1,7 @@
 package io.github.sboyanovich.scannergenerator.tests.l7;
 
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
+import io.github.sboyanovich.scannergenerator.scanner.token.TokenWithAttribute;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,7 +77,7 @@ public class ParseTree {
         this.root = new NonTerminalNode(nonTerminal, 0);
     }
 
-    // recursive for now
+    // TODO: Rewrite without recursion
     private StringBuilder visit(
             Node node,
             StringBuilder accum,
@@ -84,8 +85,19 @@ public class ParseTree {
     ) {
         accum.append(TAB).append(node.getNumber());
         if (node instanceof TerminalNode) {
+            TerminalNode terminalNode = (TerminalNode) node;
             accum.append(SPACE + "[label=\"");
-            accum.append(((TerminalNode) node).getSymbol().getTag());
+            Token symbol = terminalNode.getSymbol();
+            accum.append(symbol.getTag());
+            if (symbol instanceof TokenWithAttribute) {
+                accum.append(" : ").append(
+                        ((TokenWithAttribute) symbol).getAttribute()
+                        /*
+                            dot needs backslashes escaped, won't bother with doubling them for now
+                            as this behaviour suits me at the moment
+                        */
+                );
+            }
             accum.append("\"]").append(NEWLINE);
         } else {
             NonTerminalNode ntNode = (NonTerminalNode) node;
