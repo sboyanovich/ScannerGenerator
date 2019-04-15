@@ -1,7 +1,7 @@
 package io.github.sboyanovich.scannergenerator.tests.automata;
 
 import io.github.sboyanovich.scannergenerator.automata.DFA;
-import io.github.sboyanovich.scannergenerator.lex.StateTag;
+import io.github.sboyanovich.scannergenerator.scanner.StateTag;
 import io.github.sboyanovich.scannergenerator.tests.data.states.StateTags;
 
 import java.util.Map;

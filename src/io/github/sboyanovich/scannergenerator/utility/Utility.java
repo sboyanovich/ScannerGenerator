@@ -1,13 +1,13 @@
 package io.github.sboyanovich.scannergenerator.utility;
 
-import io.github.sboyanovich.scannergenerator.Fragment;
+import io.github.sboyanovich.scannergenerator.scanner.Fragment;
 import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraph;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
-import io.github.sboyanovich.scannergenerator.lex.LexicalRecognizer;
-import io.github.sboyanovich.scannergenerator.lex.StateTag;
-import io.github.sboyanovich.scannergenerator.lex.Text;
+import io.github.sboyanovich.scannergenerator.scanner.LexicalRecognizer;
+import io.github.sboyanovich.scannergenerator.scanner.StateTag;
+import io.github.sboyanovich.scannergenerator.scanner.Text;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.github.sboyanovich.scannergenerator.lex.StateTag.FINAL_DUMMY;
+import static io.github.sboyanovich.scannergenerator.scanner.StateTag.FINAL_DUMMY;
 
 public class Utility {
 

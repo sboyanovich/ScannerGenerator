@@ -1,7 +1,7 @@
-package io.github.sboyanovich.scannergenerator.token;
+package io.github.sboyanovich.scannergenerator.scanner.token;
 
-import io.github.sboyanovich.scannergenerator.Fragment;
-import io.github.sboyanovich.scannergenerator.lex.Text;
+import io.github.sboyanovich.scannergenerator.scanner.Fragment;
+import io.github.sboyanovich.scannergenerator.scanner.Text;
 
 /**
  * Should be implemented with an enum!

@@ -1,8 +1,8 @@
 package io.github.sboyanovich.scannergenerator.tests.automata;
 
 import io.github.sboyanovich.scannergenerator.automata.NFA;
-import io.github.sboyanovich.scannergenerator.lex.StateTag;
-import io.github.sboyanovich.scannergenerator.token.Domain;
+import io.github.sboyanovich.scannergenerator.scanner.StateTag;
+import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 
 import java.util.Map;
 

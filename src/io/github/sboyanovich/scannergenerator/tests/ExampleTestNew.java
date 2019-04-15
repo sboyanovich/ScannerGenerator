@@ -1,17 +1,17 @@
 package io.github.sboyanovich.scannergenerator.tests;
 
-import io.github.sboyanovich.scannergenerator.Position;
+import io.github.sboyanovich.scannergenerator.scanner.Position;
 import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
-import io.github.sboyanovich.scannergenerator.lex.Compiler;
-import io.github.sboyanovich.scannergenerator.lex.*;
-import io.github.sboyanovich.scannergenerator.lex.Scanner;
+import io.github.sboyanovich.scannergenerator.scanner.Compiler;
+import io.github.sboyanovich.scannergenerator.scanner.*;
+import io.github.sboyanovich.scannergenerator.scanner.Scanner;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.SimpleDomains;
-import io.github.sboyanovich.scannergenerator.token.Domain;
-import io.github.sboyanovich.scannergenerator.token.DomainEOP;
-import io.github.sboyanovich.scannergenerator.token.DomainError;
-import io.github.sboyanovich.scannergenerator.token.Token;
+import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
+import io.github.sboyanovich.scannergenerator.scanner.token.DomainEOP;
+import io.github.sboyanovich.scannergenerator.scanner.token.DomainError;
+import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 

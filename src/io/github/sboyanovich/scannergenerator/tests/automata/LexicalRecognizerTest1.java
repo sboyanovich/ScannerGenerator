@@ -3,9 +3,10 @@ package io.github.sboyanovich.scannergenerator.tests.automata;
 import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
-import io.github.sboyanovich.scannergenerator.lex.LexicalRecognizer;
-import io.github.sboyanovich.scannergenerator.lex.StateTag;
+import io.github.sboyanovich.scannergenerator.scanner.LexicalRecognizer;
+import io.github.sboyanovich.scannergenerator.scanner.StateTag;
 import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
+import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.util.HashMap;
 import java.util.List;
@@ -98,7 +99,7 @@ public class LexicalRecognizerTest1 {
             map[i] = i;
         }
         EquivalenceMap emap = new EquivalenceMap(alphabetSize, alphabetSize, map);
-        LexicalRecognizer recognizer = new LexicalRecognizer(dfa);
+        LexicalRecognizer recognizer = Utility.createRecognizer(nfa, priorityMap);
 
         String dot = recognizer.toGraphvizDotString(interpretation, true);
         System.out.println(dot);

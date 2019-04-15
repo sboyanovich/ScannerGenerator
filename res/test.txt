@@ -3,7 +3,7 @@ ifelif
 
 package tests;
 
-import io.github.sboyanovich.scannergenerator.Position;
+import io.github.sboyanovich.scannergenerator.scanner.Position;
 import lab.lex.Compiler;
 import lab.lex.*;
 import lab.token.DomainTag;

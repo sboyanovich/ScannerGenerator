@@ -1,13 +1,13 @@
 package io.github.sboyanovich.scannergenerator.tests.l7;
 
-import io.github.sboyanovich.scannergenerator.Position;
+import io.github.sboyanovich.scannergenerator.scanner.Position;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
-import io.github.sboyanovich.scannergenerator.lex.Compiler;
-import io.github.sboyanovich.scannergenerator.lex.*;
-import io.github.sboyanovich.scannergenerator.lex.Scanner;
+import io.github.sboyanovich.scannergenerator.scanner.Compiler;
+import io.github.sboyanovich.scannergenerator.scanner.*;
+import io.github.sboyanovich.scannergenerator.scanner.Scanner;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.DomainsWithStringAttribute;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.SimpleDomains;
-import io.github.sboyanovich.scannergenerator.token.*;
+import io.github.sboyanovich.scannergenerator.scanner.token.*;
 import io.github.sboyanovich.scannergenerator.utility.Pair;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 

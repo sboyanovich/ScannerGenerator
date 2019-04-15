@@ -1,6 +1,4 @@
-package io.github.sboyanovich.scannergenerator.lex;
-
-import io.github.sboyanovich.scannergenerator.Position;
+package io.github.sboyanovich.scannergenerator.scanner;
 
 import java.util.Collections;
 import java.util.SortedMap;

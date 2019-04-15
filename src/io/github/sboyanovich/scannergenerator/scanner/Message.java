@@ -1,4 +1,4 @@
-package io.github.sboyanovich.scannergenerator.lex;
+package io.github.sboyanovich.scannergenerator.scanner;
 
 public class Message {
     private boolean isError;

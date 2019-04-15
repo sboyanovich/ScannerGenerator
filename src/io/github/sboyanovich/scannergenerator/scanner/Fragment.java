@@ -1,4 +1,4 @@
-package io.github.sboyanovich.scannergenerator;
+package io.github.sboyanovich.scannergenerator.scanner;
 
 public class Fragment {
     private Position starting;

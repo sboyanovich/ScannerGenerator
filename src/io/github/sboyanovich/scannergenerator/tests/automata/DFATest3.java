@@ -3,7 +3,7 @@ package io.github.sboyanovich.scannergenerator.tests.automata;
 import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
-import io.github.sboyanovich.scannergenerator.lex.StateTag;
+import io.github.sboyanovich.scannergenerator.scanner.StateTag;
 
 import java.util.HashMap;
 import java.util.List;

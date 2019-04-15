@@ -1,6 +1,6 @@
-package io.github.sboyanovich.scannergenerator.token;
+package io.github.sboyanovich.scannergenerator.scanner.token;
 
-import io.github.sboyanovich.scannergenerator.Fragment;
+import io.github.sboyanovich.scannergenerator.scanner.Fragment;
 
 public abstract class Token {
     private Fragment coords;

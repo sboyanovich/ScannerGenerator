@@ -1,6 +1,6 @@
-package io.github.sboyanovich.scannergenerator.token;
+package io.github.sboyanovich.scannergenerator.scanner.token;
 
-import io.github.sboyanovich.scannergenerator.Fragment;
+import io.github.sboyanovich.scannergenerator.scanner.Fragment;
 
 /**
  * Standard base class for tokens with attribute.

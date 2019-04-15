@@ -1,6 +1,6 @@
 package io.github.sboyanovich.scannergenerator.tests.l7;
 
-import io.github.sboyanovich.scannergenerator.token.Token;
+import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 
 import java.util.ArrayList;
 import java.util.List;

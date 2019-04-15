@@ -1,7 +1,7 @@
 package io.github.sboyanovich.scannergenerator.tests.data.states;
 
-import io.github.sboyanovich.scannergenerator.lex.StateTag;
-import io.github.sboyanovich.scannergenerator.token.Domain;
+import io.github.sboyanovich.scannergenerator.scanner.StateTag;
+import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.DomainsWithIntegerAttribute;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.DomainsWithStringAttribute;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.SimpleDomains;
@@ -119,6 +119,19 @@ public enum StateTags implements StateTag {
         @Override
         public Domain getDomain() {
             return DomainsWithStringAttribute.NON_TERMINAL;
+        }
+    },
+    // dummies for tests
+    OPERATION {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.OPERATION;
+        }
+    },
+    KEYWORD {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.KEYWORD;
         }
     }
 }

@@ -1,4 +1,4 @@
-package io.github.sboyanovich.scannergenerator.lex;
+package io.github.sboyanovich.scannergenerator.scanner;
 
 import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;

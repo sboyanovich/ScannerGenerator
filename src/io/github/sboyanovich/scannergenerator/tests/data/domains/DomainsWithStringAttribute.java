@@ -1,10 +1,10 @@
 package io.github.sboyanovich.scannergenerator.tests.data.domains;
 
-import io.github.sboyanovich.scannergenerator.Fragment;
-import io.github.sboyanovich.scannergenerator.lex.Text;
+import io.github.sboyanovich.scannergenerator.scanner.Fragment;
+import io.github.sboyanovich.scannergenerator.scanner.Text;
 import io.github.sboyanovich.scannergenerator.tests.data.tokens.*;
-import io.github.sboyanovich.scannergenerator.token.DomainWithAttribute;
-import io.github.sboyanovich.scannergenerator.token.Token;
+import io.github.sboyanovich.scannergenerator.scanner.token.DomainWithAttribute;
+import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 public enum DomainsWithStringAttribute implements DomainWithAttribute<String> {

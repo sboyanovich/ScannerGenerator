@@ -1,10 +1,8 @@
-package io.github.sboyanovich.scannergenerator.lex;
+package io.github.sboyanovich.scannergenerator.scanner;
 
-import io.github.sboyanovich.scannergenerator.Fragment;
-import io.github.sboyanovich.scannergenerator.Position;
-import io.github.sboyanovich.scannergenerator.token.TEndOfProgram;
-import io.github.sboyanovich.scannergenerator.token.TError;
-import io.github.sboyanovich.scannergenerator.token.Token;
+import io.github.sboyanovich.scannergenerator.scanner.token.TEndOfProgram;
+import io.github.sboyanovich.scannergenerator.scanner.token.TError;
+import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.util.OptionalInt;

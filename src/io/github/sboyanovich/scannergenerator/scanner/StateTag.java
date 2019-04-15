@@ -1,6 +1,6 @@
-package io.github.sboyanovich.scannergenerator.lex;
+package io.github.sboyanovich.scannergenerator.scanner;
 
-import io.github.sboyanovich.scannergenerator.token.Domain;
+import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 
 public interface StateTag {
     static boolean isFinal(StateTag tag) {
