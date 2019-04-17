@@ -81,7 +81,7 @@ public class LexicalRecognizer {
                 if (n < drain) {
                     return n;
                 } else if (n == drain) {
-                    return -1;
+                    return DEAD_END_STATE;
                 } else {
                     return n - 1;
                 }
