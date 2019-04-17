@@ -609,38 +609,43 @@ public class NFA {
         return result;
     }
 
+    enum Color {
+        WHITE,
+        GREY,
+        BLACK
+    }
+
     private Set<Integer> lambdaClosure(Set<Integer> states) {
         Set<Integer> result = new HashSet<>();
 
         /// DFS
         Deque<Integer> stack = new ArrayDeque<>();
-        byte[] stateColors = new byte[this.numberOfStates];
-        /*
-            0 = WHITE
-            1 = GREY
-            2 = BLACK
-        */
+        Map<Integer, Color> stateColors = new HashMap<>();
+        for (int state : states) {
+            stateColors.put(state, Color.WHITE);
+        }
+
         for (int i : states) {
-            if (stateColors[i] == 0) {
+            if (stateColors.get(i) == Color.WHITE) {
                 stack.push(i);
             }
             while (!stack.isEmpty()) {
                 int s = stack.pop();
-                int mark = stateColors[s];
-                if (mark == 0) {
-                    stateColors[s] = 1;
+                Color mark = stateColors.get(s);
+                if (mark == Color.WHITE) {
+                    stateColors.put(s, Color.GREY);
 
                     // entry actions
                     result.add(s);
 
                     stack.push(s);
                     for (int j = 0; j < this.numberOfStates; j++) {
-                        if (stateColors[j] == 0 && this.edges.isLambdaEdge(s, j)) {
+                        if (stateColors.get(j) == Color.WHITE && this.edges.isLambdaEdge(s, j)) {
                             stack.push(j);
                         }
                     }
-                } else if (mark == 1) {
-                    stateColors[s] = 2;
+                } else if (mark == Color.GREY) {
+                    stateColors.put(s, Color.BLACK);
                 }
             }
         }
