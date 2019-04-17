@@ -46,14 +46,26 @@ public class LexicalRecognizer {
         return OptionalInt.empty();
     }
 
+    // as of now, hint maps precisely automaton domain to something smaller
     public LexicalRecognizer(EquivalenceMap hint, DFA automaton) {
-        automaton = automaton.minimize();
-
+        // this logic should be here
         Pair<EquivalenceMap, DFA> compressed = Utility.compressAutomaton(hint, automaton);
-        EquivalenceMap emap = compressed.getFirst();
+        EquivalenceMap hintEmap = compressed.getFirst(); // original alphabet => aux
         automaton = compressed.getSecond();
 
+        // minimization should go faster now (on average much smaller alphabet)
+        automaton = automaton.minimize();
+
+        compressed = Utility.compressAutomaton(automaton);
+        EquivalenceMap midMap = compressed.getFirst(); // aux => final
+        automaton = compressed.getSecond();
+
+        // original alphabet => final
+        EquivalenceMap emap = Utility.composeEquivalenceMaps(hintEmap, midMap);
+
         this.generalizedSymbolsMap = emap;
+        //System.out.println(emap.getDomain());
+        //System.out.println(emap.getEqClassDomain());
 
         int numberOfStates = automaton.getNumberOfStates();
         int alphabetSize = automaton.getAlphabetSize();
