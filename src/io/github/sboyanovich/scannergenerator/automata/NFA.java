@@ -609,6 +609,44 @@ public class NFA {
         return result;
     }
 
+    private Set<Integer> lambdaClosure(Set<Integer> states) {
+        Set<Integer> result = new HashSet<>();
+
+        /// DFS
+        Deque<Integer> stack = new ArrayDeque<>();
+        byte[] stateColors = new byte[this.numberOfStates];
+        /*
+            0 = WHITE
+            1 = GREY
+            2 = BLACK
+        */
+        for (int i : states) {
+            if (stateColors[i] == 0) {
+                stack.push(i);
+            }
+            while (!stack.isEmpty()) {
+                int s = stack.pop();
+                int mark = stateColors[s];
+                if (mark == 0) {
+                    stateColors[s] = 1;
+
+                    // entry actions
+                    result.add(s);
+
+                    stack.push(s);
+                    for (int j = 0; j < this.numberOfStates; j++) {
+                        if (stateColors[j] == 0 && this.edges.isLambdaEdge(s, j)) {
+                            stack.push(j);
+                        }
+                    }
+                } else if (mark == 1) {
+                    stateColors[s] = 2;
+                }
+            }
+        }
+        return result;
+    }
+
     public DFA determinize(Map<StateTag, Integer> priorities) {
         // priorities map must contain mapping for every present StateTag (bigger number -> higher priority)
         // (except NOT_FINAL and FINAL_DUMMY) (these are most likely going to be overwritten anyway)
