@@ -151,7 +151,10 @@ public class Utility {
         for (int i = 0; i < transitionTable.length; i++) {
             Objects.requireNonNull(transitionTable[i]);
             if (transitionTable[i].length != map.getDomain()) {
-                throw new IllegalArgumentException("Map domain must be  [0, alphabetSize-1]!");
+                throw new IllegalArgumentException(
+                        "Map domain must be  [0, alphabetSize-1]!\n" +
+                                "\talphabetSize = " + transitionTable[i].length + "\n" +
+                                "\tmapDomain = " + map.getDomain());
             }
         }
 
@@ -173,6 +176,8 @@ public class Utility {
     // EXPERIMENTAL
     //  hint domain must be equal to alphabetSize
     public static Pair<EquivalenceMap, DFA> compressAutomaton(EquivalenceMap hint, DFA automaton) {
+
+
         int[][] transitionTable = automaton.getTransitionTable();
 
         int numberOfStates = automaton.getNumberOfStates();
