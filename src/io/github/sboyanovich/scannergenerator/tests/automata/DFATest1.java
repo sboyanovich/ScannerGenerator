@@ -14,7 +14,7 @@ public class DFATest1 {
         Map<Integer, StateTag> stateLabels = Map.of(
                 0, StateTags.IDENTIFIER
         );
-        int[][] transitionTable = new int[][] {
+        int[][] transitionTable = new int[][]{
                 {1}
         };
         transitionTable = new int[numberOfStates][];

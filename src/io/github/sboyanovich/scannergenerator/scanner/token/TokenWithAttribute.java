@@ -4,7 +4,7 @@ import io.github.sboyanovich.scannergenerator.scanner.Fragment;
 
 /**
  * Standard base class for tokens with attribute.
- * */
+ */
 public class TokenWithAttribute<T> extends Token {
     private T attribute;
 
