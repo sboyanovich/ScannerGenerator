@@ -658,7 +658,6 @@ public class NFA {
         priorities.put(StateTag.FINAL_DUMMY, FINAL_DUMMY_PRIORITY_RANK);
 
         // initial superstate
-        // maybe replace this with ordinary HashSet later
         Set<Set<Integer>> superstates = new HashSet<>();
         Set<Integer> initialSuperstate = this.lambdaClosure(
                 Set.of(this.initialState)
@@ -744,8 +743,7 @@ public class NFA {
         NFA lambdaless = this.removeLambdaSteps();
 
         // initial superstate
-        // maybe replace this with ordinary HashSet later
-        Set<Set<Integer>> superstates = new LinkedHashSet<>();
+        Set<Set<Integer>> superstates = new HashSet<>();
         Set<Integer> initialSuperstate = Set.of(lambdaless.initialState);
         superstates.add(initialSuperstate);
 
