@@ -31,21 +31,13 @@ public class L7TestV4 {
             when dealing with entire Unicode span
         */
         //alphabetSize = 2 * Short.MAX_VALUE + 1;
-        alphabetSize = 256; // special case hack for faster recognizer generation
+        //alphabetSize = 256; // special case hack for faster recognizer generation
 
-        NFA spaceNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint(" "));
-        NFA tabNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("\t"));
-        NFA newlineNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("\n"));
-        NFA carretNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("\r"));
-
-        NFA slWhitespaceNFA = spaceNFA
-                .union(tabNFA)
+        NFA slWhitespaceNFA = acceptsAllTheseSymbols(alphabetSize, Set.of(" ", "\t"))
                 .positiveIteration();
 
-        NFA whitespaceNFA = spaceNFA
-                .union(tabNFA)
-                .union(carretNFA.concatenation(newlineNFA))
-                .union(newlineNFA)
+        NFA whitespaceNFA = acceptsAllTheseSymbols(alphabetSize, Set.of(" ", "\t", "\n"))
+                .union(acceptThisWord(alphabetSize, List.of("\r", "\n")))
                 .positiveIteration()
                 .setAllFinalStatesTo(WHITESPACE);
 
@@ -82,11 +74,7 @@ public class L7TestV4 {
         NFA dotNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("."))
                 .setAllFinalStatesTo(DOT);
 
-        NFA specialNFA = dotNFA
-                .union(vbarNFA)
-                .union(equalsNFA)
-                .union(lparenNFA)
-                .union(rparenNFA);
+        NFA specialNFA = acceptsAllTheseSymbols(alphabetSize, Set.of(".", "|", "=", "(", ")"));
 
         NFA arithmOpNFA = acceptsAllTheseSymbols(alphabetSize, Set.of("*", "+", "-", "/"));
         NFA escapeNFA = acceptsAllTheseSymbols(alphabetSize, Set.of("\\"));
