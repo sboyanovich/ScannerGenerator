@@ -374,6 +374,7 @@ public class Utility {
     // with hint heuristic
     public static LexicalRecognizer createRecognizer(NFA lang, Map<StateTag, Integer> priorityMap) {
         int alphabetSize = lang.getAlphabetSize();
+        // this one seems to be important for performance! (of mentioned(...) )
         lang = lang.removeLambdaSteps();
         EquivalenceMap hint = getCoarseSymbolClassMap(mentioned(lang), alphabetSize);
         DFA dfa = lang.determinize(priorityMap);
