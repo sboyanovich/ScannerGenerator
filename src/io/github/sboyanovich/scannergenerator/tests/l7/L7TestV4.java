@@ -14,6 +14,8 @@ import io.github.sboyanovich.scannergenerator.tests.data.states.StateTags;
 import io.github.sboyanovich.scannergenerator.utility.Pair;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 import static io.github.sboyanovich.scannergenerator.tests.data.CommonCharClasses.alphanumerics;
@@ -135,8 +137,11 @@ public class L7TestV4 {
 
         System.out.println("NFA has " + lang.getNumberOfStates() + " states.");
 
+        Instant start = Instant.now();
         LexicalRecognizer recognizer = Utility.createRecognizer(lang, priorityMap);
-        System.out.println("Recognizer built!\n");
+        Instant finish = Instant.now();
+        long timeElapsed = Duration.between(start, finish).toMillis();
+        System.out.println("Recognizer built in " + timeElapsed + "ms!\n");
 
         String dot = recognizer.toGraphvizDotString(Object::toString, true);
         System.out.println(dot);
