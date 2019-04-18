@@ -11,8 +11,35 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
-public class LexicalRecognizer {
-    static final int DEAD_END_STATE = -1;
+/**
+ * Lexical recognizer represents an optimized DFA for the language it recognizes.
+ * This means that it has the minimum possible number of states, at most one drain state
+ * (dead-end state, non-final state that only leads to itself), which enables scanning to stop
+ * as early as possible
+ * if the string certainly doesn't belong to the recognizer's language.
+ * <p>
+ * Also, its input alphabet is compressed to compress the size of the transition table. This is why
+ * lexical recognizer must know how to map natural input symbols to their equivalence classes.
+ * <p>
+ * All states are labeled, and their label can be queried by client.
+ * <p>
+ * <p>
+ * A lexical recognizer is completely defined by:
+ * <p>
+ * EquivalenceMap map: (inputAlphabet) => (compressedAlphabet)
+ * <p>
+ * int[][] transitionTable: [states][compressedSymbols], dead-end state isn't counted
+ * but the transition table can refer to it
+ * <p>
+ * List&lt;StateTag&gt; labels: labels assigned to the states (dead-end state is by definition NOT_FINAL.
+ * <p>
+ * int initialState: marks which state is initial
+ * <p>
+ * <p>
+ * For the sake of better presentation, dead-end state and edges leading to it are not shown in the diagram.
+ */
+public final class LexicalRecognizer {
+    public static final int DEAD_END_STATE = -1;
 
     private EquivalenceMap generalizedSymbolsMap;
     private int[][] transitionTable;
