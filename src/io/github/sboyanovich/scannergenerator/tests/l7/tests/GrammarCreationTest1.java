@@ -229,6 +229,12 @@ public class GrammarCreationTest1 {
         Function<Integer, Domain> interpretation = tNumMapInv::get;
 
         int[][] table = new int[nonTerminalNamesList.size()][tNumMap.size()];
+        // initializing table with -1 (ERR)
+        for (int i = 0; i < table.length; i++) {
+            for (int j = 0; j < table[i].length; j++) {
+                table[i][j] = -1;
+            }
+        }
         Map<Integer, Map<Integer, List<UnifiedAlphabetSymbol>>> rules = new HashMap<>();
 
         table[0][terminalNumbering.apply(DomainsWithStringAttribute.AXM_DECL)] = 1;
@@ -345,6 +351,7 @@ public class GrammarCreationTest1 {
 
                 String grammarString = grammar.toString();
 
+                System.out.println();
                 System.out.println(grammarString);
 
             } catch (ParseException e) {
@@ -352,11 +359,10 @@ public class GrammarCreationTest1 {
                 System.out.println("There is a syntax error in the input. Parsing cannot proceed.");
             } catch (GrammarCreationException e) {
                 System.out.println(e.getMessage());
+                System.out.println("Grammar could not be created.");
             }
         } else {
             System.out.println("There are lexical errors in the input. Parsing cannot begin.");
         }
-
-
     }
 }
