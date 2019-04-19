@@ -11,12 +11,13 @@ import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.DomainsWithStringAttribute;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.SimpleDomains;
 import io.github.sboyanovich.scannergenerator.tests.data.states.StateTags;
-import io.github.sboyanovich.scannergenerator.utility.Pair;
+import io.github.sboyanovich.scannergenerator.tests.l7.aux.UnifiedAlphabetSymbol;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
 
 import static io.github.sboyanovich.scannergenerator.tests.data.CommonCharClasses.alphanumerics;
 import static io.github.sboyanovich.scannergenerator.tests.data.CommonCharClasses.letters;
@@ -31,7 +32,7 @@ public class L7TestV4 {
             when dealing with entire Unicode span
         */
         //alphabetSize = 2 * Short.MAX_VALUE + 1;
-        //alphabetSize = 256; // special case hack for faster recognizer generation
+        alphabetSize = 256; // special case hack for faster recognizer generation
 
         NFA slWhitespaceNFA = acceptsAllTheseSymbols(alphabetSize, Set.of(" ", "\t"))
                 .positiveIteration();
@@ -171,7 +172,7 @@ public class L7TestV4 {
             System.out.println(entry.getValue() + " at " + entry.getKey());
         }
 
-        List<String> nonTerminalNames = List.of(
+        List<String> nonTerminalNamesList = List.of(
                 "<lang>",
                 "<rule_list>",
                 "<rule>",
@@ -206,123 +207,151 @@ public class L7TestV4 {
             6   $
         */
 
-        Map<Integer, Map<Domain, Integer>> table = new HashMap<>();
-        Map<Integer, Map<Integer, List<Pair<Integer, Domain>>>> rules = new HashMap<>();
+        Function<Integer, String> nonTerminalNames = nonTerminalNamesList::get;
+
+        Map<Domain, Integer> tNumMap = Map.of(
+                DomainsWithStringAttribute.TERMINAL, 0,
+                DomainsWithStringAttribute.NON_TERMINAL, 1,
+                DomainsWithStringAttribute.AXM_DECL, 2,
+                SimpleDomains.DOT, 3,
+                SimpleDomains.VERTICAL_BAR, 4,
+                SimpleDomains.EQUALS, 5,
+                DomainEOP.END_OF_PROGRAM, 6
+        );
+        Map<Integer, Domain> tNumMapInv = io.github.sboyanovich.scannergenerator.tests.l7.Utility
+                .inverseMap(tNumMap);
+        Function<Domain, Integer> terminalNumbering = tNumMap::get;
+        Function<Integer, Domain> interpretation = tNumMapInv::get;
+
+        Map<Integer, Map<Integer, Integer>> table = new HashMap<>();
+        Map<Integer, Map<Integer, List<UnifiedAlphabetSymbol>>> rules = new HashMap<>();
 
         table.put(0, Map.of(
-                DomainsWithStringAttribute.AXM_DECL, 1,
-                DomainsWithStringAttribute.NON_TERMINAL, 1
+                terminalNumbering.apply(DomainsWithStringAttribute.AXM_DECL), 1,
+                terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), 1
         ));
 
         rules.put(0, Map.of(
                 1, List.of(
-                        new Pair<>(2, null),
-                        new Pair<>(1, null)
+                        new UnifiedAlphabetSymbol(2, false),
+                        new UnifiedAlphabetSymbol(1, false)
                 )
         ));
 
         table.put(1, Map.of(
-                DomainsWithStringAttribute.AXM_DECL, 1,
-                DomainsWithStringAttribute.NON_TERMINAL, 1,
-                DomainEOP.END_OF_PROGRAM, 2
+                terminalNumbering.apply(DomainsWithStringAttribute.AXM_DECL), 1,
+                terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), 1,
+                terminalNumbering.apply(DomainEOP.END_OF_PROGRAM), 2
         ));
 
         rules.put(1, Map.of(
                 1, List.of(
-                        new Pair<>(2, null),
-                        new Pair<>(1, null)
+                        new UnifiedAlphabetSymbol(2, false),
+                        new UnifiedAlphabetSymbol(1, false)
                 ),
                 2, List.of()
         ));
 
         table.put(2, Map.of(
-                DomainsWithStringAttribute.AXM_DECL, 1,
-                DomainsWithStringAttribute.NON_TERMINAL, 1
+                terminalNumbering.apply(DomainsWithStringAttribute.AXM_DECL), 1,
+                terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), 1
         ));
 
         rules.put(2, Map.of(
                 1, List.of(
-                        new Pair<>(7, null),
-                        new Pair<>(null, SimpleDomains.EQUALS),
-                        new Pair<>(3, null),
-                        new Pair<>(null, SimpleDomains.DOT)
+                        new UnifiedAlphabetSymbol(7, false),
+                        new UnifiedAlphabetSymbol(terminalNumbering.apply(SimpleDomains.EQUALS), true),
+                        new UnifiedAlphabetSymbol(3, false),
+                        new UnifiedAlphabetSymbol(terminalNumbering.apply(SimpleDomains.DOT), true)
                 )
         ));
 
         table.put(3, Map.of(
-                DomainsWithStringAttribute.TERMINAL, 1,
-                DomainsWithStringAttribute.NON_TERMINAL, 1,
-                SimpleDomains.VERTICAL_BAR, 1,
-                SimpleDomains.DOT, 1
+                terminalNumbering.apply(DomainsWithStringAttribute.TERMINAL), 1,
+                terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), 1,
+                terminalNumbering.apply(SimpleDomains.VERTICAL_BAR), 1,
+                terminalNumbering.apply(SimpleDomains.DOT), 1
         ));
 
         rules.put(3, Map.of(
                 1, List.of(
-                        new Pair<>(5, null),
-                        new Pair<>(4, null)
+                        new UnifiedAlphabetSymbol(5, false),
+                        new UnifiedAlphabetSymbol(4, false)
                 )
         ));
 
         table.put(4, Map.of(
-                SimpleDomains.VERTICAL_BAR, 1,
-                SimpleDomains.DOT, 2
+                terminalNumbering.apply(SimpleDomains.VERTICAL_BAR), 1,
+                terminalNumbering.apply(SimpleDomains.DOT), 2
         ));
 
         rules.put(4, Map.of(
                 1, List.of(
-                        new Pair<>(null, SimpleDomains.VERTICAL_BAR),
-                        new Pair<>(3, null)
+                        new UnifiedAlphabetSymbol(terminalNumbering.apply(SimpleDomains.VERTICAL_BAR), true),
+                        new UnifiedAlphabetSymbol(3, false)
                 ),
                 2, List.of()
         ));
 
         table.put(5, Map.of(
-                DomainsWithStringAttribute.TERMINAL, 1,
-                DomainsWithStringAttribute.NON_TERMINAL, 1,
-                SimpleDomains.VERTICAL_BAR, 2,
-                SimpleDomains.DOT, 2
+                terminalNumbering.apply(DomainsWithStringAttribute.TERMINAL), 1,
+                terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), 1,
+                terminalNumbering.apply(SimpleDomains.VERTICAL_BAR), 2,
+                terminalNumbering.apply(SimpleDomains.DOT), 2
         ));
 
         rules.put(5, Map.of(
                 1, List.of(
-                        new Pair<>(6, null),
-                        new Pair<>(5, null)
+                        new UnifiedAlphabetSymbol(6, false),
+                        new UnifiedAlphabetSymbol(5, false)
                 ),
                 2, List.of()
         ));
 
         table.put(6, Map.of(
-                DomainsWithStringAttribute.TERMINAL, 1,
-                DomainsWithStringAttribute.NON_TERMINAL, 2
+                terminalNumbering.apply(DomainsWithStringAttribute.TERMINAL), 1,
+                terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), 2
         ));
 
         rules.put(6, Map.of(
                 1, List.of(
-                        new Pair<>(null, DomainsWithStringAttribute.TERMINAL)
+                        new UnifiedAlphabetSymbol(terminalNumbering.apply(DomainsWithStringAttribute.TERMINAL), true)
                 ),
                 2, List.of(
-                        new Pair<>(null, DomainsWithStringAttribute.NON_TERMINAL)
+                        new UnifiedAlphabetSymbol(terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), true)
                 )
         ));
 
         table.put(7, Map.of(
-                DomainsWithStringAttribute.AXM_DECL, 2,
-                DomainsWithStringAttribute.NON_TERMINAL, 1
+                terminalNumbering.apply(DomainsWithStringAttribute.AXM_DECL), 2,
+                terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), 1
         ));
 
         rules.put(7, Map.of(
                 1, List.of(
-                        new Pair<>(null, DomainsWithStringAttribute.NON_TERMINAL)
+                        new UnifiedAlphabetSymbol(
+                                terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), true
+                        )
                 ),
                 2, List.of(
-                        new Pair<>(null, DomainsWithStringAttribute.AXM_DECL)
+                        new UnifiedAlphabetSymbol(terminalNumbering.apply(DomainsWithStringAttribute.AXM_DECL), true)
                 )
         ));
 
         if (errCount == 0) {
             try {
-                ParseTree derivation = parse(tokensToParse, nonTerminalNames, table, rules);
-                dot = derivation.toGraphvizDotString(nonTerminalNames::get);
+                ParseTree derivation =
+                        io.github.sboyanovich.scannergenerator.tests.l7.Utility
+                                .parse(
+                                        tokensToParse,
+                                        nonTerminalNames,
+                                        0,
+                                        terminalNumbering,
+                                        interpretation,
+                                        table,
+                                        rules
+                                );
+                dot = derivation.toGraphvizDotString(nonTerminalNames);
                 System.out.println();
                 System.out.println(dot);
             } catch (ParseException e) {
@@ -332,92 +361,5 @@ public class L7TestV4 {
         } else {
             System.out.println("There are lexical errors in the input. Parsing cannot begin.");
         }
-    }
-
-    static boolean isTerminal(Pair<Integer, Domain> genSymbol) {
-        return genSymbol.getFirst() == null;
-    }
-
-    static ParseTree parse(
-            List<Token> tokens,
-            List<String> nonTerminalNames,
-            Map<Integer, Map<Domain, Integer>> predictionTable,
-            Map<Integer, Map<Integer, List<Pair<Integer, Domain>>>> rules
-    ) throws ParseException {
-        ParseTree result = new ParseTree(0); // knowing axiom is 0 here
-
-        Deque<Pair<Integer, Domain>> stack = new ArrayDeque<>();
-        Deque<ParseTree.Node> nodeStack = new ArrayDeque<>(); // for building parse tree
-
-        stack.push(new Pair<>(null, DomainEOP.END_OF_PROGRAM));
-        stack.push(new Pair<>(0, null));
-
-        nodeStack.push(new ParseTree.TerminalNode(null, -1)); // dummy for symmetry
-        nodeStack.push(result.getRoot());
-
-        int cnt = 0; // input tracker
-        int nodeCnt = 1; // node numbering
-
-        while (!stack.isEmpty()) {
-            Pair<Integer, Domain> genSymbol = stack.pop();
-            Token curr = tokens.get(cnt);
-            if (isTerminal(genSymbol)) {
-                ParseTree.TerminalNode leaf = (ParseTree.TerminalNode) nodeStack.pop();
-                Domain expected = genSymbol.getSecond();
-                if (expected != curr.getTag()) {
-                    throw new ParseException("Unexpected token encountered: expected type " +
-                            expected + ", got " + curr
-                    );
-                } else {
-                    // setting successfully recognized token in the parse tree
-                    leaf.setSymbol(curr);
-                    cnt++;
-                }
-            } else {
-                Integer nonTerminal = genSymbol.getFirst();
-                Integer ruleNo = predictionTable.get(nonTerminal).get(curr.getTag());
-
-                // null symbolizes ERR in prediction table
-                if (ruleNo == null) {
-                    throw new ParseException("Token type " + curr.getTag() + " not allowed here!\n" +
-                            "Offending (token, nonTerminal) pair: " +
-                            "(" + curr + ", " + nonTerminalNames.get(nonTerminal) + ")");
-                } else {
-                    ParseTree.NonTerminalNode subtree = (ParseTree.NonTerminalNode) nodeStack.pop();
-
-                    String ruleApplied = nonTerminalNames.get(nonTerminal) + "_" + ruleNo;
-                    // System.out.println(ruleApplied);
-
-                    List<ParseTree.Node> nodes = new ArrayList<>();
-                    List<Pair<Integer, Domain>> rhs = rules.get(nonTerminal).get(ruleNo);
-                    for (int i = rhs.size() - 1; i >= 0; i--) {
-                        Pair<Integer, Domain> gs = rhs.get(i);
-                        stack.push(gs);
-                        if (!isTerminal(gs)) {
-                            ParseTree.NonTerminalNode nonTerminalNode =
-                                    new ParseTree.NonTerminalNode(gs.getFirst(), nodeCnt);
-                            nodeCnt++;
-                            nodeStack.push(
-                                    nonTerminalNode
-                            );
-                            nodes.add(nonTerminalNode);
-                        } else {
-                            // for now unknown token
-                            ParseTree.TerminalNode terminalNode = new ParseTree.TerminalNode(null, nodeCnt);
-                            nodeCnt++;
-                            nodeStack.push(
-                                    terminalNode
-                            );
-                            nodes.add(terminalNode);
-                        }
-                    }
-
-                    Collections.reverse(nodes);
-
-                    subtree.setChildren(nodes);
-                }
-            }
-        }
-        return result;
     }
 }
