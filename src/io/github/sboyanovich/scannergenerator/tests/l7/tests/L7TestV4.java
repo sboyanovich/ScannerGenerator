@@ -1,4 +1,4 @@
-package io.github.sboyanovich.scannergenerator.tests.l7;
+package io.github.sboyanovich.scannergenerator.tests.l7.tests;
 
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.scanner.Compiler;
@@ -11,6 +11,8 @@ import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.DomainsWithStringAttribute;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.SimpleDomains;
 import io.github.sboyanovich.scannergenerator.tests.data.states.StateTags;
+import io.github.sboyanovich.scannergenerator.tests.l7.ParseException;
+import io.github.sboyanovich.scannergenerator.tests.l7.ParseTree;
 import io.github.sboyanovich.scannergenerator.tests.l7.aux.UnifiedAlphabetSymbol;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
@@ -223,13 +225,11 @@ public class L7TestV4 {
         Function<Domain, Integer> terminalNumbering = tNumMap::get;
         Function<Integer, Domain> interpretation = tNumMapInv::get;
 
-        Map<Integer, Map<Integer, Integer>> table = new HashMap<>();
+        int[][] table = new int[nonTerminalNamesList.size()][tNumMap.size()];
         Map<Integer, Map<Integer, List<UnifiedAlphabetSymbol>>> rules = new HashMap<>();
 
-        table.put(0, Map.of(
-                terminalNumbering.apply(DomainsWithStringAttribute.AXM_DECL), 1,
-                terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), 1
-        ));
+        table[0][terminalNumbering.apply(DomainsWithStringAttribute.AXM_DECL)] = 1;
+        table[0][terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL)] = 1;
 
         rules.put(0, Map.of(
                 1, List.of(
@@ -238,11 +238,9 @@ public class L7TestV4 {
                 )
         ));
 
-        table.put(1, Map.of(
-                terminalNumbering.apply(DomainsWithStringAttribute.AXM_DECL), 1,
-                terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), 1,
-                terminalNumbering.apply(DomainEOP.END_OF_PROGRAM), 2
-        ));
+        table[1][terminalNumbering.apply(DomainsWithStringAttribute.AXM_DECL)] = 1;
+        table[1][terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL)] = 1;
+        table[1][terminalNumbering.apply(DomainEOP.END_OF_PROGRAM)] = 2;
 
         rules.put(1, Map.of(
                 1, List.of(
@@ -252,10 +250,8 @@ public class L7TestV4 {
                 2, List.of()
         ));
 
-        table.put(2, Map.of(
-                terminalNumbering.apply(DomainsWithStringAttribute.AXM_DECL), 1,
-                terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), 1
-        ));
+        table[2][terminalNumbering.apply(DomainsWithStringAttribute.AXM_DECL)] = 1;
+        table[2][terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL)] = 1;
 
         rules.put(2, Map.of(
                 1, List.of(
@@ -266,12 +262,10 @@ public class L7TestV4 {
                 )
         ));
 
-        table.put(3, Map.of(
-                terminalNumbering.apply(DomainsWithStringAttribute.TERMINAL), 1,
-                terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), 1,
-                terminalNumbering.apply(SimpleDomains.VERTICAL_BAR), 1,
-                terminalNumbering.apply(SimpleDomains.DOT), 1
-        ));
+        table[3][terminalNumbering.apply(DomainsWithStringAttribute.TERMINAL)] = 1;
+        table[3][terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL)] = 1;
+        table[3][terminalNumbering.apply(SimpleDomains.VERTICAL_BAR)] = 1;
+        table[3][terminalNumbering.apply(SimpleDomains.DOT)] = 1;
 
         rules.put(3, Map.of(
                 1, List.of(
@@ -280,10 +274,8 @@ public class L7TestV4 {
                 )
         ));
 
-        table.put(4, Map.of(
-                terminalNumbering.apply(SimpleDomains.VERTICAL_BAR), 1,
-                terminalNumbering.apply(SimpleDomains.DOT), 2
-        ));
+        table[4][terminalNumbering.apply(SimpleDomains.VERTICAL_BAR)] = 1;
+        table[4][terminalNumbering.apply(SimpleDomains.DOT)] = 2;
 
         rules.put(4, Map.of(
                 1, List.of(
@@ -293,12 +285,10 @@ public class L7TestV4 {
                 2, List.of()
         ));
 
-        table.put(5, Map.of(
-                terminalNumbering.apply(DomainsWithStringAttribute.TERMINAL), 1,
-                terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), 1,
-                terminalNumbering.apply(SimpleDomains.VERTICAL_BAR), 2,
-                terminalNumbering.apply(SimpleDomains.DOT), 2
-        ));
+        table[5][terminalNumbering.apply(DomainsWithStringAttribute.TERMINAL)] = 1;
+        table[5][terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL)] = 1;
+        table[5][terminalNumbering.apply(SimpleDomains.VERTICAL_BAR)] = 2;
+        table[5][terminalNumbering.apply(SimpleDomains.DOT)] = 2;
 
         rules.put(5, Map.of(
                 1, List.of(
@@ -308,10 +298,8 @@ public class L7TestV4 {
                 2, List.of()
         ));
 
-        table.put(6, Map.of(
-                terminalNumbering.apply(DomainsWithStringAttribute.TERMINAL), 1,
-                terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), 2
-        ));
+        table[6][terminalNumbering.apply(DomainsWithStringAttribute.TERMINAL)] = 1;
+        table[6][terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL)] = 2;
 
         rules.put(6, Map.of(
                 1, List.of(
@@ -322,10 +310,8 @@ public class L7TestV4 {
                 )
         ));
 
-        table.put(7, Map.of(
-                terminalNumbering.apply(DomainsWithStringAttribute.AXM_DECL), 2,
-                terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL), 1
-        ));
+        table[7][terminalNumbering.apply(DomainsWithStringAttribute.AXM_DECL)] = 2;
+        table[7][terminalNumbering.apply(DomainsWithStringAttribute.NON_TERMINAL)] = 1;
 
         rules.put(7, Map.of(
                 1, List.of(
