@@ -11,11 +11,9 @@ import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.DomainsWithStringAttribute;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.SimpleDomains;
 import io.github.sboyanovich.scannergenerator.tests.data.states.StateTags;
-import io.github.sboyanovich.scannergenerator.tests.l7.GrammarCreationException;
-import io.github.sboyanovich.scannergenerator.tests.l7.GrammarCreator;
-import io.github.sboyanovich.scannergenerator.tests.l7.ParseException;
-import io.github.sboyanovich.scannergenerator.tests.l7.ParseTree;
+import io.github.sboyanovich.scannergenerator.tests.l7.*;
 import io.github.sboyanovich.scannergenerator.tests.l7.aux.CFGrammar;
+import io.github.sboyanovich.scannergenerator.tests.l7.aux.UAString;
 import io.github.sboyanovich.scannergenerator.tests.l7.aux.UnifiedAlphabetSymbol;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
@@ -351,8 +349,36 @@ public class GrammarCreationTest1 {
 
                 String grammarString = grammar.toString();
 
+                Function<Integer, String> gtai = grammar.getNativeTai();
+                Function<Integer, String> gntai = grammar.getNativeNtai();
+                for (int i = 0; i < grammar.getTerminalAlphabetSize(); i++) {
+                    System.out.println(gtai.apply(i));
+                }
+                for (int i = 0; i < grammar.getNonTerminalAlphabetSize(); i++) {
+                    System.out.println(gntai.apply(i));
+                }
+
+                System.out.println();
+
+                for (int i = 0; i < grammar.getNonTerminalAlphabetSize(); i++) {
+                    List<UAString> productions = grammar.getProductions(i);
+                    System.out.println(gntai.apply(i) + " = ");
+                    for (UAString p : productions) {
+                        System.out.println("\t" + p.toString(gtai, gntai));
+                    }
+                }
+
                 System.out.println();
                 System.out.println(grammarString);
+                System.out.println();
+
+                int[][] table2 = grammar.buildPredictiveAnalysisTable();
+                for (int i = 0; i < table2.length; i++) {
+                    for (int j = 0; j < table2[i].length; j++) {
+                        System.out.print(table2[i][j] + ", ");
+                    }
+                    System.out.println();
+                }
 
             } catch (ParseException e) {
                 System.out.println(e.getMessage());
@@ -360,6 +386,8 @@ public class GrammarCreationTest1 {
             } catch (GrammarCreationException e) {
                 System.out.println(e.getMessage());
                 System.out.println("Grammar could not be created.");
+            } catch (PredictionTableCreationException e) {
+                System.out.println(e.getMessage());
             }
         } else {
             System.out.println("There are lexical errors in the input. Parsing cannot begin.");
