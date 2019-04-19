@@ -38,7 +38,7 @@ public class CFGrammarBuilder {
     public void addProduction(CFGProduction production) {
         int nonTerminal = production.getNonTerminal();
         if (!this.rules.containsKey(nonTerminal)) {
-            this.rules.put(nonTerminal, new HashSet<>());
+            this.rules.put(nonTerminal, new LinkedHashSet<>());
         }
         Set<UAString> rhss = this.rules.get(nonTerminal);
         rhss.add(production.getRhs());
