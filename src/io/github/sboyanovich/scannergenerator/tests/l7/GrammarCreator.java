@@ -109,8 +109,9 @@ public class GrammarCreator {
     private List<UAString> rhsList(ParseTree.NonTerminalNode rhslNode) {
         ParseTree.NonTerminalNode rhsCNode = (ParseTree.NonTerminalNode) rhslNode.getChildren().get(0);
         ParseTree.NonTerminalNode rhslcCNode = (ParseTree.NonTerminalNode) rhslNode.getChildren().get(1);
-        List<UAString> result = rhsListC(rhslcCNode);
+        List<UAString> result = new ArrayList<>();
         result.add(rhs(rhsCNode));
+        result.addAll(rhsListC(rhslcCNode));
         return result;
     }
 
