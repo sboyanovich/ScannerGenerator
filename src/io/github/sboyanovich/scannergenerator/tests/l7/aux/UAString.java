@@ -34,6 +34,25 @@ public class UAString {
         return this.symbols.isEmpty();
     }
 
+    public UAString prepend(UnifiedAlphabetSymbol symbol) {
+        List<UnifiedAlphabetSymbol> symbols = new ArrayList<>();
+        symbols.add(symbol);
+        symbols.addAll(this.symbols);
+        return new UAString(symbols);
+    }
+
+    public UAString append(UAString other) {
+        List<UnifiedAlphabetSymbol> symbols = new ArrayList<>(this.symbols);
+        symbols.addAll(other.symbols);
+        return new UAString(symbols);
+    }
+
+    public UAString append(UnifiedAlphabetSymbol symbol) {
+        List<UnifiedAlphabetSymbol> symbols = new ArrayList<>(this.symbols);
+        symbols.add(symbol);
+        return new UAString(symbols);
+    }
+
     public String toString(
             Function<Integer, String> terminalAlphabetInterpretation,
             Function<Integer, String> nonterminalAlphabetInterpretation
