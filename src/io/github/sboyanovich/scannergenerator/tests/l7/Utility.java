@@ -28,7 +28,7 @@ public class Utility {
             Function<Domain, Integer> terminalNumbering,
             Function<Integer, Domain> terminalAlphabetInterpretation,
 
-            Map<Integer, Map<Integer, Integer>> predictionTable,
+            int[][] predictionTable,
             Map<Integer, Map<Integer, List<UnifiedAlphabetSymbol>>> rules
     ) throws ParseException {
         ParseTree result = new ParseTree(axiom);
@@ -65,14 +65,10 @@ public class Utility {
                 }
             } else {
                 int nonTerminal = genSymbol.getSymbol();
-                Integer ruleNo = predictionTable.get(nonTerminal).get(
-                        terminalNumbering.apply(
-                                curr.getTag()
-                        )
-                );
+                int ruleNo = predictionTable[nonTerminal][terminalNumbering.apply(curr.getTag())];
 
-                // null symbolizes ERR in prediction table
-                if (ruleNo == null) {
+                // -1 symbolizes ERR in prediction table
+                if (ruleNo == -1) {
                     throw new ParseException("Token type " + curr.getTag() + " not allowed here!\n" +
                             "Offending (token, nonTerminal) pair: " +
                             "(" + curr + ", " + nonTerminalNames.apply(nonTerminal) + ")");
