@@ -1,5 +1,7 @@
 package io.github.sboyanovich.scannergenerator.tests.l7.aux;
 
+import io.github.sboyanovich.scannergenerator.tests.l7.PredictionTableCreationException;
+
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -120,6 +122,129 @@ public class CFGrammar {
             result.append(".\n");
         }
         return result.toString();
+    }
+
+    // -1 represents epsilon
+    private Set<Integer> fst(UAString string, Map<Integer, Set<Integer>> ntsFirst) {
+        Set<Integer> result = new HashSet<>();
+        if (string.isEmpty()) {
+            result.add(-1);
+        } else if (string.getSymbols().get(0).isTerminal()) {
+            result.add(string.getSymbols().get(0).getSymbol());
+        } else {
+            int nt = string.getSymbols().get(0).getSymbol();
+            Set<Integer> ntFirst = ntsFirst.get(nt);
+            if (ntFirst.contains(-1)) {
+                result.addAll(ntFirst);
+                result.remove(-1);
+                result.addAll(fst(string.removeFirst(), ntsFirst));
+            } else {
+                result.addAll(ntFirst);
+            }
+        }
+        return result;
+    }
+
+    public int[][] buildPredictiveAnalysisTable() throws PredictionTableCreationException {
+        int[][] table = new int[this.nonTerminalAlphabetSize][this.terminalAlphabetSize + 1];
+        for (int i = 0; i < table.length; i++) {
+            for (int j = 0; j < table[i].length; j++) {
+                table[i][j] = -1;
+            }
+        }
+
+        Map<Integer, Set<Integer>> ntsFirst = new HashMap<>();
+        for (int i = 0; i < this.nonTerminalAlphabetSize; i++) {
+            ntsFirst.put(i, new HashSet<>());
+        }
+
+        boolean changed;
+        do {
+            changed = false;
+            for (int i = 0; i < this.nonTerminalAlphabetSize; i++) {
+                Set<Integer> ntFirst = ntsFirst.get(i);
+                List<UAString> rhss = this.rules.get(i);
+                for (UAString rhs : rhss) {
+                    changed |= ntFirst.addAll(fst(rhs, ntsFirst));
+                }
+            }
+        } while (changed);
+
+        Map<Integer, Set<Integer>> ntsFollow = new HashMap<>();
+        for (int i = 0; i < this.nonTerminalAlphabetSize; i++) {
+            ntsFollow.put(i, new HashSet<>());
+        }
+
+        int endMarker = this.terminalAlphabetSize;
+        ntsFollow.get(this.axiom).add(endMarker);
+
+        for (int i = 0; i < this.nonTerminalAlphabetSize; i++) {
+            List<UAString> rhss = this.rules.get(i);
+            for (UAString rhs : rhss) {
+                for (int j = 0; j < rhs.getSymbols().size(); j++) {
+                    UnifiedAlphabetSymbol x = rhs.getSymbols().get(j);
+                    if (!x.isTerminal()) {
+                        int nt = x.getSymbol();
+                        Set<Integer> fv = fst(rhs.subsequence(j + 1), ntsFirst);
+                        fv.remove(-1);
+                        ntsFollow.get(nt).addAll(fv);
+                    }
+                }
+            }
+        }
+
+        // not terribly effective
+        do {
+            changed = false;
+            for (int i = 0; i < this.nonTerminalAlphabetSize; i++) {
+                List<UAString> rhss = this.rules.get(i);
+                for (UAString rhs : rhss) {
+                    for (int j = 0; j < rhs.getSymbols().size(); j++) {
+                        UnifiedAlphabetSymbol x = rhs.getSymbols().get(j);
+                        if (!x.isTerminal()) {
+                            int nt = x.getSymbol();
+                            Set<Integer> fv = fst(rhs.subsequence(j + 1), ntsFirst);
+                            if (fv.contains(-1)) {
+                                changed |= ntsFollow.get(nt).addAll(
+                                        ntsFollow.get(i)
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        } while (changed);
+
+        for (int i = 0; i < this.nonTerminalAlphabetSize; i++) {
+            List<UAString> rhss = this.rules.get(i);
+            for (int j = 0; j < rhss.size(); j++) {
+                Set<Integer> first = fst(rhss.get(j), ntsFirst);
+                for (int a : first) {
+                    if (a != -1) {
+                        if (table[i][a] == -1) {
+                            table[i][a] = j;
+                        } else {
+                            throw new PredictionTableCreationException(
+                                    "Grammar is not LL(1)."
+                            );
+                        }
+                    }
+                }
+                if (first.contains(-1)) {
+                    Set<Integer> follow = ntsFollow.get(i);
+                    for (int b : follow) {
+                        if (table[i][b] == -1) {
+                            table[i][b] = j;
+                        } else {
+                            throw new PredictionTableCreationException(
+                                    "Grammar is not LL(1)."
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        return table;
     }
 
     @Override
