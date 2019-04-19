@@ -46,17 +46,15 @@ public class CFGrammarBuilder {
 
     public String toString(
             Function<Integer, String> terminalAlphabetInterpretation,
-            Function<Integer, String> nonTerminalAlphabetInterpretation,
-            Function<String, String> axiomHighlighter
+            Function<Integer, String> nonTerminalAlphabetInterpretation
     ) {
         StringBuilder result = new StringBuilder();
+        result.append("axiom: ")
+                .append(nonTerminalAlphabetInterpretation.apply(this.axiom))
+                .append("\n");
         for (int nonTerminal : this.rules.keySet()) {
-            String ntName = nonTerminalAlphabetInterpretation.apply(nonTerminal);
-            if (nonTerminal == this.axiom) {
-                ntName = axiomHighlighter.apply(ntName);
-            }
             result.append(
-                    ntName
+                    nonTerminalAlphabetInterpretation.apply(nonTerminal)
             );
             result.append(" = ");
             List<UAString> productions = new ArrayList<>(this.rules.get(nonTerminal));
@@ -71,7 +69,7 @@ public class CFGrammarBuilder {
                                     nonTerminalAlphabetInterpretation
                             )
             );
-            for (int i = 1; i < productions.size(); i++) {
+            for (int i = 1; i < notNullProductions.size(); i++) {
                 result.append(" | ");
                 result.append(
                         productions.get(i)
@@ -81,7 +79,7 @@ public class CFGrammarBuilder {
                                 )
                 );
             }
-            if (isNullable) {
+            if (isNullable && (productions.size() > 1)) {
                 result.append(" | ");
             }
             result.append(".\n");
