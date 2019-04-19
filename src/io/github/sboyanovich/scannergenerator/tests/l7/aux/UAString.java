@@ -53,6 +53,18 @@ public class UAString {
         return new UAString(symbols);
     }
 
+    public UAString removeFirst() {
+        List<UnifiedAlphabetSymbol> symbols = new ArrayList<>(this.symbols);
+        symbols = symbols.subList(1, symbols.size());
+        return new UAString(symbols);
+    }
+
+    public UAString subsequence(int from) {
+        List<UnifiedAlphabetSymbol> symbols = new ArrayList<>(this.symbols);
+        symbols = symbols.subList(from, symbols.size());
+        return new UAString(symbols);
+    }
+
     public String toString(
             Function<Integer, String> terminalAlphabetInterpretation,
             Function<Integer, String> nonterminalAlphabetInterpretation
