@@ -4,23 +4,61 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-// no validation at all for now
-public class CFGrammarBuilder {
+public class CFGrammar {
     private int nonTerminalAlphabetSize;
     private int terminalAlphabetSize;
     private int axiom;
 
-    private Map<Integer, Set<UAString>> rules;
+    private Map<Integer, List<UAString>> rules;
 
-    public CFGrammarBuilder(
+    // kind of a hack
+    private Function<Integer, String> nativeTai;
+    private Function<Integer, String> nativeNtai;
+
+    // possibly just pass Builder
+    public CFGrammar(
             int nonTerminalAlphabetSize,
             int terminalAlphabetSize,
-            int axiom
+            int axiom,
+            Map<Integer, Set<UAString>> rules,
+            Function<Integer, String> nativeTai,
+            Function<Integer, String> nativeNtai
     ) {
         this.nonTerminalAlphabetSize = nonTerminalAlphabetSize;
         this.terminalAlphabetSize = terminalAlphabetSize;
         this.axiom = axiom;
         this.rules = new HashMap<>();
+        for (int nonTerminal : rules.keySet()) {
+            Set<UAString> productions = rules.get(nonTerminal);
+            List<UAString> productionList = new ArrayList<>(productions);
+            this.rules.put(nonTerminal, productionList);
+        }
+        this.nativeTai = nativeTai;
+        this.nativeNtai = nativeNtai;
+    }
+
+    public CFGrammar(
+            int nonTerminalAlphabetSize,
+            int terminalAlphabetSize,
+            int axiom,
+            Map<Integer, Set<UAString>> rules
+    ) {
+        this(
+                nonTerminalAlphabetSize,
+                terminalAlphabetSize,
+                axiom,
+                rules,
+                String::valueOf,
+                String::valueOf
+        );
+    }
+
+    public Function<Integer, String> getNativeTai() {
+        return nativeTai;
+    }
+
+    public Function<Integer, String> getNativeNtai() {
+        return nativeNtai;
     }
 
     public int getNonTerminalAlphabetSize() {
@@ -35,36 +73,11 @@ public class CFGrammarBuilder {
         return axiom;
     }
 
-    public void addProduction(CFGProduction production) {
-        int nonTerminal = production.getNonTerminal();
-        if (!this.rules.containsKey(nonTerminal)) {
-            this.rules.put(nonTerminal, new HashSet<>());
-        }
-        Set<UAString> rhss = this.rules.get(nonTerminal);
-        rhss.add(production.getRhs());
+    public List<UAString> getProductions(int nonTerminal) {
+        return Collections.unmodifiableList(this.rules.get(nonTerminal));
     }
 
-    public CFGrammar build(Function<Integer, String> nativeTai,
-                           Function<Integer, String> nativeNtai) {
-        return new CFGrammar(
-                this.nonTerminalAlphabetSize,
-                this.terminalAlphabetSize,
-                this.axiom,
-                this.rules,
-                nativeTai,
-                nativeNtai
-        );
-    }
-
-    public CFGrammar build() {
-        return new CFGrammar(
-                this.nonTerminalAlphabetSize,
-                this.terminalAlphabetSize,
-                this.axiom,
-                this.rules
-        );
-    }
-
+    // shamelessly copypasted from builder
     public String toString(
             Function<Integer, String> terminalAlphabetInterpretation,
             Function<Integer, String> nonTerminalAlphabetInterpretation
@@ -107,5 +120,13 @@ public class CFGrammarBuilder {
             result.append(".\n");
         }
         return result.toString();
+    }
+
+    @Override
+    public String toString() {
+        return toString(
+                this.nativeTai,
+                this.nativeNtai
+        );
     }
 }
