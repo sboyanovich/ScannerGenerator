@@ -40,7 +40,7 @@ public class UnifiedAlphabetSymbol {
         if (this.isTerminal) {
             return terminalAlphabetInterpretation.apply(this.symbol);
         } else {
-            return nonterminalAlphabetInterpretation.apply(this.symbol);
+            return "(" + nonterminalAlphabetInterpretation.apply(this.symbol) + ")";
         }
     }
 
