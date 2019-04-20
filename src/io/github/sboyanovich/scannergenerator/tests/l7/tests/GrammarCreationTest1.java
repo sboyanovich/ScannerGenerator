@@ -21,10 +21,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.github.sboyanovich.scannergenerator.tests.data.CommonCharClasses.alphanumerics;
 import static io.github.sboyanovich.scannergenerator.tests.data.CommonCharClasses.letters;
 import static io.github.sboyanovich.scannergenerator.tests.data.states.StateTags.*;
+import static io.github.sboyanovich.scannergenerator.tests.l7.Utility.writeToFile;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 
 public class GrammarCreationTest1 {
@@ -347,6 +349,13 @@ public class GrammarCreationTest1 {
 
                 CFGrammar grammar = new GrammarCreator(derivation).createGrammar();
 
+                List<String> useless = grammar.getExplicitlyUselessNonTerminals().stream()
+                        .map(i -> grammar.getNativeNtai().apply(i))
+                        .collect(Collectors.toList());
+                if(!useless.isEmpty()) {
+                    throw new AppException("There are useless nonterminals in this grammar: " + useless.toString());
+                }
+
                 String grammarString = grammar.toString();
 
                 Function<Integer, String> gtai = grammar.getNativeTai();
@@ -380,6 +389,15 @@ public class GrammarCreationTest1 {
                     System.out.println();
                 }
 
+                String className = "BaseGrammar";
+                String gen = io.github.sboyanovich.scannergenerator.tests.l7.Utility
+                        .grammarAsClass(grammar, className);
+                writeToFile(
+                        "src/io/github/sboyanovich/scannergenerator/tests/l7/generated/" + className + ".java",
+                        gen
+                );
+
+
             } catch (ParseException e) {
                 System.out.println(e.getMessage());
                 System.out.println("There is a syntax error in the input. Parsing cannot proceed.");
@@ -388,6 +406,9 @@ public class GrammarCreationTest1 {
                 System.out.println("Grammar could not be created.");
             } catch (PredictionTableCreationException e) {
                 System.out.println(e.getMessage());
+            } catch (AppException e) {
+                System.out.println(e.getMessage());
+                System.out.println("App cannot proceed.");
             }
         } else {
             System.out.println("There are lexical errors in the input. Parsing cannot begin.");
