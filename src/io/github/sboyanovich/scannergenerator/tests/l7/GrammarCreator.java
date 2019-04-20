@@ -149,7 +149,6 @@ public class GrammarCreator {
 
     // adds name to table if absent and returns mapped index
     private int addToNonTerminalNamesTable(String name) {
-        name = "(" + name + ")";
         if (!this.nonTerminalNames.containsKey(name)) {
             int index = this.ntCounter;
             this.nonTerminalNames.put(name, this.ntCounter++);
