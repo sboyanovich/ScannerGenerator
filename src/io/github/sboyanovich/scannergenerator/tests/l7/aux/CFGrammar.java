@@ -30,6 +30,9 @@ public class CFGrammar {
         this.terminalAlphabetSize = terminalAlphabetSize;
         this.axiom = axiom;
         this.rules = new HashMap<>();
+        for (int i = 0; i < this.nonTerminalAlphabetSize; i++) {
+            this.rules.put(i, new ArrayList<>());
+        }
         for (int nonTerminal : rules.keySet()) {
             Set<UAString> productions = rules.get(nonTerminal);
             List<UAString> productionList = new ArrayList<>(productions);
@@ -86,12 +89,15 @@ public class CFGrammar {
     ) {
         StringBuilder result = new StringBuilder();
         result.append("axiom: ")
+                .append("(")
                 .append(nonTerminalAlphabetInterpretation.apply(this.axiom))
+                .append(")")
                 .append("\n");
         for (int nonTerminal : this.rules.keySet()) {
-            result.append(
-                    nonTerminalAlphabetInterpretation.apply(nonTerminal)
-            );
+            result
+                    .append("(")
+                    .append(nonTerminalAlphabetInterpretation.apply(nonTerminal))
+                    .append(")");
             result.append(" = ");
             List<UAString> productions = new ArrayList<>(this.rules.get(nonTerminal));
             List<UAString> notNullProductions = productions.stream()
@@ -245,6 +251,16 @@ public class CFGrammar {
             }
         }
         return table;
+    }
+
+    public List<Integer> getExplicitlyUselessNonTerminals() {
+        List<Integer> result = new ArrayList<>();
+        for (int i = 0; i < this.nonTerminalAlphabetSize; i++) {
+            if (this.rules.get(i).isEmpty()) {
+                result.add(i);
+            }
+        }
+        return result;
     }
 
     @Override
