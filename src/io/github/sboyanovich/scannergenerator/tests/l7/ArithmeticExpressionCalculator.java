@@ -2,6 +2,7 @@ package io.github.sboyanovich.scannergenerator.tests.l7;
 
 import io.github.sboyanovich.scannergenerator.scanner.token.TokenWithAttribute;
 
+// TODO: e1 and t1 lend themselves well for loop implementation, so I can cut on the recursion
 public class ArithmeticExpressionCalculator {
     public static int evaluate(ParseTree expression) {
         return e(expression.getRoot());
