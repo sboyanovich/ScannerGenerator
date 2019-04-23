@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/LexicalRecognizer.iml" filepath="$PROJECT_DIR$/LexicalRecognizer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ScannerGenerator.iml" filepath="$PROJECT_DIR$/ScannerGenerator.iml" />
     </modules>
   </component>
 </project>
