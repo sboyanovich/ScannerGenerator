@@ -133,8 +133,8 @@ public class L7TestV2 {
 
         Set<Domain> ignoredTokenTypes = Set.of(
                 SimpleDomains.WHITESPACE,
-                DomainEOP.END_OF_PROGRAM,
-                DomainError.ERROR
+                Domain.END_OF_PROGRAM,
+                Domain.ERROR
         );
 
         int errCount = 0;
@@ -142,12 +142,12 @@ public class L7TestV2 {
         List<Token> tokensToParse = new ArrayList<>();
 
         Token t = scanner.nextToken();
-        while (t.getTag() != DomainEOP.END_OF_PROGRAM) {
+        while (t.getTag() != Domain.END_OF_PROGRAM) {
             if (!ignoredTokenTypes.contains(t.getTag())) {
                 tokensToParse.add(t);
                 System.out.println(t);
             }
-            if (t.getTag() == DomainError.ERROR) {
+            if (t.getTag() == Domain.ERROR) {
                 errCount++;
                 System.out.println(t.getCoords());
             }
@@ -174,7 +174,7 @@ public class L7TestV2 {
                 SimpleDomains.OP_MULTIPLY,
                 SimpleDomains.ESCAPED_LPAREN,
                 SimpleDomains.ESCAPED_RPAREN,
-                DomainEOP.END_OF_PROGRAM
+                Domain.END_OF_PROGRAM
         );
 
         List<String> nonTerminalNames = List.of(
@@ -207,7 +207,7 @@ public class L7TestV2 {
         table.put(1, Map.of(
                 DomainsWithStringAttribute.AXM_DECL, 1,
                 DomainsWithStringAttribute.NON_TERMINAL, 1,
-                DomainEOP.END_OF_PROGRAM, 2
+                Domain.END_OF_PROGRAM, 2
         ));
 
         rules.put(1, Map.of(
@@ -361,7 +361,7 @@ public class L7TestV2 {
     ) {
         List<String> result = new ArrayList<>();
         Deque<Pair<Integer, Domain>> stack = new ArrayDeque<>();
-        stack.push(new Pair<>(null, DomainEOP.END_OF_PROGRAM));
+        stack.push(new Pair<>(null, Domain.END_OF_PROGRAM));
         stack.push(new Pair<>(0, null));
         int cnt = 0;
         while (!stack.isEmpty()) {

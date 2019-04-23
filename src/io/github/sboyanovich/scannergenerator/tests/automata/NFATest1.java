@@ -43,8 +43,8 @@ public class NFATest1 {
                 .iteration()
                 .removeLambdaSteps();
 
-                // removeLambdaSteps() doesn't work correctly (messes up iteration)
-                // UPDATE: Fixed
+        // removeLambdaSteps() doesn't work correctly (messes up iteration)
+        // UPDATE: Fixed
 
         String dot = elif.toGraphvizDotString(interpretation::get, true);
         System.out.println(dot);

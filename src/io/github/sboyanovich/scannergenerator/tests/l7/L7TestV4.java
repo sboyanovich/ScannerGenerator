@@ -5,8 +5,6 @@ import io.github.sboyanovich.scannergenerator.scanner.Compiler;
 import io.github.sboyanovich.scannergenerator.scanner.*;
 import io.github.sboyanovich.scannergenerator.scanner.Scanner;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
-import io.github.sboyanovich.scannergenerator.scanner.token.DomainEOP;
-import io.github.sboyanovich.scannergenerator.scanner.token.DomainError;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.DomainsWithStringAttribute;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.SimpleDomains;
@@ -31,21 +29,13 @@ public class L7TestV4 {
             when dealing with entire Unicode span
         */
         //alphabetSize = 2 * Short.MAX_VALUE + 1;
-        alphabetSize = 256; // special case hack for faster recognizer generation
+        //alphabetSize = 256; // special case hack for faster recognizer generation
 
-        NFA spaceNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint(" "));
-        NFA tabNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("\t"));
-        NFA newlineNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("\n"));
-        NFA carretNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("\r"));
-
-        NFA slWhitespaceNFA = spaceNFA
-                .union(tabNFA)
+        NFA slWhitespaceNFA = acceptsAllTheseSymbols(alphabetSize, Set.of(" ", "\t"))
                 .positiveIteration();
 
-        NFA whitespaceNFA = spaceNFA
-                .union(tabNFA)
-                .union(carretNFA.concatenation(newlineNFA))
-                .union(newlineNFA)
+        NFA whitespaceNFA = acceptsAllTheseSymbols(alphabetSize, Set.of(" ", "\t", "\n"))
+                .union(acceptThisWord(alphabetSize, List.of("\r", "\n")))
                 .positiveIteration()
                 .setAllFinalStatesTo(WHITESPACE);
 
@@ -82,11 +72,7 @@ public class L7TestV4 {
         NFA dotNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("."))
                 .setAllFinalStatesTo(DOT);
 
-        NFA specialNFA = dotNFA
-                .union(vbarNFA)
-                .union(equalsNFA)
-                .union(lparenNFA)
-                .union(rparenNFA);
+        NFA specialNFA = acceptsAllTheseSymbols(alphabetSize, Set.of(".", "|", "=", "(", ")"));
 
         NFA arithmOpNFA = acceptsAllTheseSymbols(alphabetSize, Set.of("*", "+", "-", "/"));
         NFA escapeNFA = acceptsAllTheseSymbols(alphabetSize, Set.of("\\"));
@@ -153,8 +139,8 @@ public class L7TestV4 {
 
         Set<Domain> ignoredTokenTypes = Set.of(
                 SimpleDomains.WHITESPACE,
-                DomainEOP.END_OF_PROGRAM,
-                DomainError.ERROR
+                Domain.END_OF_PROGRAM,
+                Domain.ERROR
         );
 
         int errCount = 0;
@@ -162,12 +148,12 @@ public class L7TestV4 {
         List<Token> tokensToParse = new ArrayList<>();
 
         Token t = scanner.nextToken();
-        while (t.getTag() != DomainEOP.END_OF_PROGRAM) {
+        while (t.getTag() != Domain.END_OF_PROGRAM) {
             if (!ignoredTokenTypes.contains(t.getTag())) {
                 tokensToParse.add(t);
                 System.out.println(t);
             }
-            if (t.getTag() == DomainError.ERROR) {
+            if (t.getTag() == Domain.ERROR) {
                 errCount++;
                 System.out.println(t.getCoords());
             }
@@ -236,7 +222,7 @@ public class L7TestV4 {
         table.put(1, Map.of(
                 DomainsWithStringAttribute.AXM_DECL, 1,
                 DomainsWithStringAttribute.NON_TERMINAL, 1,
-                DomainEOP.END_OF_PROGRAM, 2
+                Domain.END_OF_PROGRAM, 2
         ));
 
         rules.put(1, Map.of(
@@ -361,7 +347,7 @@ public class L7TestV4 {
         Deque<Pair<Integer, Domain>> stack = new ArrayDeque<>();
         Deque<ParseTree.Node> nodeStack = new ArrayDeque<>(); // for building parse tree
 
-        stack.push(new Pair<>(null, DomainEOP.END_OF_PROGRAM));
+        stack.push(new Pair<>(null, Domain.END_OF_PROGRAM));
         stack.push(new Pair<>(0, null));
 
         nodeStack.push(new ParseTree.TerminalNode(null, -1)); // dummy for symmetry

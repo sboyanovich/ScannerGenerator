@@ -9,6 +9,7 @@ import java.util.function.Function;
 public class Utility {
     static final int NOT_FINAL_PRIORITY_RANK = -2;
     static final int FINAL_DUMMY_PRIORITY_RANK = -1;
+
     /**
      * @param transitionTable Table[STATE][SYMBOL] contains state reachable from STATE through SYMBOL.
      * @return Equivalent NFAStateGraph.
