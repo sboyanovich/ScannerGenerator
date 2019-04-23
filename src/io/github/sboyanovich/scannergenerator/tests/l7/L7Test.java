@@ -7,8 +7,6 @@ import io.github.sboyanovich.scannergenerator.scanner.*;
 import io.github.sboyanovich.scannergenerator.scanner.Scanner;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.SimpleDomains;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
-import io.github.sboyanovich.scannergenerator.scanner.token.DomainEOP;
-import io.github.sboyanovich.scannergenerator.scanner.token.DomainError;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
@@ -123,18 +121,18 @@ public class L7Test {
 
         Set<Domain> ignoredTokenTypes = Set.of(
                 SimpleDomains.WHITESPACE,
-                DomainEOP.END_OF_PROGRAM,
-                DomainError.ERROR
+                Domain.END_OF_PROGRAM,
+                Domain.ERROR
         );
 
         int errCount = 0;
 
         Token t = scanner.nextToken();
-        while (t.getTag() != DomainEOP.END_OF_PROGRAM) {
+        while (t.getTag() != Domain.END_OF_PROGRAM) {
             if (!ignoredTokenTypes.contains(t.getTag())) {
                 System.out.println(t);
             }
-            if (t.getTag() == DomainError.ERROR) {
+            if (t.getTag() == Domain.ERROR) {
                 errCount++;
                 System.out.println(t.getCoords());
             }
