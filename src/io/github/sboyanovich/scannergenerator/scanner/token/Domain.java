@@ -18,7 +18,7 @@ public interface Domain {
 
     DomainWithAttribute<String> ERROR = new DomainWithAttribute<>() {
         @Override
-        public Token createToken(Text text, Fragment fragment) {
+        public TokenWithAttribute<String> createToken(Text text, Fragment fragment) {
             return new TError(fragment, attribute(text, fragment));
         }
 
