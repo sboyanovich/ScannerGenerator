@@ -2,22 +2,24 @@ package io.github.sboyanovich.scannergenerator.tests.data.domains;
 
 import io.github.sboyanovich.scannergenerator.scanner.Fragment;
 import io.github.sboyanovich.scannergenerator.scanner.Text;
-import io.github.sboyanovich.scannergenerator.scanner.token.TokenWithAttribute;
-import io.github.sboyanovich.scannergenerator.tests.data.tokens.*;
 import io.github.sboyanovich.scannergenerator.scanner.token.DomainWithAttribute;
-import io.github.sboyanovich.scannergenerator.scanner.token.Token;
+import io.github.sboyanovich.scannergenerator.scanner.token.TokenWithAttribute;
+import io.github.sboyanovich.scannergenerator.tests.data.tokens.TAxmDecl;
+import io.github.sboyanovich.scannergenerator.tests.data.tokens.TComment;
+import io.github.sboyanovich.scannergenerator.tests.data.tokens.TIdentifier;
+import io.github.sboyanovich.scannergenerator.tests.data.tokens.TNonTerminal;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 public enum DomainsWithStringAttribute implements DomainWithAttribute<String> {
     IDENTIFIER {
         @Override
-        public Token createToken(Text text, Fragment fragment) {
+        public TokenWithAttribute<String> createToken(Text text, Fragment fragment) {
             return new TIdentifier(fragment, attribute(text, fragment));
         }
     },
     COMMENT {
         @Override
-        public Token createToken(Text text, Fragment fragment) {
+        public TokenWithAttribute<String> createToken(Text text, Fragment fragment) {
             return new TComment(fragment, attribute(text, fragment));
         }
     },
@@ -31,7 +33,7 @@ public enum DomainsWithStringAttribute implements DomainWithAttribute<String> {
         }
 
         @Override
-        public Token createToken(Text text, Fragment fragment) {
+        public TokenWithAttribute<String> createToken(Text text, Fragment fragment) {
             return new TAxmDecl(fragment, attribute(text, fragment));
         }
     },
@@ -43,14 +45,14 @@ public enum DomainsWithStringAttribute implements DomainWithAttribute<String> {
         }
 
         @Override
-        public Token createToken(Text text, Fragment fragment) {
+        public TokenWithAttribute<String> createToken(Text text, Fragment fragment) {
             return new TNonTerminal(fragment, attribute(text, fragment));
         }
     },
     TERMINAL {
         @Override
-        public Token createToken(Text text, Fragment fragment) {
-            return new TokenWithAttribute<String>(fragment, TERMINAL, attribute(text, fragment));
+        public TokenWithAttribute<String> createToken(Text text, Fragment fragment) {
+            return new TokenWithAttribute<>(fragment, TERMINAL, attribute(text, fragment));
         }
     };
 
