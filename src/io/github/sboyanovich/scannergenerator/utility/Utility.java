@@ -1,10 +1,10 @@
 package io.github.sboyanovich.scannergenerator.utility;
 
-import io.github.sboyanovich.scannergenerator.scanner.Fragment;
 import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraph;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
+import io.github.sboyanovich.scannergenerator.scanner.Fragment;
 import io.github.sboyanovich.scannergenerator.scanner.LexicalRecognizer;
 import io.github.sboyanovich.scannergenerator.scanner.StateTag;
 import io.github.sboyanovich.scannergenerator.scanner.Text;
@@ -14,6 +14,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.github.sboyanovich.scannergenerator.scanner.StateTag.FINAL_DUMMY;
@@ -30,7 +31,9 @@ public class Utility {
     public static final String EMPTY = "";
     public static final String BNF_OR = " | ";
     public static final String NONTERMINAL_NAME_PREFIX = "Q_";
+    public static final String MINUS = "-";
     public static final String DOT_ARROW = "->";
+    public static final String EQDEF = ":=";
 
     public static int asCodePoint(String symbol) {
         return Character.codePointAt(symbol, 0);
@@ -38,6 +41,31 @@ public class Utility {
 
     public static String asString(int codePoint) {
         return new String(new int[]{codePoint}, 0, 1);
+    }
+
+    public static String defaultUnicodeInterpretation(int codepoint) {
+        switch (codepoint) {
+            case 9:
+                return "TAB";
+            case 10:
+                return "NEWLINE";
+            case 13:
+                return "CR";
+            case 32:
+                return "SPACE";
+            case 42:
+                return "*";
+            case 47:
+                return "/";
+        }
+        if (isInRange(codepoint, asCodePoint("A"), asCodePoint("Z")) ||
+                isInRange(codepoint, asCodePoint("a"), asCodePoint("z")) ||
+                isInRange(codepoint, asCodePoint("0"), asCodePoint("9"))
+        ) {
+            return asString(codepoint);
+        }
+
+        return "U+#" + codepoint;
     }
 
     /**
@@ -75,6 +103,40 @@ public class Utility {
 
     public static EquivalenceMap getCoarseSymbolClassMap(List<Integer> pivots) {
         return getCoarseSymbolClassMap(pivots, Character.MAX_CODE_POINT + 1);
+    }
+
+    //EXPERIMENTAL
+
+    /**
+     * Assigns distinct equivalence classes to all pivots. All unmentioned symbols are in class 0.
+     */
+    public static EquivalenceMap getCoarseSymbolClassMapExp(List<Integer> pivots, int alphabetSize) {
+        int[] resultMap = new int[alphabetSize];
+        List<Integer> sortedPivots = new ArrayList<>(pivots);
+        Collections.sort(sortedPivots);
+
+        int classNo;
+
+        if (pivots.size() < alphabetSize) {
+            int classCounter = 1;
+            for (int pivot : sortedPivots) {
+                resultMap[pivot] = classCounter;
+                classCounter++;
+            }
+            classNo = pivots.size() + 1;
+        } else {
+            for (int i = 0; i < alphabetSize; i++) {
+                resultMap[i] = i;
+            }
+            classNo = alphabetSize;
+        }
+
+        return new EquivalenceMap(alphabetSize, classNo, resultMap);
+    }
+
+    /// EXPERIMENTAL
+    public static EquivalenceMap getCoarseSymbolClassMapExp(List<Integer> pivots) {
+        return getCoarseSymbolClassMapExp(pivots, Character.MAX_CODE_POINT + 1);
     }
 
     private static boolean areSymbolsEquivalent(int a, int b, int[][] transitionTable) {
@@ -293,6 +355,70 @@ public class Utility {
         for (int i = 0; i < n; i++) {
             result.append(" ");
         }
+        return result.toString();
+    }
+
+    /**
+     * Represents a collection of integers into a list of sorted segments, i.e.
+     * <p>
+     * 0, 1, 2, 3, 6, 7, 8, 10, 11, 14, 15, 16 ==> 0-3, 6-8, 10, 11, 14-16
+     */
+    public static List<Pair<Integer, Integer>> compressIntoSegments(Collection<Integer> data) {
+        List<Pair<Integer, Integer>> result = new ArrayList<>();
+        List<Integer> sortedData = new ArrayList<>(data);
+        Collections.sort(sortedData);
+
+        int n = sortedData.size();
+        int segstart = 0;
+        int seglen = 1;
+
+        while (segstart < n) {
+            while (segstart + seglen < n &&
+                    (sortedData.get(segstart + seglen) - sortedData.get(segstart) == seglen)) {
+                seglen++;
+            }
+
+            int a = sortedData.get(segstart);
+            int b = sortedData.get(segstart + seglen - 1);
+
+            result.add(new Pair<>(a, b));
+
+            segstart += seglen;
+            seglen = 1;
+        }
+
+        return result;
+    }
+
+    private static String displaySegment(
+            Pair<Integer, Integer> segment, Function<Integer, String> interpretation
+    ) {
+        int a = segment.getFirst();
+        int b = segment.getSecond();
+
+        int seglen = b - a + 1;
+
+        if (seglen > 2) {
+            return interpretation.apply(a) + MINUS + interpretation.apply(b);
+        } else if (seglen > 1) {
+            return interpretation.apply(a) + COMMA + SPACE + interpretation.apply(b);
+        } else {
+            return interpretation.apply(a);
+        }
+    }
+
+    public static String displayAsSegments(Collection<Integer> data, Function<Integer, String> interpretation) {
+        List<Pair<Integer, Integer>> segments = compressIntoSegments(data);
+        StringBuilder result = new StringBuilder();
+
+        if (!segments.isEmpty()) {
+            result.append(displaySegment(segments.get(0), interpretation));
+        }
+        for (int i = 1; i < segments.size(); i++) {
+            result.append(COMMA).append(SPACE);
+            result.append(displaySegment(segments.get(i), interpretation));
+        }
+
         return result.toString();
     }
 
