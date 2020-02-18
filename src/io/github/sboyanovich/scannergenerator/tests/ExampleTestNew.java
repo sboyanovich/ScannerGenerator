@@ -1,15 +1,14 @@
 package io.github.sboyanovich.scannergenerator.tests;
 
-import io.github.sboyanovich.scannergenerator.scanner.Position;
 import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
 import io.github.sboyanovich.scannergenerator.scanner.Compiler;
 import io.github.sboyanovich.scannergenerator.scanner.*;
 import io.github.sboyanovich.scannergenerator.scanner.Scanner;
-import io.github.sboyanovich.scannergenerator.tests.data.domains.SimpleDomains;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
+import io.github.sboyanovich.scannergenerator.tests.data.domains.SimpleDomains;
 import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
@@ -107,7 +106,7 @@ public class ExampleTestNew {
         // EXPERIMENTAL
         List<Integer> mentioned = mentioned(lang);
         System.out.println(mentioned.size() + " mentioned symbols");
-        EquivalenceMap hint = Utility.getCoarseSymbolClassMap(mentioned, alphabetSize);
+        EquivalenceMap hint = Utility.getCoarseSymbolClassMapExp(mentioned, alphabetSize);
         System.out.println(hint.getDomain() + " -> " + hint.getEqClassDomain());
 
         DFA dfa = lang.determinize(priorityMap);
@@ -117,9 +116,12 @@ public class ExampleTestNew {
 
         LexicalRecognizer recognizer = new LexicalRecognizer(hint, dfa);
         System.out.println("Recognizer built!");
+        System.out.println("Classes: " + recognizer.getNumberOfColumns());
 
         String dot = recognizer.toGraphvizDotString(Object::toString, true);
         System.out.println(dot);
+        String factorization = recognizer.displayEquivalenceMap(Utility::defaultUnicodeInterpretation);
+        System.out.println(NEWLINE + factorization + NEWLINE);
 
         String text = Utility.getText("testWin.txt");
 
