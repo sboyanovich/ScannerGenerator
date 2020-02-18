@@ -1,9 +1,12 @@
 package io.github.sboyanovich.scannergenerator.utility;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
-import static io.github.sboyanovich.scannergenerator.utility.Utility.isInRange;
+import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 
 /**
  * Represents mapping of [0, domain - 1] to equivalence class [0, eqClassDomain - 1]
@@ -58,5 +61,33 @@ public class EquivalenceMap {
 
     public int getEqClassDomain() {
         return eqClassDomain;
+    }
+
+    public List<List<Integer>> getClasses() {
+        List<List<Integer>> result = new ArrayList<>();
+
+        for (int i = 0; i < eqClassDomain; i++) {
+            result.add(new ArrayList<>());
+        }
+
+        for (int i = 0; i < domain; i++) {
+            int c = map[i];
+            result.get(c).add(i);
+        }
+
+        return result;
+    }
+
+    public String displayClasses(Function<Integer, String> alphabetInterpretation) {
+        List<List<Integer>> classes = getClasses();
+        StringBuilder result = new StringBuilder();
+
+        for (int i = 0; i < eqClassDomain; i++) {
+            result.append(i).append(SPACE).append(EQDEF).append(SPACE)
+                    .append(displayAsSegments(classes.get(i), alphabetInterpretation));
+            result.append(NEWLINE);
+        }
+
+        return result.toString();
     }
 }
