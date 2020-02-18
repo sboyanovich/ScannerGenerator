@@ -6,6 +6,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
+import static io.github.sboyanovich.scannergenerator.utility.Utility.SPACE;
+import static io.github.sboyanovich.scannergenerator.utility.Utility.displayAsSegments;
+
 public class Utility {
     static final int NOT_FINAL_PRIORITY_RANK = -2;
     static final int FINAL_DUMMY_PRIORITY_RANK = -1;
@@ -38,20 +41,37 @@ public class Utility {
         return edgeLabelAsString(edgeLabel, Utility::defaultAlphabetInterpretation);
     }
 
-    public static String edgeLabelAsString(Set<Integer> edgeLabel, Function<Integer, String> alphabetInterpretation) {
+    public static String edgeLabelAsString(
+            Set<Integer> edgeLabel, Function<Integer, String> alphabetInterpretation) {
+        return edgeLabelAsString(edgeLabel, alphabetInterpretation, true);
+    }
+
+    public static String edgeLabelAsString(
+            Set<Integer> edgeLabel, Function<Integer, String> alphabetInterpretation, boolean compressEdgeLabels) {
         Objects.requireNonNull(edgeLabel);
 
-        StringBuilder result = new StringBuilder();
-        if (edgeLabel.isEmpty()) {
-            result.append(io.github.sboyanovich.scannergenerator.utility.Utility.LAMBDA);
-        } else {
-            List<Integer> letters = new ArrayList<>(edgeLabel);
-            result.append(alphabetInterpretation.apply(letters.get(0)));
-            for (int i = 1; i < letters.size(); i++) {
-                result.append(io.github.sboyanovich.scannergenerator.utility.Utility.COMMA + io.github.sboyanovich.scannergenerator.utility.Utility.SPACE);
-                result.append(alphabetInterpretation.apply(letters.get(i)));
+        if (!compressEdgeLabels) {
+
+            StringBuilder result = new StringBuilder();
+            if (edgeLabel.isEmpty()) {
+                result.append(io.github.sboyanovich.scannergenerator.utility.Utility.LAMBDA);
+            } else {
+                List<Integer> letters = new ArrayList<>(edgeLabel);
+                result.append(alphabetInterpretation.apply(letters.get(0)));
+                for (int i = 1; i < letters.size(); i++) {
+                    result.append(io.github.sboyanovich.scannergenerator.utility.Utility.COMMA + SPACE);
+                    result.append(alphabetInterpretation.apply(letters.get(i)));
+                }
             }
+            return result.toString();
+        } else {
+            return edgeLabelAsStringCompressed(edgeLabel, alphabetInterpretation);
         }
-        return result.toString();
+    }
+
+    private static String edgeLabelAsStringCompressed(
+            Set<Integer> edgeLabel, Function<Integer, String> alphabetInterpretation
+    ) {
+        return displayAsSegments(edgeLabel, alphabetInterpretation);
     }
 }
