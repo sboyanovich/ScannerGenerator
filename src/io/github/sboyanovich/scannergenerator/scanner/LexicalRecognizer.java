@@ -200,6 +200,10 @@ public final class LexicalRecognizer {
         return this.labels.get(state);
     }
 
+    public int getNumberOfColumns() {
+        return this.transitionTable[0].length;
+    }
+
     private NFA toNFA() {
         Map<Integer, StateTag> labelsMap = new HashMap<>();
         int numberOfStates = this.transitionTable.length;
@@ -248,5 +252,9 @@ public final class LexicalRecognizer {
             boolean prefixFinalStatesWithTagName
     ) {
         return this.toNFA().toGraphvizDotString(alphabetInterpretation, prefixFinalStatesWithTagName);
+    }
+
+    public String displayEquivalenceMap(Function<Integer, String> alphabetInterpretation) {
+        return generalizedSymbolsMap.displayClasses(alphabetInterpretation);
     }
 }
