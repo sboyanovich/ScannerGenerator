@@ -431,6 +431,18 @@ public class Utility {
         return new NFA(2, alphabetSize, 0, Map.of(1, FINAL_DUMMY), edges.build());
     }
 
+    public static NFA acceptThisWord(int alphabetSize, String word) {
+        List<Integer> codePoints = word.codePoints().boxed().collect(Collectors.toList());
+        int n = codePoints.size();
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(n + 1, alphabetSize);
+        for (int i = 0; i < n; i++) {
+            int codePoint = codePoints.get(i);
+            edges.addSymbolToEdge(i, i + 1, codePoint);
+        }
+        return new NFA(n + 1, alphabetSize, 0, Map.of(n, StateTag.FINAL_DUMMY), edges.build());
+    }
+
+    // now this exists mostly for test compatibility reasons
     public static NFA acceptThisWord(int alphabetSize, List<String> symbols) {
         int n = symbols.size();
         NFAStateGraphBuilder edges = new NFAStateGraphBuilder(n + 1, alphabetSize);
@@ -461,38 +473,32 @@ public class Utility {
         return (alphabetSize - marker.size()) < limit;
     }
 
-    static boolean isMentioned(NFAStateGraph edges, int symbol) {
-        int numberOfStates = edges.getNumberOfStates();
-        int alphabetSize = edges.getAlphabetSize();
+    public static List<Integer> mentioned(NFA nfa) {
+        int alphabetSize = nfa.getAlphabetSize();
+        int n = nfa.getNumberOfStates();
+        NFAStateGraph edges = nfa.getEdges();
 
-        for (int j = 0; j < numberOfStates; j++) {
-            for (int k = 0; k < numberOfStates; k++) {
-                Optional<Set<Integer>> marker = edges.getEdgeMarker(j, k);
+        Set<Integer> aux = new HashSet<>();
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                Optional<Set<Integer>> marker = edges.getEdgeMarker(i, j);
                 if (marker.isPresent()) {
                     Set<Integer> markerSet = marker.get();
-                    if (isSubtractive(markerSet, alphabetSize, 5)) {
-                        if (!markerSet.contains(symbol)) {
-                            return true;
+                    if (!isSubtractive(markerSet, alphabetSize, 5)) {
+                        aux.addAll(markerSet);
+                    } else {
+                        for (int k = 0; k < alphabetSize; k++) {
+                            if (!markerSet.contains(k)) {
+                                aux.add(k);
+                            }
                         }
-                    } else if (markerSet.contains(symbol)) {
-                        return true;
                     }
                 }
             }
         }
-        return false;
-    }
 
-    public static List<Integer> mentioned(NFA nfa) {
-        int alphabetSize = nfa.getAlphabetSize();
-        List<Integer> result = new ArrayList<>();
-        NFAStateGraph edges = nfa.getEdges();
-
-        for (int i = 0; i < alphabetSize; i++) {
-            if (isMentioned(edges, i)) {
-                result.add(i);
-            }
-        }
+        List<Integer> result = new ArrayList<>(aux);
 
         return result;
     }
