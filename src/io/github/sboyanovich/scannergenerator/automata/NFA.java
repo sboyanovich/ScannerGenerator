@@ -1,6 +1,7 @@
 package io.github.sboyanovich.scannergenerator.automata;
 
 import io.github.sboyanovich.scannergenerator.scanner.StateTag;
+import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
 
 import java.util.*;
 import java.util.function.Function;
@@ -650,6 +651,91 @@ public class NFA {
             }
         }
         return result;
+    }
+
+    public DFA determinizeExp(Map<StateTag, Integer> priorities, EquivalenceMap emap) {
+        // priorities map must contain mapping for every present StateTag (bigger number -> higher priority)
+        // (except NOT_FINAL and FINAL_DUMMY) (these are most likely going to be overwritten anyway)
+        // client-defined priority ranks must be non-negative
+
+        priorities = new HashMap<>(priorities);
+        // TODO: Validate priorities Map
+        priorities.put(StateTag.NOT_FINAL, NOT_FINAL_PRIORITY_RANK);
+        priorities.put(StateTag.FINAL_DUMMY, FINAL_DUMMY_PRIORITY_RANK);
+
+        // initial superstate
+        Set<Set<Integer>> superstates = new HashSet<>();
+        Set<Integer> initialSuperstate = this.lambdaClosure(
+                Set.of(this.initialState)
+        );
+        superstates.add(initialSuperstate);
+
+        Map<Set<Integer>, Integer> names = new HashMap<>();
+        names.put(initialSuperstate, 0);
+
+        List<Set<Integer>> statesList = new ArrayList<>(superstates);
+        List<List<Integer>> transitionFunction = new ArrayList<>();
+
+        int eqcd = emap.getEqClassDomain();
+        List<List<Integer>> eqc = emap.getClasses();
+
+        {
+            int i = 0;
+            int k = 1; // current free name to be assigned to a new superstate
+            do {
+                Set<Integer> currentSuperstate = statesList.get(i);
+
+                transitionFunction.add(new ArrayList<>());
+
+                for (int j = 0; j < eqcd; j++) {
+                    Set<Integer> image = this.lambdaClosure(
+                            this.closure(currentSuperstate, eqc.get(j).get(0))
+                    );
+                    boolean newState = superstates.add(image);
+                    if (newState) {
+                        statesList.add(image);
+                        names.put(image, k);
+                        k++;
+                    }
+                    transitionFunction.get(i).add(names.get(image));
+                }
+                i++;
+            } while (i < superstates.size());
+        }
+
+        int alphabetSize = this.alphabetSize;
+        int numberOfStates = superstates.size();
+        int initialState = 0;
+
+        // time to handle accepting states (state tags)
+        // maybe use copy of priorities, to prevent race conditions
+        Map<Integer, StateTag> labelsMap = new HashMap<>();
+        for (int j = 0; j < numberOfStates; j++) {
+            Set<Integer> currentSuperstate = statesList.get(j);
+            List<StateTag> candidateTags = List.of(StateTag.NOT_FINAL);
+            if (!currentSuperstate.isEmpty()) {
+                candidateTags =
+                        currentSuperstate.stream()
+                                .map(s -> this.labels.get(s))
+                                .collect(Collectors.toList());
+            }
+            StateTag label =
+                    Collections.max(
+                            candidateTags,
+                            Comparator.comparingInt(priorities::get)
+                    );
+            labelsMap.put(j, label);
+        }
+
+        // writing transition table
+        int[][] transitionTable = new int[numberOfStates][alphabetSize];
+        for (int i = 0; i < numberOfStates; i++) {
+            for (int j = 0; j < alphabetSize; j++) {
+                transitionTable[i][j] = transitionFunction.get(i).get(emap.getEqClass(j));
+            }
+        }
+
+        return new DFA(numberOfStates, alphabetSize, initialState, labelsMap, transitionTable);
     }
 
     public DFA determinize(Map<StateTag, Integer> priorities) {
