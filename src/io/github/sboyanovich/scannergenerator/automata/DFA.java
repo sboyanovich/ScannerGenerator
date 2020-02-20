@@ -131,7 +131,10 @@ public class DFA {
     public DFA compress() {
         Map<Integer, StateTag> labelsMap = new HashMap<>();
         for (int i = 0; i < this.labels.size(); i++) {
-            labelsMap.put(i, labelsMap.get(i));
+            StateTag tag = labels.get(i);
+            if (!tag.equals(StateTag.NOT_FINAL)) {
+                labelsMap.put(i, labels.get(i));
+            }
         }
         return new DFA(
                 this.numberOfStates, this.alphabetSize, this.initialState, labelsMap, this.transitionTable.compress()
