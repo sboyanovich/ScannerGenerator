@@ -136,4 +136,8 @@ public class DFATransitionTable {
         }
         return result;
     }
+
+    int generalizedTransition(int fromState, int genSymbol) {
+        return this.transitionTable[fromState][genSymbol];
+    }
 }

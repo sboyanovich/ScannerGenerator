@@ -137,7 +137,7 @@ public class DFA {
                 this.numberOfStates, this.alphabetSize, this.initialState, labelsMap, this.transitionTable.compress()
         );
     }
-    
+
     /// MINIMIZATION
     //  Methods in this section prioritize correctness over performance.
 
@@ -151,28 +151,32 @@ public class DFA {
         }
         return result;
     }
-    // checks if two states are equivalent
 
-    private static boolean areEquivalent(int state1, int state2, int alphabetSize,
-                                         DFATransitionTable transitionFunction, DisjointSetForest dsf) {
-        for (int i = 0; i < alphabetSize; i++) {
-            int r1 = transitionFunction.transition(state1, i);
-            int r2 = transitionFunction.transition(state2, i);
+    // checks if two states are equivalent
+    private static boolean areEquivalent(
+            int state1, int state2, DFATransitionTable transitionFunction, DisjointSetForest dsf
+    ) {
+        int genAlphabetSize = transitionFunction.getEquivalenceMap().getEqClassDomain();
+
+        for (int i = 0; i < genAlphabetSize; i++) {
+            int r1 = transitionFunction.generalizedTransition(state1, i);
+            int r2 = transitionFunction.generalizedTransition(state2, i);
             if (!dsf.areEquivalent(r1, r2)) {
                 return false;
             }
         }
         return true;
     }
-    // breaking up some coarse equivalence classes
 
-    private static DisjointSetForest refine(DisjointSetForest dsf, int nElements,
-                                            int alphabetSize, DFATransitionTable transitionFunction) {
+    // breaking up some coarse equivalence classes
+    private static DisjointSetForest refine(
+            DisjointSetForest dsf, int nElements, DFATransitionTable transitionFunction
+    ) {
         DisjointSetForest result = finestPartition(nElements);
         for (int i = 0; i < nElements; i++) {
             for (int j = i; j < nElements; j++) {
                 if (dsf.areEquivalent(i, j)) {
-                    if (areEquivalent(i, j, alphabetSize, transitionFunction, dsf)) {
+                    if (areEquivalent(i, j, transitionFunction, dsf)) {
                         result.union(i, j);
                     }
                 }
@@ -212,7 +216,7 @@ public class DFA {
         int numberOfStates;
         do {
             numberOfStates = dsf.numberOfClasses();
-            dsf = refine(dsf, this.numberOfStates, alphabetSize, transitionFunction);
+            dsf = refine(dsf, this.numberOfStates, transitionFunction);
         } while (dsf.numberOfClasses() > numberOfStates);
 
         List<Integer> states = dsf.getRepresentatives();
@@ -237,13 +241,13 @@ public class DFA {
         EquivalenceMap equivalenceMap = this.transitionTable.getEquivalenceMap();
         int eqcDomain = equivalenceMap.getEqClassDomain();
 
-        int[][] transitionTable = new int[numberOfStates][equivalenceMap.getEqClassDomain()];
+        int[][] transitionTable = new int[numberOfStates][eqcDomain];
 
         // writing transition table
         for (int i = 0; i < numberOfStates; i++) {
             int dfaStateNo = states.get(i);
             for (int j = 0; j < eqcDomain; j++) {
-                int targetState = transitionFunction.transition(dfaStateNo, j);
+                int targetState = transitionFunction.generalizedTransition(dfaStateNo, j);
                 targetState = dsf.find(targetState);
                 targetState = renaming.get(targetState);
                 transitionTable[i][j] = targetState;
