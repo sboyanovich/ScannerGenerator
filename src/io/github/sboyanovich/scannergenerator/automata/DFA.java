@@ -188,8 +188,6 @@ public class DFA {
         return result;
     }
 
-    // EXPERIMENTAL
-    // TODO: might need extra work to take advantage of equivalence map
     public DFA minimize() {
 
         DisjointSetForest dsf = finestPartition(this.numberOfStates);

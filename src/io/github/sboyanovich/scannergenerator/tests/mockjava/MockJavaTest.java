@@ -19,7 +19,7 @@ import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 public class MockJavaTest {
     public static void main(String[] args) {
         int alphabetSize = Character.MAX_CODE_POINT + 1;
-        alphabetSize = 256;
+        // alphabetSize = 256;
 
         NFA spaceNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint(" "));
         NFA tabNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("\t"));
@@ -272,8 +272,6 @@ public class MockJavaTest {
                 .union(lit_nullNFA)
                 .union(lit_falseNFA)
                 .union(lit_trueNFA);
-
-        // TODO: OUT OF MEMORY!!!
 
         System.out.println(lang.getNumberOfStates());
 
