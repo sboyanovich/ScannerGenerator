@@ -9,7 +9,6 @@ import io.github.sboyanovich.scannergenerator.scanner.Scanner;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.tests.mockjava.data.domains.SimpleDomains;
-import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.util.*;
@@ -20,7 +19,7 @@ import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 public class MockJavaTest {
     public static void main(String[] args) {
         int alphabetSize = Character.MAX_CODE_POINT + 1;
-        //alphabetSize = 256;
+        alphabetSize = 256;
 
         NFA spaceNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint(" "));
         NFA tabNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("\t"));
@@ -281,20 +280,13 @@ public class MockJavaTest {
         lang = lang.removeLambdaSteps();
         System.out.println("Lambda steps removed.");
 
-        // EXPERIMENTAL
-        List<Integer> mentioned = mentioned(lang);
-        System.out.println(mentioned.size() + " mentioned symbols");
-        EquivalenceMap hint = Utility.getCoarseSymbolClassMapExp(mentioned, alphabetSize);
-
-        System.out.println(hint.getDomain() + " -> " + hint.getEqClassDomain());
-
-        DFA dfa = lang.determinizeExp(priorityMap, hint);
+        DFA dfa = lang.determinize(priorityMap);
 
         System.out.println("Determinized!");
-        // Determinization needs to be optimized!
-        System.out.println(dfa.getNumberOfStates());
+        System.out.println("States: " + dfa.getNumberOfStates());
+        System.out.println("Classes: " + dfa.getTransitionTable().getEquivalenceMap().getEqClassDomain());
 
-        LexicalRecognizer recognizer = new LexicalRecognizer(hint, dfa);
+        LexicalRecognizer recognizer = new LexicalRecognizer(dfa);
         System.out.println("Recognizer built!");
         System.out.println("States: " + recognizer.getNumberOfStates());
         System.out.println("Classes: " + recognizer.getNumberOfColumns());

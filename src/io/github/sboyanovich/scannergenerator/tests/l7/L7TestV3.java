@@ -136,7 +136,7 @@ public class L7TestV3 {
 
         System.out.println("NFA has " + lang.getNumberOfStates() + " states.");
 
-        LexicalRecognizer recognizer = Utility.createRecognizer(lang, priorityMap);
+        LexicalRecognizer recognizer = new LexicalRecognizer(lang.determinize(priorityMap));
         System.out.println("Recognizer built!\n");
 
         String dot = recognizer.toGraphvizDotString(Object::toString, true);

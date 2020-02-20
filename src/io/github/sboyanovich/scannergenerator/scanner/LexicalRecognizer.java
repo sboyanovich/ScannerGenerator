@@ -4,8 +4,6 @@ import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
 import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
-import io.github.sboyanovich.scannergenerator.utility.Pair;
-import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.util.*;
 import java.util.function.Function;
@@ -51,40 +49,30 @@ public final class LexicalRecognizer {
     private int initialState;
 
     // as of now, hint maps precisely automaton domain to something smaller
-    public LexicalRecognizer(EquivalenceMap hint, DFA automaton) {
-        Objects.requireNonNull(hint);
+    public LexicalRecognizer(DFA automaton) {
         Objects.requireNonNull(automaton);
-        if (hint.getDomain() != automaton.getAlphabetSize()) {
-            throw new IllegalArgumentException(
-                    "Hint domain should coincide with automaton's alphabet!"
-            );
-        }
 
         // this logic should be here
-        Pair<EquivalenceMap, DFA> compressed = Utility.compressAutomaton(hint, automaton);
-        EquivalenceMap hintEmap = compressed.getFirst(); // original alphabet => aux
-        automaton = compressed.getSecond();
+        automaton = automaton.compress();
 
         // minimization should go faster now (on average much smaller alphabet)
         automaton = automaton.minimize();
 
-        compressed = Utility.compressAutomaton(automaton);
-        EquivalenceMap midMap = compressed.getFirst(); // aux => final
-        automaton = compressed.getSecond();
-
+        // aux => final
+        automaton = automaton.compress();
         // original alphabet => final
-        EquivalenceMap emap = Utility.composeEquivalenceMaps(hintEmap, midMap);
 
-        this.generalizedSymbolsMap = emap;
+        this.generalizedSymbolsMap = automaton.getTransitionTable().getEquivalenceMap();
         //System.out.println(emap.getDomain());
         //System.out.println(emap.getEqClassDomain());
 
         int numberOfStates = automaton.getNumberOfStates();
-        int alphabetSize = automaton.getAlphabetSize();
+        int alphabetSize = this.generalizedSymbolsMap.getEqClassDomain();
 
+        // Minimal automaton has one drain at most.
         OptionalInt maybeDrain = getDrainState(automaton);
 
-        int[][] transitionTable = automaton.getTransitionTable();
+        int[][] transitionTable = automaton.getTransitionTable().getTable();
 
         if (maybeDrain.isPresent()) {
             int drain = maybeDrain.getAsInt();
@@ -129,8 +117,8 @@ public final class LexicalRecognizer {
             return false;
         }
 
-        int[][] transitionTable = dfa.getTransitionTable();
-        int alphabetSize = dfa.getAlphabetSize();
+        int[][] transitionTable = dfa.getTransitionTable().getTable();
+        int alphabetSize = dfa.getTransitionTable().getEquivalenceMap().getEqClassDomain();
         for (int i = 0; i < alphabetSize; i++) {
             int to = transitionTable[state][i];
             if (to != state) {

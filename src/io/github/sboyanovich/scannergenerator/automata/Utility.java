@@ -17,6 +17,26 @@ public class Utility {
      * @param transitionTable Table[STATE][SYMBOL] contains state reachable from STATE through SYMBOL.
      * @return Equivalent NFAStateGraph.
      */
+    public static NFAStateGraph computeEdgeLabels(DFATransitionTable transitionTable) {
+        int numberOfStates = transitionTable.getNumberOfStates();
+        int alphabetSize = transitionTable.getAlphabetSize();
+
+        NFAStateGraphBuilder result = new NFAStateGraphBuilder(numberOfStates, alphabetSize);
+
+        for (int state = 0; state < numberOfStates; state++) {
+            for (int symbol = 0; symbol < alphabetSize; symbol++) {
+                int to = transitionTable.transition(state, symbol);
+                result.addSymbolToEdge(state, to, symbol);
+            }
+        }
+
+        return result.build();
+    }
+
+    /**
+     * @param transitionTable Table[STATE][SYMBOL] contains state reachable from STATE through SYMBOL.
+     * @return Equivalent NFAStateGraph.
+     */
     public static NFAStateGraph computeEdgeLabels(int[][] transitionTable) {
         int numberOfStates = transitionTable.length;
         int alphabetSize = transitionTable[0].length;

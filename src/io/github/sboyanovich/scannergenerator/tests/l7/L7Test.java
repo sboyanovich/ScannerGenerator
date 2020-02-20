@@ -108,7 +108,7 @@ public class L7Test {
 
         System.out.println(lang.getNumberOfStates());
 
-        LexicalRecognizer recognizer = Utility.createRecognizer(lang, priorityMap);
+        LexicalRecognizer recognizer = new LexicalRecognizer(lang.determinize(priorityMap));
         System.out.println("Recognizer built!");
 
         String dot = recognizer.toGraphvizDotString(Object::toString, true);

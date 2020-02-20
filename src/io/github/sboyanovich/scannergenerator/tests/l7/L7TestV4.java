@@ -124,7 +124,7 @@ public class L7TestV4 {
         System.out.println("NFA has " + lang.getNumberOfStates() + " states.");
 
         Instant start = Instant.now();
-        LexicalRecognizer recognizer = Utility.createRecognizer(lang, priorityMap);
+        LexicalRecognizer recognizer = new LexicalRecognizer(lang.determinize(priorityMap));
         Instant finish = Instant.now();
         long timeElapsed = Duration.between(start, finish).toMillis();
         System.out.println("Recognizer built in " + timeElapsed + "ms!\n");

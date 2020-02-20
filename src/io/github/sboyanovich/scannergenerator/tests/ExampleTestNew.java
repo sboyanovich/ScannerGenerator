@@ -9,7 +9,6 @@ import io.github.sboyanovich.scannergenerator.scanner.Scanner;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.tests.data.domains.SimpleDomains;
-import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.util.*;
@@ -103,19 +102,14 @@ public class ExampleTestNew {
 
         lang = lang.removeLambdaSteps();
 
-        // EXPERIMENTAL
-        List<Integer> mentioned = mentioned(lang);
-        System.out.println(mentioned.size() + " mentioned symbols");
-        EquivalenceMap hint = Utility.getCoarseSymbolClassMapExp(mentioned, alphabetSize);
-        System.out.println(hint.getDomain() + " -> " + hint.getEqClassDomain());
-
         DFA dfa = lang.determinize(priorityMap);
 
         System.out.println("Determinized!");
         System.out.println(dfa.getNumberOfStates());
 
-        LexicalRecognizer recognizer = new LexicalRecognizer(hint, dfa);
+        LexicalRecognizer recognizer = new LexicalRecognizer(dfa);
         System.out.println("Recognizer built!");
+        System.out.println("States: " + recognizer.getNumberOfStates());
         System.out.println("Classes: " + recognizer.getNumberOfColumns());
 
         String dot = recognizer.toGraphvizDotString(Object::toString, true);

@@ -1,11 +1,7 @@
 package io.github.sboyanovich.scannergenerator.utility;
 
-import io.github.sboyanovich.scannergenerator.automata.DFA;
-import io.github.sboyanovich.scannergenerator.automata.NFA;
-import io.github.sboyanovich.scannergenerator.automata.NFAStateGraph;
-import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
+import io.github.sboyanovich.scannergenerator.automata.*;
 import io.github.sboyanovich.scannergenerator.scanner.Fragment;
-import io.github.sboyanovich.scannergenerator.scanner.LexicalRecognizer;
 import io.github.sboyanovich.scannergenerator.scanner.StateTag;
 import io.github.sboyanovich.scannergenerator.scanner.Text;
 
@@ -69,48 +65,9 @@ public class Utility {
     }
 
     /**
-     * Assigns distinct equivalence classes to all pivots. Each interval between two closest pivots
-     * (left and right alphabet border act as implicit pivots) is assigned its own equivalence class.
-     */
-    public static EquivalenceMap getCoarseSymbolClassMap(List<Integer> pivots, int alphabetSize) {
-        int[] resultMap = new int[alphabetSize];
-        List<Integer> sortedPivots = new ArrayList<>(pivots);
-        Collections.sort(sortedPivots);
-
-        int classCounter = 0;
-        int start = 0;
-        for (int pivot : sortedPivots) {
-            int i;
-            for (i = start; i < pivot; i++) {
-                resultMap[i] = classCounter;
-            }
-            // covers if there is nothing between prev and curr pivot
-            if (i > start) {
-                classCounter++;
-            }
-            resultMap[pivot] = classCounter;
-            classCounter++;
-            start = pivot + 1;
-        }
-        // last one
-        for (int i = start; i < resultMap.length; i++) {
-            resultMap[i] = classCounter;
-        }
-        int classNo = resultMap[alphabetSize - 1] + 1;
-
-        return new EquivalenceMap(alphabetSize, classNo, resultMap);
-    }
-
-    public static EquivalenceMap getCoarseSymbolClassMap(List<Integer> pivots) {
-        return getCoarseSymbolClassMap(pivots, Character.MAX_CODE_POINT + 1);
-    }
-
-    //EXPERIMENTAL
-
-    /**
      * Assigns distinct equivalence classes to all pivots. All unmentioned symbols are in class 0.
      */
-    public static EquivalenceMap getCoarseSymbolClassMapExp(List<Integer> pivots, int alphabetSize) {
+    public static EquivalenceMap getCoarseSymbolClassMap(List<Integer> pivots, int alphabetSize) {
         int[] resultMap = new int[alphabetSize];
         List<Integer> sortedPivots = new ArrayList<>(pivots);
         Collections.sort(sortedPivots);
@@ -134,147 +91,8 @@ public class Utility {
         return new EquivalenceMap(alphabetSize, classNo, resultMap);
     }
 
-    /// EXPERIMENTAL
-    public static EquivalenceMap getCoarseSymbolClassMapExp(List<Integer> pivots) {
-        return getCoarseSymbolClassMapExp(pivots, Character.MAX_CODE_POINT + 1);
-    }
-
-    private static boolean areSymbolsEquivalent(int a, int b, int[][] transitionTable) {
-        for (int[] aTransitionTable : transitionTable) {
-            if (aTransitionTable[a] != aTransitionTable[b]) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    // numbers distinct elements from 0 and renames (returns new array)
-    private static int[] normalizeMapping(int[] map) {
-        int n = map.length;
-        int[] result = new int[n];
-        Map<Integer, Integer> known = new HashMap<>();
-
-        int c = 0;
-        for (int i = 0; i < map.length; i++) {
-            int elem = map[i];
-            if (!known.containsKey(elem)) {
-                known.put(elem, c);
-                c++;
-            }
-            result[i] = known.get(elem);
-        }
-
-        return result;
-    }
-
-    public static EquivalenceMap composeEquivalenceMaps(EquivalenceMap map1, EquivalenceMap map2) {
-        // not checking parameters for validity for now
-        int m = map1.getDomain();
-        int[] resultMap = new int[m];
-        for (int i = 0; i < resultMap.length; i++) {
-            resultMap[i] = map2.getEqClass(map1.getEqClass(i));
-        }
-        return new EquivalenceMap(m, map2.getEqClassDomain(), resultMap);
-    }
-
-    // map eqDomain == transitionTable alphabet
-    public static EquivalenceMap refineEquivalenceMap(EquivalenceMap map, int[][] transitionTable) {
-        int n = map.getEqClassDomain();
-
-        int[] auxMap = new int[n];
-        // everyone is equivalent to themselves
-        for (int i = 0; i < auxMap.length; i++) {
-            auxMap[i] = i;
-        }
-
-        for (int i = 0; i < n - 1; i++) {
-            for (int j = i + 1; j < n; j++) {
-                if ((auxMap[i] != auxMap[j]) && areSymbolsEquivalent(i, j, transitionTable)) {
-                    auxMap[j] = auxMap[i];
-                }
-            }
-        }
-
-        auxMap = normalizeMapping(auxMap);
-
-        List<Integer> aux = new ArrayList<>();
-        for (int elem : auxMap) {
-            aux.add(elem);
-        }
-        int c = Collections.max(aux) + 1;
-
-        return new EquivalenceMap(n, c, auxMap);
-    }
-
-    // map maps alphabetSize -> eqDomain, where alphabetSize = transitionTable[0].length
-    public static int[][] compressTransitionTable(int[][] transitionTable, EquivalenceMap map) {
-        Objects.requireNonNull(transitionTable);
-        Objects.requireNonNull(map);
-        for (int i = 0; i < transitionTable.length; i++) {
-            Objects.requireNonNull(transitionTable[i]);
-            if (transitionTable[i].length != map.getDomain()) {
-                throw new IllegalArgumentException(
-                        "Map domain must be  [0, alphabetSize-1]!\n" +
-                                "\talphabetSize = " + transitionTable[i].length + "\n" +
-                                "\tmapDomain = " + map.getDomain());
-            }
-        }
-
-        int n = transitionTable.length; // number of states
-        int m = map.getEqClassDomain();
-
-        int[][] result = new int[n][m];
-
-        for (int i = 0; i < transitionTable.length; i++) {
-            for (int j = 0; j < transitionTable[i].length; j++) {
-                int state = i;
-                int symbol = map.getEqClass(j);
-                result[state][symbol] = transitionTable[i][j];
-            }
-        }
-        return result;
-    }
-
-    // EXPERIMENTAL
-    //  hint domain must be equal to alphabetSize
-    public static Pair<EquivalenceMap, DFA> compressAutomaton(EquivalenceMap hint, DFA automaton) {
-
-
-        int[][] transitionTable = automaton.getTransitionTable();
-
-        int numberOfStates = automaton.getNumberOfStates();
-        int initialState = automaton.getInitialState();
-
-        int[][] table = compressTransitionTable(transitionTable, hint);
-
-        EquivalenceMap rmap = refineEquivalenceMap(
-                hint,
-                table
-        );
-
-        int newAlphabetSize = rmap.getEqClassDomain();
-        Map<Integer, StateTag> labelsMap = new HashMap<>();
-        for (int i = 0; i < numberOfStates; i++) {
-            labelsMap.put(i, automaton.getStateTag(i));
-        }
-
-        EquivalenceMap emap = composeEquivalenceMaps(hint, rmap);
-
-        int[][] newTransitionTable = compressTransitionTable(
-                table,
-                rmap
-        );
-
-        DFA dfa = new DFA(numberOfStates, newAlphabetSize, initialState, labelsMap, newTransitionTable);
-
-        return new Pair<>(emap, dfa);
-    }
-
-    public static Pair<EquivalenceMap, DFA> compressAutomaton(DFA automaton) {
-        return compressAutomaton(
-                EquivalenceMap.identityMap(automaton.getAlphabetSize()),
-                automaton
-        );
+    public static EquivalenceMap getCoarseSymbolClassMap(List<Integer> pivots) {
+        return getCoarseSymbolClassMap(pivots, Character.MAX_CODE_POINT + 1);
     }
 
     public static <T> Set<T> union(Set<T> s1, Set<T> s2) {
@@ -501,15 +319,5 @@ public class Utility {
         List<Integer> result = new ArrayList<>(aux);
 
         return result;
-    }
-
-    // with hint heuristic
-    public static LexicalRecognizer createRecognizer(NFA lang, Map<StateTag, Integer> priorityMap) {
-        int alphabetSize = lang.getAlphabetSize();
-        // this one seems to be important for performance! (of mentioned(...) )
-        lang = lang.removeLambdaSteps();
-        EquivalenceMap hint = getCoarseSymbolClassMap(mentioned(lang), alphabetSize);
-        DFA dfa = lang.determinize(priorityMap);
-        return new LexicalRecognizer(hint, dfa);
     }
 }
