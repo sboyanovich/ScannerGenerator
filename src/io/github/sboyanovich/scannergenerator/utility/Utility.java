@@ -1,6 +1,8 @@
 package io.github.sboyanovich.scannergenerator.utility;
 
-import io.github.sboyanovich.scannergenerator.automata.*;
+import io.github.sboyanovich.scannergenerator.automata.NFA;
+import io.github.sboyanovich.scannergenerator.automata.NFAStateGraph;
+import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
 import io.github.sboyanovich.scannergenerator.scanner.Fragment;
 import io.github.sboyanovich.scannergenerator.scanner.StateTag;
 import io.github.sboyanovich.scannergenerator.scanner.Text;
@@ -49,14 +51,33 @@ public class Utility {
                 return "CR";
             case 32:
                 return "SPACE";
-            case 42:
-                return "*";
-            case 47:
-                return "/";
+            case 352:
+                return "Š";
+            case 353:
+                return "š";
+            case 272:
+                return "Đ";
+            case 273:
+                return "đ";
+            case 268:
+                return "Č";
+            case 269:
+                return "č";
+            case 262:
+                return "Ć";
+            case 263:
+                return "ć";
+            case 381:
+                return "Ž";
+            case 382:
+                return "ž";
         }
-        if (isInRange(codepoint, asCodePoint("A"), asCodePoint("Z")) ||
-                isInRange(codepoint, asCodePoint("a"), asCodePoint("z")) ||
-                isInRange(codepoint, asCodePoint("0"), asCodePoint("9"))
+        if (isInRange(codepoint, 33, 126) ||
+                isInRange(codepoint, 162, 165)) {
+            return asString(codepoint);
+        }
+        if (isInRange(codepoint, asCodePoint("А"), asCodePoint("Я")) ||
+                isInRange(codepoint, asCodePoint("а"), asCodePoint("я"))
         ) {
             return asString(codepoint);
         }
@@ -243,8 +264,12 @@ public class Utility {
     /// EXPERIMENTAL METHODS SECTION
 
     public static NFA acceptsAllTheseSymbols(int alphabetSize, Set<String> symbols) {
-        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(2, alphabetSize);
         Set<Integer> codePoints = symbols.stream().map(Utility::asCodePoint).collect(Collectors.toSet());
+        return acceptsAllTheseCodePoints(alphabetSize, codePoints);
+    }
+
+    public static NFA acceptsAllTheseCodePoints(int alphabetSize, Set<Integer> codePoints) {
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(2, alphabetSize);
         edges.setEdge(0, 1, codePoints);
         return new NFA(2, alphabetSize, 0, Map.of(1, FINAL_DUMMY), edges.build());
     }
