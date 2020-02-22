@@ -7,24 +7,6 @@ import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 
 public enum SimpleDomains implements Domain {
-    DOUBLE_COLON {
-        @Override
-        public Token createToken(Text text, Fragment fragment) {
-            return new BasicToken(fragment, SimpleDomains.DOUBLE_COLON);
-        }
-    },
-    AT {
-        @Override
-        public Token createToken(Text text, Fragment fragment) {
-            return new BasicToken(fragment, SimpleDomains.AT);
-        }
-    },
-    ELLIPSIS {
-        @Override
-        public Token createToken(Text text, Fragment fragment) {
-            return new BasicToken(fragment, SimpleDomains.ELLIPSIS);
-        }
-    },
     DOT {
         @Override
         public Token createToken(Text text, Fragment fragment) {
@@ -86,3 +68,5 @@ public enum SimpleDomains implements Domain {
         }
     }
 }
+
+"Wild string literal.\nAnd another line."

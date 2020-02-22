@@ -11,9 +11,13 @@ import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.tests.mockjava.data.domains.SimpleDomains;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 import static io.github.sboyanovich.scannergenerator.tests.mockjava.data.states.StateTags.*;
+import static io.github.sboyanovich.scannergenerator.tests.mockjava.data.states.StateTags.COMMA;
+import static io.github.sboyanovich.scannergenerator.tests.mockjava.data.states.StateTags.SEMICOLON;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 
 public class MockJavaTest {
@@ -154,9 +158,112 @@ public class MockJavaTest {
 
         NFA commentNFA = new NFA(6, alphabetSize, 0, Map.of(5, COMMENT), commentNFAEdges.build());
 
+        Set<Integer> javaLetters = new HashSet<>();
+        Set<Integer> javaLettersOrDigits = new HashSet<>();
+        for (int i = 0; i < 256; i++) {
+            if (Character.isJavaIdentifierStart(i)) {
+                javaLetters.add(i);
+            }
+            if (Character.isJavaIdentifierPart(i)) {
+                javaLettersOrDigits.add(i);
+            }
+        }
+        NFA idenStartNFA = acceptsAllTheseCodePoints(alphabetSize, javaLetters);
+        NFA idenPartNFA = acceptsAllTheseCodePoints(alphabetSize, javaLettersOrDigits);
+        NFA identifierNFA = idenStartNFA.concatenation(idenPartNFA.iteration())
+                .setAllFinalStatesTo(IDENTIFIER);
+
+        NFA underscoreNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("_"));
+        NFA underscoresNFA = underscoreNFA.positiveIteration();
+        NFA zeroNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("0"));
+        NFA nonZeroNFA = acceptsAllTheseSymbols(alphabetSize, Set.of(
+                "1", "2", "3", "4", "5", "6", "7", "8", "9"
+        ));
+        NFA digitNFA = zeroNFA.union(nonZeroNFA);
+        NFA digitOrUnderscoreNFA = digitNFA.union(underscoreNFA);
+        NFA digitsAndUnderscoresNFA = digitOrUnderscoreNFA.positiveIteration();
+        NFA digitsNFA = digitNFA.concatenation(
+                digitsAndUnderscoresNFA.optional().concatenation(digitNFA).optional());
+
+        NFA decimalNumeralNFA = zeroNFA.union(nonZeroNFA.concatenation(digitsNFA.optional()))
+                .union(nonZeroNFA.concatenation(underscoresNFA).concatenation(digitNFA));
+
+        NFA integerTypeSuffixNFA = acceptsAllTheseSymbols(alphabetSize, Set.of("l", "L"));
+
+        NFA decimalIntegerLiteralNFA = decimalNumeralNFA.concatenation(integerTypeSuffixNFA.optional());
+
+        NFA integerLiteralNFA = decimalIntegerLiteralNFA
+                .setAllFinalStatesTo(INTEGER_LITERAL); // for now
+
+        NFA lparenNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("("))
+                .setAllFinalStatesTo(LPAREN);
+        NFA rparenNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint(")"))
+                .setAllFinalStatesTo(RPAREN);
+
+        NFA lbraceNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("{"))
+                .setAllFinalStatesTo(LBRACE);
+        NFA rbraceNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("}"))
+                .setAllFinalStatesTo(RBRACE);
+
+        NFA lsq_bracketNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("["))
+                .setAllFinalStatesTo(LSQ_BRACKET);
+        NFA rsq_bracketNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("]"))
+                .setAllFinalStatesTo(RSQ_BRACKET);
+
+        NFA semicolonNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint(";"))
+                .setAllFinalStatesTo(SEMICOLON);
+        NFA commaNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint(","))
+                .setAllFinalStatesTo(COMMA);
+        NFA dotNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("."))
+                .setAllFinalStatesTo(DOT);
+
+        NFA ellipsisNFA = acceptThisWord(alphabetSize, "...")
+                .setAllFinalStatesTo(ELLIPSIS);
+        NFA atNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("@"))
+                .setAllFinalStatesTo(AT);
+        NFA doubleColonNFA = acceptThisWord(alphabetSize, "::")
+                .setAllFinalStatesTo(DOUBLE_COLON);
+
+        NFA escapeSequenceNFA =
+                acceptThisWord(alphabetSize, "\\b")
+                        .union(acceptThisWord(alphabetSize, "\\t"))
+                        .union(acceptThisWord(alphabetSize, "\\n"))
+                        .union(acceptThisWord(alphabetSize, "\\f"))
+                        .union(acceptThisWord(alphabetSize, "\\r"))
+                        .union(acceptThisWord(alphabetSize, "\\\""))
+                        .union(acceptThisWord(alphabetSize, "\\'"))
+                        .union(acceptThisWord(alphabetSize, "\\\\"));
+
+        Set<Integer> stringChars = new HashSet<>();
+        for (int i = 0; i < alphabetSize; i++) {
+            if (i != asCodePoint("\\") && i != asCodePoint("\"")) {
+                stringChars.add(i);
+            }
+        }
+
+        NFA stringCharNFA = acceptsAllTheseCodePoints(alphabetSize, stringChars).union(escapeSequenceNFA);
+        NFA dquoteNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("\""));
+        NFA stringLiteralNFA = dquoteNFA.concatenation(stringCharNFA.iteration()).concatenation(dquoteNFA)
+                .setAllFinalStatesTo(STRING_LITERAL);
+
         List<StateTag> priorityList = List.of(
                 WHITESPACE,
                 COMMENT,
+                STRING_LITERAL,
+                ELLIPSIS,
+                AT,
+                DOUBLE_COLON,
+                LPAREN,
+                RPAREN,
+                LBRACE,
+                RBRACE,
+                LSQ_BRACKET,
+                RSQ_BRACKET,
+                SEMICOLON,
+                COMMA,
+                DOT,
+                IDENTIFIER,
+                INTEGER_LITERAL,
                 NULL,
                 FALSE,
                 TRUE,
@@ -271,21 +378,45 @@ public class MockJavaTest {
                 .union(commentNFA)
                 .union(lit_nullNFA)
                 .union(lit_falseNFA)
-                .union(lit_trueNFA);
+                .union(lit_trueNFA)
+                .union(identifierNFA)
+                .union(integerLiteralNFA)
+                .union(lparenNFA)
+                .union(rparenNFA)
+                .union(lbraceNFA)
+                .union(rbraceNFA)
+                .union(lsq_bracketNFA)
+                .union(rsq_bracketNFA)
+                .union(semicolonNFA)
+                .union(commaNFA)
+                .union(dotNFA)
+                .union(ellipsisNFA)
+                .union(atNFA)
+                .union(doubleColonNFA)
+                .union(stringLiteralNFA);
 
         System.out.println(lang.getNumberOfStates());
 
+        // This appears to be necessary for determinization to work properly. It shouldn't be.
         lang = lang.removeLambdaSteps();
         System.out.println("Lambda steps removed.");
 
+        Instant start = Instant.now();
         DFA dfa = lang.determinize(priorityMap);
+        Instant stop = Instant.now();
+        long timeElapsed = Duration.between(start, stop).toMillis();
 
         System.out.println("Determinized!");
+        System.out.println("\tin " + timeElapsed + "ms");
         System.out.println("States: " + dfa.getNumberOfStates());
         System.out.println("Classes: " + dfa.getTransitionTable().getEquivalenceMap().getEqClassDomain());
 
+        start = Instant.now();
         LexicalRecognizer recognizer = new LexicalRecognizer(dfa);
+        stop = Instant.now();
+        timeElapsed = Duration.between(start, stop).toMillis();
         System.out.println("Recognizer built!");
+        System.out.println("\tin " + timeElapsed + "ms");
         System.out.println("States: " + recognizer.getNumberOfStates());
         System.out.println("Classes: " + recognizer.getNumberOfColumns());
 
@@ -294,7 +425,7 @@ public class MockJavaTest {
         String factorization = recognizer.displayEquivalenceMap(Utility::defaultUnicodeInterpretation);
         System.out.println(NEWLINE + factorization + NEWLINE);
 
-        String text = Utility.getText("MJTest.txt");
+        String text = Utility.getText("MJTest2.txt");
 
         Compiler compiler = new Compiler(recognizer);
         Scanner scanner = compiler.getScanner(text);
