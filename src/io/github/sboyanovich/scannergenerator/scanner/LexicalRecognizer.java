@@ -59,7 +59,7 @@ public final class LexicalRecognizer {
         automaton = automaton.minimize();
 
         // aux => final
-        automaton = automaton.compress();
+        automaton = automaton.compress(); // Is this compression really necessary? It appears to be so.
         // original alphabet => final
 
         this.generalizedSymbolsMap = automaton.getTransitionTable().getEquivalenceMap();
