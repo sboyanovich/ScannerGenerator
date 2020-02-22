@@ -272,6 +272,10 @@ public class NFA {
     }
 
     // EXPERIMENTAL
+    public NFA optional() {
+        return this.union(emptyStringLanguage(this.alphabetSize));
+    }
+
     public NFA power(int n) {
         if (n == 0) {
             return NFA.emptyStringLanguage(this.alphabetSize);
@@ -661,6 +665,7 @@ public class NFA {
         // Maybe remove lambdas here.
 
         List<Integer> mentioned = mentioned(this);
+        System.out.println("Mentioned :" + mentioned.size());
         EquivalenceMap emap = getCoarseSymbolClassMap(mentioned, this.alphabetSize);
 
         priorities = new HashMap<>(priorities);
