@@ -14,7 +14,7 @@ import java.time.Instant;
 import java.util.*;
 
 import static io.github.sboyanovich.scannergenerator.tests.lexgen.StateTags.*;
-import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
+import static io.github.sboyanovich.scannergenerator.utility.Utility.NEWLINE;
 
 public class Test {
     public static void main(String[] args) {
@@ -22,10 +22,10 @@ public class Test {
         alphabetSize = 256;
 
 /*
-        NFA spaceNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint(" "));
-        NFA tabNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("\t"));
-        NFA newlineNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("\n"));
-        NFA carretNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("\r"));
+        NFA spaceNFA = NFA.singleLetterLanguage(alphabetSize, " ");
+        NFA tabNFA = NFA.singleLetterLanguage(alphabetSize, "\t");
+        NFA newlineNFA = NFA.singleLetterLanguage(alphabetSize, "\n");
+        NFA carretNFA = NFA.singleLetterLanguage(alphabetSize, "\r");
 
         NFA whitespaceNFA = spaceNFA
                 .union(tabNFA)
@@ -34,33 +34,13 @@ public class Test {
                 .positiveIteration()
                 .setAllFinalStatesTo(WHITESPACE);
 */
+        NFA classSingleCharNFA = NFA.acceptsAllSymbolsButThese(
+                alphabetSize, Set.of("\r", "\b", "\t", "\n", "\f", "\\", "-", "^", "[", "]"));
 
-        Set<Integer> chars = new HashSet<>();
-        for (int i = 0; i < alphabetSize; i++) {
-            if (i != asCodePoint("\r") &&
-                    i != asCodePoint("\n") &&
-                    i != asCodePoint("\t") &&
-                    i != asCodePoint("-") &&
-                    i != asCodePoint("\\") &&
-                    i != asCodePoint("^") &&
-                    i != asCodePoint("[") &&
-                    i != asCodePoint("]") &&
-                    i != asCodePoint("\b") &&
-                    i != asCodePoint("\f")
-            ) {
-                chars.add(i);
-            }
-        }
-
-        NFA classSingleCharNFA = NFA.acceptsAllTheseCodePoints(alphabetSize, chars);
-
-        NFA decimalDigitsNFA = NFA.acceptsAllTheseSymbols(
-                alphabetSize, Set.of("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
-        );
-
+        NFA decimalDigitsNFA = NFA.acceptsThisRange(alphabetSize, "0", "9");
         NFA hexDigitsNFA = decimalDigitsNFA
                 .union(
-                        NFA.acceptsAllTheseSymbols(alphabetSize, Set.of("A", "B", "C", "D", "E", "F"))
+                        NFA.acceptsThisRange(alphabetSize, "A", "F")
                 );
 
         NFA decimalNumberNFA = decimalDigitsNFA.positiveIteration();
@@ -74,103 +54,85 @@ public class Test {
         NFA uEscapeNFA = decimalEscapeNFA.union(hexEscapeNFA);
 
         NFA classEscapeNFA = uEscapeNFA
-                .union(NFA.acceptsThisWord(alphabetSize, "\\b"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\t"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\n"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\f"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\r"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\\\"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\-"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\^"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\["))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\]"));
+                .union(
+                        NFA.acceptsAllTheseWords(
+                                alphabetSize,
+                                Set.of(
+                                        "\\b", "\\t", "\\n", "\\f", "\\r", "\\\\",
+                                        "\\-", "\\^", "\\[", "\\]")
+                        )
+                );
 
         NFA classCharNFA = classSingleCharNFA.union(classEscapeNFA);
 
         NFA escapeNFA = uEscapeNFA
-                .union(NFA.acceptsThisWord(alphabetSize, "\\b"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\t"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\n"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\f"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\r"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\\""))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\'"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\\\"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\*"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\+"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\|"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\?"))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\."))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\("))
-                .union(NFA.acceptsThisWord(alphabetSize, "\\)"));
+                .union(
+                        NFA.acceptsAllTheseWords(
+                                alphabetSize,
+                                Set.of(
+                                        "\\b", "\\t", "\\n", "\\f", "\\r", "\\\\",
+                                        "\\\"", "\\'", "\\*", "\\+", "\\|", "\\?",
+                                        "\\.", "\\(", "\\)"
+                                )
+                        )
+                );
 
-        chars = new HashSet<>();
-        for (int i = 0; i < alphabetSize; i++) {
-            if (i != asCodePoint("\r") && i != asCodePoint("\n")) {
-                chars.add(i);
-            }
-        }
-        NFA inputCharNFA = NFA.acceptsAllTheseCodePoints(alphabetSize, chars);
+        NFA inputCharNFA = NFA.acceptsAllSymbolsButThese(
+                alphabetSize, Set.of("\r", "\n")
+        );
 
-        chars = new HashSet<>();
-        for (int i = asCodePoint("A"); i <= asCodePoint("Z"); i++) {
-            chars.add(i);
-        }
-        for (int i = asCodePoint("a"); i <= asCodePoint("z"); i++) {
-            chars.add(i);
-        }
-
-        NFA underscoreNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("_"));
-        NFA latinLettersNFA = NFA.acceptsAllTheseCodePoints(alphabetSize, chars);
+        NFA underscoreNFA = NFA.singleLetterLanguage(alphabetSize, "_");
+        NFA latinLettersNFA = NFA.acceptsThisRange(alphabetSize, "A", "Z")
+                .union(NFA.acceptsThisRange(alphabetSize, "a", "z"));
         NFA idenStartNFA = latinLettersNFA.union(underscoreNFA);
         NFA idenPartNFA = idenStartNFA.union(decimalDigitsNFA);
         NFA identifierNFA = idenStartNFA.concatenation(idenPartNFA.iteration());
 
-        NFA namedExprNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("{"))
+        NFA namedExprNFA = NFA.singleLetterLanguage(alphabetSize, "{")
                 .concatenation(identifierNFA)
-                .concatenation(NFA.singleLetterLanguage(alphabetSize, asCodePoint("}")))
+                .concatenation(NFA.singleLetterLanguage(alphabetSize, "}"))
                 .setAllFinalStatesTo(NAMED_EXPR);
 
         NFA charNFA = inputCharNFA.union(escapeNFA)
                 .setAllFinalStatesTo(CHAR);
 
         NFA segmentNFA = classCharNFA
-                .concatenation(NFA.singleLetterLanguage(alphabetSize, asCodePoint("-")))
+                .concatenation(NFA.singleLetterLanguage(alphabetSize, "-"))
                 .concatenation(classCharNFA);
 
         NFA charsAndSegmentsNFA = classCharNFA.union(segmentNFA).positiveIteration();
-        NFA charClassNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("["))
-                .concatenation(NFA.singleLetterLanguage(alphabetSize, asCodePoint("^")).optional())
+        NFA charClassNFA = NFA.singleLetterLanguage(alphabetSize, "[")
+                .concatenation(NFA.singleLetterLanguage(alphabetSize, "^").optional())
                 .concatenation(charsAndSegmentsNFA)
-                .concatenation(NFA.singleLetterLanguage(alphabetSize, asCodePoint("]")))
+                .concatenation(NFA.singleLetterLanguage(alphabetSize, "]"))
                 .setAllFinalStatesTo(CHAR_CLASS);
 
-        NFA dotNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("."))
+        NFA dotNFA = NFA.singleLetterLanguage(alphabetSize, ".")
                 .setAllFinalStatesTo(DOT);
-        NFA iterationOpNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("*"))
+        NFA iterationOpNFA = NFA.singleLetterLanguage(alphabetSize, "*")
                 .setAllFinalStatesTo(ITERATION_OP);
-        NFA posIterationOpNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("+"))
+        NFA posIterationOpNFA = NFA.singleLetterLanguage(alphabetSize, "+")
                 .setAllFinalStatesTo(POS_ITERATION_OP);
-        NFA unionOpNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("|"))
+        NFA unionOpNFA = NFA.singleLetterLanguage(alphabetSize, "|")
                 .setAllFinalStatesTo(UNION_OP);
-        NFA optionOpNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("?"))
+        NFA optionOpNFA = NFA.singleLetterLanguage(alphabetSize, "?")
                 .setAllFinalStatesTo(OPTION_OP);
 
-        NFA lParenNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("("))
+        NFA lParenNFA = NFA.singleLetterLanguage(alphabetSize, "(")
                 .setAllFinalStatesTo(LPAREN);
-        NFA rParenNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint(")"))
+        NFA rParenNFA = NFA.singleLetterLanguage(alphabetSize, ")")
                 .setAllFinalStatesTo(RPAREN);
 
         NFA classMinusOpNFA = NFA.acceptsThisWord(alphabetSize, "{-}")
                 .setAllFinalStatesTo(CLASS_MINUS_OP);
 
-        NFA repetitionOpNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("{"))
+        NFA repetitionOpNFA = NFA.singleLetterLanguage(alphabetSize, "{")
                 .concatenation(decimalNumberNFA)
                 .concatenation(
-                        NFA.singleLetterLanguage(alphabetSize, asCodePoint(","))
+                        NFA.singleLetterLanguage(alphabetSize, ",")
                                 .concatenation(decimalNumberNFA.optional()).optional()
                 )
-                .concatenation(NFA.singleLetterLanguage(alphabetSize, asCodePoint("}")))
+                .concatenation(NFA.singleLetterLanguage(alphabetSize, "}"))
                 .setAllFinalStatesTo(REPETITION_OP);
 
         List<StateTag> priorityList = new ArrayList<>(

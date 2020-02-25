@@ -97,7 +97,7 @@ public class NFA {
     }
 
     // TODO: Will be suitable for a better implementation once improved sets are introduced.
-    public static NFA acceptsAllButTheseCodePoints(int alphabetSize, Set<Integer> codePoints) {
+    public static NFA acceptsAllCodePointsButThese(int alphabetSize, Set<Integer> codePoints) {
         Set<Integer> acceptedCodePoints = new HashSet<>();
         for (int i = 0; i < alphabetSize; i++) {
             if (!codePoints.contains(i)) {
@@ -107,10 +107,10 @@ public class NFA {
         return acceptsAllTheseCodePoints(alphabetSize, acceptedCodePoints);
     }
 
-    public static NFA acceptsAllButTheseSymbols(int alphabetSize, Set<String> symbols) {
+    public static NFA acceptsAllSymbolsButThese(int alphabetSize, Set<String> symbols) {
         Set<Integer> codePoints = symbols.stream()
                 .map(io.github.sboyanovich.scannergenerator.utility.Utility::asCodePoint).collect(Collectors.toSet());
-        return acceptsAllTheseCodePoints(alphabetSize, codePoints);
+        return acceptsAllCodePointsButThese(alphabetSize, codePoints);
     }
 
     public static NFA acceptsThisWord(int alphabetSize, String word) {
@@ -122,6 +122,14 @@ public class NFA {
             edges.addSymbolToEdge(i, i + 1, codePoint);
         }
         return new NFA(n + 1, alphabetSize, 0, Map.of(n, StateTag.FINAL_DUMMY), edges.build());
+    }
+
+    public static NFA acceptsAllTheseWords(int alphabetSize, Set<String> words) {
+        NFA result = NFA.emptyLanguage(alphabetSize);
+        for (String word : words) {
+            result = result.union(acceptsThisWord(alphabetSize, word));
+        }
+        return result;
     }
 
     // now this exists mostly for test compatibility reasons
