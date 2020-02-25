@@ -292,7 +292,7 @@ public class Utility {
                 Optional<Set<Integer>> marker = edges.getEdgeMarker(i, j);
                 if (marker.isPresent()) {
                     Set<Integer> markerSet = marker.get();
-                    if (!isSubtractive(markerSet, alphabetSize, 5)) {
+                    if (!isSubtractive(markerSet, alphabetSize, 15)) {
                         aux.addAll(markerSet);
                     } else {
                         for (int k = 0; k < alphabetSize; k++) {
