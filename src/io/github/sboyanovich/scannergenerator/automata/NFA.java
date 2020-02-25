@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import static io.github.sboyanovich.scannergenerator.automata.Utility.FINAL_DUMMY_PRIORITY_RANK;
 import static io.github.sboyanovich.scannergenerator.automata.Utility.NOT_FINAL_PRIORITY_RANK;
+import static io.github.sboyanovich.scannergenerator.scanner.StateTag.FINAL_DUMMY;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 
 public class NFA {
@@ -70,6 +71,70 @@ public class NFA {
         }
     }
 
+    public static NFA acceptsAllTheseSymbols(int alphabetSize, Set<String> symbols) {
+        Set<Integer> codePoints = symbols.stream()
+                .map(io.github.sboyanovich.scannergenerator.utility.Utility::asCodePoint).collect(Collectors.toSet());
+        return acceptsAllTheseCodePoints(alphabetSize, codePoints);
+    }
+
+    public static NFA acceptsAllTheseCodePoints(int alphabetSize, Set<Integer> codePoints) {
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(2, alphabetSize);
+        edges.setEdge(0, 1, codePoints);
+        return new NFA(2, alphabetSize, 0, Map.of(1, FINAL_DUMMY), edges.build());
+    }
+
+    // TODO: Will be suitable for a better implementation once improved sets are introduced.
+    public static NFA acceptsThisRange(int alphabetSize, int a, int b) {
+        Set<Integer> codePoints = new HashSet<>();
+        for (int i = a; i <= b; i++) {
+            codePoints.add(i);
+        }
+        return acceptsAllTheseCodePoints(alphabetSize, codePoints);
+    }
+
+    public static NFA acceptsThisRange(int alphabetSize, String a, String b) {
+        return acceptsThisRange(alphabetSize, asCodePoint(a), asCodePoint(b));
+    }
+
+    // TODO: Will be suitable for a better implementation once improved sets are introduced.
+    public static NFA acceptsAllButTheseCodePoints(int alphabetSize, Set<Integer> codePoints) {
+        Set<Integer> acceptedCodePoints = new HashSet<>();
+        for (int i = 0; i < alphabetSize; i++) {
+            if (!codePoints.contains(i)) {
+                acceptedCodePoints.add(i);
+            }
+        }
+        return acceptsAllTheseCodePoints(alphabetSize, acceptedCodePoints);
+    }
+
+    public static NFA acceptsAllButTheseSymbols(int alphabetSize, Set<String> symbols) {
+        Set<Integer> codePoints = symbols.stream()
+                .map(io.github.sboyanovich.scannergenerator.utility.Utility::asCodePoint).collect(Collectors.toSet());
+        return acceptsAllTheseCodePoints(alphabetSize, codePoints);
+    }
+
+    public static NFA acceptsThisWord(int alphabetSize, String word) {
+        List<Integer> codePoints = word.codePoints().boxed().collect(Collectors.toList());
+        int n = codePoints.size();
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(n + 1, alphabetSize);
+        for (int i = 0; i < n; i++) {
+            int codePoint = codePoints.get(i);
+            edges.addSymbolToEdge(i, i + 1, codePoint);
+        }
+        return new NFA(n + 1, alphabetSize, 0, Map.of(n, StateTag.FINAL_DUMMY), edges.build());
+    }
+
+    // now this exists mostly for test compatibility reasons
+    public static NFA acceptsThisWord(int alphabetSize, List<String> symbols) {
+        int n = symbols.size();
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(n + 1, alphabetSize);
+        for (int i = 0; i < n; i++) {
+            int codePoint = asCodePoint(symbols.get(i));
+            edges.addSymbolToEdge(i, i + 1, codePoint);
+        }
+        return new NFA(n + 1, alphabetSize, 0, Map.of(n, StateTag.FINAL_DUMMY), edges.build());
+    }
+
     public int getNumberOfStates() {
         return numberOfStates;
     }
@@ -113,6 +178,10 @@ public class NFA {
                         1, StateTag.FINAL_DUMMY
                 ), edges.build()
         );
+    }
+
+    public static NFA singleLetterLanguage(int alphabetSize, String letter) {
+        return singleLetterLanguage(alphabetSize, asCodePoint(letter));
     }
 
     public NFA relabelStates(Map<Integer, StateTag> relabel) {
