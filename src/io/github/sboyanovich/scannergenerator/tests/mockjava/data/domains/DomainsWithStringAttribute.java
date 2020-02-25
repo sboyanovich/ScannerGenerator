@@ -16,17 +16,19 @@ public enum DomainsWithStringAttribute implements DomainWithAttribute<String> {
             return new TStringLiteral(fragment, STRING_LITERAL, attribute(text, fragment));
         }
 
+        /// NOT ENTIRELY CORRECT WAY TO DEAL WITH ESCAPES
+        /// WILL PROBABLY WRITE BY HAND LATER
         @Override
         public String attribute(Text text, Fragment fragment) {
             String literal = super.attribute(text, fragment);
-            literal = literal.replaceAll("\\\\b", "\b");
+/*            literal = literal.replaceAll("\\\\b", "\b");
             literal = literal.replaceAll("\\\\t", "\t");
             literal = literal.replaceAll("\\\\n", "\n");
             literal = literal.replaceAll("\\\\f", "\f");
             literal = literal.replaceAll("\\\\r", "\r");
             literal = literal.replaceAll("\\\\\"", "\"");
             literal = literal.replaceAll("\\\\'", "'");
-            literal = literal.replaceAll("\\\\", "\\");
+            literal = literal.replaceAll("\\\\", "\\");*/
             return literal;
         }
     },

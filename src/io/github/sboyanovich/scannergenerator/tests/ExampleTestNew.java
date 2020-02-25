@@ -38,21 +38,21 @@ public class ExampleTestNew {
                 .positiveIteration()
                 .setAllFinalStatesTo(WHITESPACE);
 
-        NFA lettersNFA = acceptsAllTheseSymbols(alphabetSize, letters);
-        NFA alphanumericsNFA = acceptsAllTheseSymbols(alphabetSize, alphanumerics);
+        NFA lettersNFA = NFA.acceptsAllTheseSymbols(alphabetSize, letters);
+        NFA alphanumericsNFA = NFA.acceptsAllTheseSymbols(alphabetSize, alphanumerics);
 
         NFA identifierNFA = lettersNFA
                 .concatenation(alphanumericsNFA.iteration())
                 .setAllFinalStatesTo(IDENTIFIER);
 
-        NFA digitNFA = acceptsAllTheseSymbols(alphabetSize, digits);
+        NFA digitNFA = NFA.acceptsAllTheseSymbols(alphabetSize, digits);
         NFA integerLiteralNFA = digitNFA.positiveIteration()
                 .setAllFinalStatesTo(INTEGER_LITERAL);
 
-        NFA kwIfNFA = acceptThisWord(alphabetSize, List.of("i", "f"))
+        NFA kwIfNFA = NFA.acceptsThisWord(alphabetSize, List.of("i", "f"))
                 .setAllFinalStatesTo(KEYWORD_IF);
 
-        NFA kwElifNFA = acceptThisWord(alphabetSize, List.of("e", "l", "i", "f"))
+        NFA kwElifNFA = NFA.acceptsThisWord(alphabetSize, List.of("e", "l", "i", "f"))
                 .setAllFinalStatesTo(KEYWORD_ELIF);
 
         NFA opDivideNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("/"))

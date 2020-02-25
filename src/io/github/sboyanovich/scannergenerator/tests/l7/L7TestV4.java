@@ -31,23 +31,23 @@ public class L7TestV4 {
         //alphabetSize = 2 * Short.MAX_VALUE + 1;
         //alphabetSize = 256; // special case hack for faster recognizer generation
 
-        NFA slWhitespaceNFA = acceptsAllTheseSymbols(alphabetSize, Set.of(" ", "\t"))
+        NFA slWhitespaceNFA = NFA.acceptsAllTheseSymbols(alphabetSize, Set.of(" ", "\t"))
                 .positiveIteration();
 
-        NFA whitespaceNFA = acceptsAllTheseSymbols(alphabetSize, Set.of(" ", "\t", "\n"))
-                .union(acceptThisWord(alphabetSize, List.of("\r", "\n")))
+        NFA whitespaceNFA = NFA.acceptsAllTheseSymbols(alphabetSize, Set.of(" ", "\t", "\n"))
+                .union(NFA.acceptsThisWord(alphabetSize, List.of("\r", "\n")))
                 .positiveIteration()
                 .setAllFinalStatesTo(WHITESPACE);
 
-        NFA lettersNFA = acceptsAllTheseSymbols(alphabetSize, letters);
-        NFA alphanumericsNFA = acceptsAllTheseSymbols(alphabetSize, alphanumerics);
-        NFA underscoreNFA = acceptsAllTheseSymbols(alphabetSize, Set.of("_"));
+        NFA lettersNFA = NFA.acceptsAllTheseSymbols(alphabetSize, letters);
+        NFA alphanumericsNFA = NFA.acceptsAllTheseSymbols(alphabetSize, alphanumerics);
+        NFA underscoreNFA = NFA.acceptsAllTheseSymbols(alphabetSize, Set.of("_"));
 
         NFA identifierNFA = lettersNFA
                 .concatenation(alphanumericsNFA.union(underscoreNFA).iteration())
                 .setAllFinalStatesTo(IDENTIFIER);
 
-        NFA kwAxiomNFA = acceptThisWord(alphabetSize, List.of("a", "x", "i", "o", "m"));
+        NFA kwAxiomNFA = NFA.acceptsThisWord(alphabetSize, List.of("a", "x", "i", "o", "m"));
         NFA lparenNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("("));
         NFA rparenNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint(")"));
 
@@ -72,10 +72,10 @@ public class L7TestV4 {
         NFA dotNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("."))
                 .setAllFinalStatesTo(DOT);
 
-        NFA specialNFA = acceptsAllTheseSymbols(alphabetSize, Set.of(".", "|", "=", "(", ")"));
+        NFA specialNFA = NFA.acceptsAllTheseSymbols(alphabetSize, Set.of(".", "|", "=", "(", ")"));
 
-        NFA arithmOpNFA = acceptsAllTheseSymbols(alphabetSize, Set.of("*", "+", "-", "/"));
-        NFA escapeNFA = acceptsAllTheseSymbols(alphabetSize, Set.of("\\"));
+        NFA arithmOpNFA = NFA.acceptsAllTheseSymbols(alphabetSize, Set.of("*", "+", "-", "/"));
+        NFA escapeNFA = NFA.acceptsAllTheseSymbols(alphabetSize, Set.of("\\"));
 
         NFA terminalNFA = identifierNFA
                 .union(arithmOpNFA)

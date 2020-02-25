@@ -38,14 +38,14 @@ public class L7Test {
                 .positiveIteration()
                 .setAllFinalStatesTo(WHITESPACE);
 
-        NFA lettersNFA = acceptsAllTheseSymbols(alphabetSize, letters);
-        NFA alphanumericsNFA = acceptsAllTheseSymbols(alphabetSize, alphanumerics);
+        NFA lettersNFA = NFA.acceptsAllTheseSymbols(alphabetSize, letters);
+        NFA alphanumericsNFA = NFA.acceptsAllTheseSymbols(alphabetSize, alphanumerics);
 
         NFA identifierNFA = lettersNFA
                 .concatenation(alphanumericsNFA.iteration())
                 .setAllFinalStatesTo(IDENTIFIER);
 
-        NFA kwAxiomNFA = acceptThisWord(alphabetSize, List.of("a", "x", "i", "o", "m"))
+        NFA kwAxiomNFA = NFA.acceptsThisWord(alphabetSize, List.of("a", "x", "i", "o", "m"))
                 .setAllFinalStatesTo(KEYWORD_AXIOM);
 
         NFA opPlusNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("+"))
@@ -67,10 +67,10 @@ public class L7Test {
         NFA dotNFA = NFA.singleLetterLanguage(alphabetSize, asCodePoint("."))
                 .setAllFinalStatesTo(DOT);
 
-        NFA eslpNFA = acceptThisWord(alphabetSize, List.of("\\", "("))
+        NFA eslpNFA = NFA.acceptsThisWord(alphabetSize, List.of("\\", "("))
                 .setAllFinalStatesTo(ESCAPED_LPAREN);
 
-        NFA esrpNFA = acceptThisWord(alphabetSize, List.of("\\", ")"))
+        NFA esrpNFA = NFA.acceptsThisWord(alphabetSize, List.of("\\", ")"))
                 .setAllFinalStatesTo(ESCAPED_RPAREN);
 
         NFA lang = whitespaceNFA

@@ -5,6 +5,10 @@ import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.tests.mockjava.data.domains.*;
 
 public enum StateTags implements StateTag {
+    /// OPERATORS
+    // In separate enum
+    /// OPERATORS#
+
     STRING_LITERAL {
         @Override
         public Domain getDomain() {
