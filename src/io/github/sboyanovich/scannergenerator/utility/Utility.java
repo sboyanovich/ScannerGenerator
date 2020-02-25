@@ -4,7 +4,6 @@ import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraph;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
 import io.github.sboyanovich.scannergenerator.scanner.Fragment;
-import io.github.sboyanovich.scannergenerator.scanner.StateTag;
 import io.github.sboyanovich.scannergenerator.scanner.Text;
 
 import java.io.BufferedReader;
@@ -14,8 +13,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static io.github.sboyanovich.scannergenerator.scanner.StateTag.FINAL_DUMMY;
 
 public class Utility {
 
@@ -262,39 +259,6 @@ public class Utility {
     }
 
     /// EXPERIMENTAL METHODS SECTION
-
-    public static NFA acceptsAllTheseSymbols(int alphabetSize, Set<String> symbols) {
-        Set<Integer> codePoints = symbols.stream().map(Utility::asCodePoint).collect(Collectors.toSet());
-        return acceptsAllTheseCodePoints(alphabetSize, codePoints);
-    }
-
-    public static NFA acceptsAllTheseCodePoints(int alphabetSize, Set<Integer> codePoints) {
-        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(2, alphabetSize);
-        edges.setEdge(0, 1, codePoints);
-        return new NFA(2, alphabetSize, 0, Map.of(1, FINAL_DUMMY), edges.build());
-    }
-
-    public static NFA acceptThisWord(int alphabetSize, String word) {
-        List<Integer> codePoints = word.codePoints().boxed().collect(Collectors.toList());
-        int n = codePoints.size();
-        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(n + 1, alphabetSize);
-        for (int i = 0; i < n; i++) {
-            int codePoint = codePoints.get(i);
-            edges.addSymbolToEdge(i, i + 1, codePoint);
-        }
-        return new NFA(n + 1, alphabetSize, 0, Map.of(n, StateTag.FINAL_DUMMY), edges.build());
-    }
-
-    // now this exists mostly for test compatibility reasons
-    public static NFA acceptThisWord(int alphabetSize, List<String> symbols) {
-        int n = symbols.size();
-        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(n + 1, alphabetSize);
-        for (int i = 0; i < n; i++) {
-            int codePoint = asCodePoint(symbols.get(i));
-            edges.addSymbolToEdge(i, i + 1, codePoint);
-        }
-        return new NFA(n + 1, alphabetSize, 0, Map.of(n, StateTag.FINAL_DUMMY), edges.build());
-    }
 
     public static void addEdge(NFAStateGraphBuilder edges, int from, int to, Set<String> edge) {
         for (String symbol : edge) {
