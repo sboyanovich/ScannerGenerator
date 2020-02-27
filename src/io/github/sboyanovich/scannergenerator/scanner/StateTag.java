@@ -32,4 +32,8 @@ public interface StateTag {
     };
 
     Domain getDomain();
+
+    default boolean hasDomain() {
+        return true;
+    }
 }
