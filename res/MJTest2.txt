@@ -1,3 +1,11 @@
+/*
+ *** This be a comment my nigga. ***
+*/
+"STRING"
+/*
+"NOT
+LIKE THIS"
+*/
 package io.github.sboyanovich.scannergenerator.tests.mockjava;
 
 import io.github.sboyanovich.scannergenerator.automata.DFA;

@@ -1,1 +1,1 @@
-[a-zA-z][a-zA-Z0-9]+[^aeiou]\U+#65*\U+00FF?([a-z]{-}[aeiou])+{STRING_LITERAL}{1,10}[^\r\n\t\-\\\^\[\]\b\f]
+[a-zA-z][a-zA-Z0-9]+[^aeiou]\U+#65*\U+00FF?([a-zšđčćž]{-}[aeiou])+{STRING_LITERAL}{1,10}[^\r\n\t\-\\\^\[\]\b\f]
