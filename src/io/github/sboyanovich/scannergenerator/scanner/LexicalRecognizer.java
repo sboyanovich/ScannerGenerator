@@ -112,29 +112,12 @@ public final class LexicalRecognizer {
         }
     }
 
-    private static boolean isStateADrain(DFA dfa, int state) {
-        if (StateTag.isFinal(dfa.getStateTag(state))) {
-            return false;
-        }
-
-        int[][] transitionTable = dfa.getTransitionTable().getTable();
-        int alphabetSize = dfa.getTransitionTable().getEquivalenceMap().getEqClassDomain();
-        for (int i = 0; i < alphabetSize; i++) {
-            int to = transitionTable[state][i];
-            if (to != state) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     // is called only on dfa known to be minimal
     private static OptionalInt getDrainState(DFA dfa) {
-        int numberOfStates = dfa.getNumberOfStates();
-        for (int i = 0; i < numberOfStates; i++) {
-            if (isStateADrain(dfa, i)) {
-                return OptionalInt.of(i);
-            }
+        List<Integer> drainStates = dfa.getDrainStates();
+        if (!drainStates.isEmpty()) {
+            // should have exactly one
+            return OptionalInt.of(drainStates.get(0));
         }
         return OptionalInt.empty();
     }
