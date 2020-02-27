@@ -74,6 +74,33 @@ public class DFA {
         this.transitionTable = transitionTable;
     }
 
+    public boolean isStateADrain(int state) {
+        if (StateTag.isFinal(getStateTag(state))) {
+            return false;
+        }
+
+        int alphabetSize = this.transitionTable.getEquivalenceMap().getEqClassDomain();
+        for (int i = 0; i < alphabetSize; i++) {
+            int to = this.transitionTable.generalizedTransition(state, i);
+            if (to != state) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public List<Integer> getDrainStates() {
+        List<Integer> result = new ArrayList<>();
+
+        for (int i = 0; i < this.numberOfStates; i++) {
+            if (isStateADrain(i)) {
+                result.add(i);
+            }
+        }
+
+        return result;
+    }
+
     public int getNumberOfStates() {
         return numberOfStates;
     }
