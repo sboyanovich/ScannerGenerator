@@ -122,17 +122,69 @@ public class DFA {
     }
 
     public NFA toNFA() {
-        Map<Integer, StateTag> labelsMap = new HashMap<>();
-        for (int i = 0; i < this.numberOfStates; i++) {
-            labelsMap.put(i, this.labels.get(i));
+        Set<Integer> drainStates = new TreeSet<>(getDrainStates());
+        if (drainStates.contains(initialState)) {
+            return NFA.emptyLanguage(this.alphabetSize);
         }
 
-        NFAStateGraph edges = Utility.computeEdgeLabels(this.transitionTable);
+        int numberOfStates = this.numberOfStates - drainStates.size();
+
+        Function<Integer, Integer> lessThan = n -> {
+            int cnt = 0;
+            for (var state : drainStates) {
+                if (state < n) {
+                    cnt++;
+                } else {
+                    break;
+                }
+            }
+            return cnt;
+        };
+
+        Function<Integer, Integer> renaming = n -> {
+            if (drainStates.contains(n)) {
+                return -1;
+            } else {
+                return n - lessThan.apply(n);
+            }
+        };
+
+        //NFAStateGraph edges = Utility.computeEdgeLabels(this.transitionTable);
+
+        int initialState = renaming.apply(this.initialState);
+        int alphabetSize = transitionTable.getAlphabetSize();
+
+        NFAStateGraphBuilder edgeBuilder = new NFAStateGraphBuilder(numberOfStates, alphabetSize);
+
+        for (int state = 0; state < this.numberOfStates; state++) {
+            if (drainStates.contains(state)) {
+                continue;
+            }
+            int stateNewName = renaming.apply(state);
+            for (int symbol = 0; symbol < alphabetSize; symbol++) {
+                int to = transitionTable.transition(state, symbol);
+                if (!drainStates.contains(to)) {
+                    int toNewName = renaming.apply(to);
+                    edgeBuilder.addSymbolToEdge(stateNewName, toNewName, symbol);
+                }
+            }
+        }
+
+        NFAStateGraph edges = edgeBuilder.build();
+
+        Map<Integer, StateTag> labelsMap = new HashMap<>();
+        for (int i = 0; i < this.numberOfStates; i++) {
+            if (drainStates.contains(i)) {
+                continue;
+            }
+            int stateNewName = renaming.apply(i);
+            labelsMap.put(stateNewName, this.labels.get(i));
+        }
 
         return new NFA(
-                this.numberOfStates,
+                numberOfStates,
                 this.alphabetSize,
-                this.initialState,
+                initialState,
                 labelsMap,
                 edges
         );
