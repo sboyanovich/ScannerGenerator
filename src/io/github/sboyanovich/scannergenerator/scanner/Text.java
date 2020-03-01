@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 
 // UTF32 text
 public class Text {
-    static final int EOI = -1;
+    public static final int EOI = -1;
 
     private List<Integer> codePoints;
 
