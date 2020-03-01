@@ -150,7 +150,10 @@ public class Test {
                         UNION_OP,
                         OPTION_OP,
                         LPAREN,
-                        RPAREN
+                        RPAREN,
+                        REPETITION_OP,
+                        CLASS_MINUS_OP,
+                        NAMED_EXPR
                 )
         );
 
