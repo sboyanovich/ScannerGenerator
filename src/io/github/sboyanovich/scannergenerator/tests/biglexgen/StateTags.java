@@ -1,9 +1,9 @@
 package io.github.sboyanovich.scannergenerator.tests.biglexgen;
 
-import io.github.sboyanovich.scannergenerator.scanner.StateTag;
+import io.github.sboyanovich.scannergenerator.scanner.DomainTag;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 
-public enum StateTags implements StateTag {
+public enum StateTags implements DomainTag {
     WHITESPACE_IN_REGEX {
         @Override
         public Domain getDomain() {
@@ -165,11 +165,5 @@ public enum StateTags implements StateTag {
         public Domain getDomain() {
             return SimpleDomains.OPTION_OP;
         }
-    }/*,
-    WHITESPACE {
-        @Override
-        public Domain getDomain() {
-            return SimpleDomains.WHITESPACE;
-        }
-    }*/
+    }
 }

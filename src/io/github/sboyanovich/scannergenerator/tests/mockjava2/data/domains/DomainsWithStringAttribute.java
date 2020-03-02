@@ -6,7 +6,6 @@ import io.github.sboyanovich.scannergenerator.scanner.token.DomainWithAttribute;
 import io.github.sboyanovich.scannergenerator.scanner.token.TokenWithAttribute;
 import io.github.sboyanovich.scannergenerator.tests.mockjava2.data.tokens.TComment;
 import io.github.sboyanovich.scannergenerator.tests.mockjava2.data.tokens.TStringLiteral;
-import io.github.sboyanovich.scannergenerator.tests.data.tokens.TIdentifier;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 public enum DomainsWithStringAttribute implements DomainWithAttribute<String> {
@@ -35,7 +34,7 @@ public enum DomainsWithStringAttribute implements DomainWithAttribute<String> {
     IDENTIFIER {
         @Override
         public TokenWithAttribute<String> createToken(Text text, Fragment fragment) {
-            return new TIdentifier(fragment, attribute(text, fragment));
+            return new TokenWithAttribute<>(fragment, IDENTIFIER, attribute(text, fragment));
         }
     },
     COMMENT {

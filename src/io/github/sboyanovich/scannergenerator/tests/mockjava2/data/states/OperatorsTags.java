@@ -1,10 +1,10 @@
 package io.github.sboyanovich.scannergenerator.tests.mockjava2.data.states;
 
-import io.github.sboyanovich.scannergenerator.scanner.StateTag;
+import io.github.sboyanovich.scannergenerator.scanner.DomainTag;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.tests.mockjava2.data.domains.Operators;
 
-public enum OperatorsTags implements StateTag {
+public enum OperatorsTags implements DomainTag {
     ASSIGNMENT {
         @Override
         public Domain getDomain() {

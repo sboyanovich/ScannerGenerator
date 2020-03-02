@@ -6,10 +6,7 @@ import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
 import io.github.sboyanovich.scannergenerator.scanner.Fragment;
 import io.github.sboyanovich.scannergenerator.scanner.Text;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -254,6 +251,98 @@ public class Utility {
             result.append(COMMA).append(SPACE);
             result.append(displaySegment(segments.get(i), interpretation));
         }
+
+        return result.toString();
+    }
+
+    public static void writeTextToFile(String text, String path) {
+        File filePath = new File(path);
+        File parentFile = filePath.getParentFile();
+        if (parentFile != null) {
+            boolean dirsMade = parentFile.mkdirs();
+        }
+        try (Writer writer = new BufferedWriter(new FileWriter(filePath))) {
+            writer.write(text);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static String generateSimpleDomain(String domainName) {
+        return "    " +
+                domainName +
+                " {\n" + "        @Override\n" +
+                "        public Token createToken(Text text, Fragment fragment) {\n" +
+                "            return new BasicToken(fragment, " +
+                domainName + ");\n" + "        }\n" + "    }";
+    }
+
+    public static String generateSimpleDomainsEnum(List<String> domainNames, String packageName) {
+        StringBuilder result = new StringBuilder();
+
+        result.append("package ")
+                .append(packageName)
+                .append(";\n\n");
+        result.append("import io.github.sboyanovich.scannergenerator.scanner.Fragment;\n" +
+                "import io.github.sboyanovich.scannergenerator.scanner.Text;\n" +
+                "import io.github.sboyanovich.scannergenerator.scanner.token.BasicToken;\n" +
+                "import io.github.sboyanovich.scannergenerator.scanner.token.Domain;\n" +
+                "import io.github.sboyanovich.scannergenerator.scanner.token.Token;\n\n");
+        result.append("public enum SimpleDomains implements Domain {\n");
+
+        if (domainNames.size() > 0) {
+            result.append(generateSimpleDomain(domainNames.get(0)));
+        }
+        for (int i = 1; i < domainNames.size(); i++) {
+            result.append(",\n")
+                    .append(generateSimpleDomain(domainNames.get(i)));
+        }
+
+        result.append("\n}");
+
+        return result.toString();
+    }
+
+    private static String generateDomainWithAttribute(String domainName, String attributeType) {
+        return "    " + domainName + " {\n" +
+                "        @Override\n" +
+                "        public " + attributeType + " attribute(Text text, Fragment fragment) {\n\n" +
+                "        }\n" +
+                "\n" +
+                "        @Override\n" +
+                "        public TokenWithAttribute<" + attributeType +
+                "> createToken(Text text, Fragment fragment) {\n" +
+                "            return new TokenWithAttribute<>(fragment, " +
+                domainName + ", attribute(text, fragment));\n" +
+                "        }\n" +
+                "    }";
+    }
+
+    public static String generateDomainWithAttributeEnum(
+            String attributeType, List<String> domainNames, String packageName
+    ) {
+        StringBuilder result = new StringBuilder();
+
+        result.append("package ")
+                .append(packageName)
+                .append(";\n\n");
+        result.append("import io.github.sboyanovich.scannergenerator.scanner.Fragment;\n" +
+                "import io.github.sboyanovich.scannergenerator.scanner.Text;\n" +
+                "import io.github.sboyanovich.scannergenerator.scanner.token.DomainWithAttribute;\n" +
+                "import io.github.sboyanovich.scannergenerator.scanner.token.TokenWithAttribute;\n\n");
+        result.append("public enum DomainsWith")
+                .append(attributeType)
+                .append("Attribute implements DomainWithAttribute<").append(attributeType).append("> {\n");
+
+        if (domainNames.size() > 0) {
+            result.append(generateDomainWithAttribute(domainNames.get(0), attributeType));
+        }
+        for (int i = 1; i < domainNames.size(); i++) {
+            result.append(",\n")
+                    .append(generateDomainWithAttribute(domainNames.get(i), attributeType));
+        }
+
+        result.append("\n}");
 
         return result.toString();
     }

@@ -1,10 +1,10 @@
 package io.github.sboyanovich.scannergenerator.tests.mockjava.data.states;
 
-import io.github.sboyanovich.scannergenerator.scanner.StateTag;
+import io.github.sboyanovich.scannergenerator.scanner.DomainTag;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.tests.mockjava.data.domains.*;
 
-public enum StateTags implements StateTag {
+public enum StateTags implements DomainTag {
     /// OPERATORS
     // In separate enum
     /// OPERATORS#

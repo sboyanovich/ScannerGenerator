@@ -162,10 +162,11 @@ public class ProScanner {
                         // resetting to initial state is done later in the code
                     }
 
-                    if (tag.hasDomain()) {
+                    if (tag instanceof DomainTag) {
                         // we have a Token
+                        DomainTag domainTag = (DomainTag) tag;
                         Fragment scannedFragment = new Fragment(start, this.currPos);
-                        return tag.getDomain().createToken(this.program, scannedFragment);
+                        return domainTag.getDomain().createToken(this.program, scannedFragment);
                     } else {
                         // we must work further to complete our Token (maybe in new mode)
                         // don't forget to reset current recognizer to initial state

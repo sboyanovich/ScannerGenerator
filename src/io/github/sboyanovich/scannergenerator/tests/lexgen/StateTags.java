@@ -1,9 +1,9 @@
 package io.github.sboyanovich.scannergenerator.tests.lexgen;
 
-import io.github.sboyanovich.scannergenerator.scanner.StateTag;
+import io.github.sboyanovich.scannergenerator.scanner.DomainTag;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 
-public enum StateTags implements StateTag {
+public enum StateTags implements DomainTag {
     REPETITION_OP {
         @Override
         public Domain getDomain() {

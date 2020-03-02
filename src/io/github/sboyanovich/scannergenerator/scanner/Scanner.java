@@ -118,7 +118,13 @@ public class Scanner {
 
                     StateTag tag = this.recognizer.getStateTag(currState);
 
-                    return tag.getDomain().createToken(this.program, scannedFragment);
+                    if (tag instanceof DomainTag) {
+                        DomainTag domainTag = (DomainTag) tag;
+                        return domainTag.getDomain().createToken(this.program, scannedFragment);
+                    } else {
+                        // FOR NOW, THIS CHECK SHOULD PROBABLY BE PERFORMED WHEN BUILDING A RECOGNIZER/SCANNER
+                        throw new RuntimeException("Only DomainTag StateTags allowed as final states in a scanner!");
+                    }
                 }
             }
         }
