@@ -520,7 +520,7 @@ public class LexGenScanner {
                             optToken = handleRuleEnd(this.inputText, scannedFragment);
                             break;
                         case WHITESPACE:
-                            start = this.currPos;
+                            setStartToCurrentPosition();
                             resetCurrState();
                             break;
                         case WHITESPACE_IN_REGEX:
