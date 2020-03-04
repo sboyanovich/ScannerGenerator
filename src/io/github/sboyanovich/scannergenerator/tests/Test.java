@@ -21,13 +21,49 @@ public class Test {
                 "io.github.sboyanovich.scannergenerator.generated"
         );
 
+        String packageName = "io.github.sboyanovich.scannergenerator.generated";
+
         text = Utility.generateDomainWithAttributeEnum(
                 "String",
                 List.of("NAMED_EXPR", "DOMAINS_GROUP_MARKER", "STATE_NAME", "IDENTIFIER"),
-                "io.github.sboyanovich.scannergenerator.generated"
+                packageName
         );
 
         String path = "generated/testFiles/Test.java";
+        Utility.writeTextToFile(text, path);
+        path = "generated/StateTags.java";
+        text = Utility.generateStateTagsEnum(
+                List.of(
+                        "WHITESPACE_IN_REGEX",
+                        "WHITESPACE",
+                        "IDENTIFIER",
+                        "STATE_NAME",
+                        "DOMAINS_GROUP_MARKER",
+                        "RULE_END",
+                        "MODES_SECTION_MARKER",
+                        "DEFINER",
+                        "RULES_SECTION_MARKER",
+                        "COMMA",
+                        "L_ANGLE_BRACKET",
+                        "R_ANGLE_BRACKET",
+                        "CHAR_CLASS_OPEN",
+                        "CHAR_CLASS_CLOSE",
+                        "CHAR_CLASS_NEG",
+                        "CHAR_CLASS_RANGE_OP",
+                        "REPETITION_OP",
+                        "CLASS_MINUS_OP",
+                        "NAMED_EXPR",
+                        "LPAREN",
+                        "RPAREN",
+                        "CHAR",
+                        "DOT",
+                        "ITERATION_OP",
+                        "POS_ITERATION_OP",
+                        "UNION_OP",
+                        "OPTION_OP"
+                ),
+                packageName
+        );
         Utility.writeTextToFile(text, path);
     }
 }

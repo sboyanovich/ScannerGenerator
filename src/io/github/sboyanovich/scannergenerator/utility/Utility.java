@@ -347,6 +347,28 @@ public class Utility {
         return result.toString();
     }
 
+    public static String generateStateTagsEnum(List<String> stateNames, String packageName) {
+        StringBuilder result = new StringBuilder();
+
+        result.append("package ")
+                .append(packageName)
+                .append(";\n\n");
+        result.append("import io.github.sboyanovich.scannergenerator.scanner.StateTag;\n\n");
+        result.append("public enum StateTags implements StateTag {\n");
+
+        if (stateNames.size() > 0) {
+            result.append("    ").append(stateNames.get(0));
+        }
+        for (int i = 1; i < stateNames.size(); i++) {
+            result.append(",\n")
+                    .append("    ").append(stateNames.get(i));
+        }
+
+        result.append("\n}");
+
+        return result.toString();
+    }
+
     /// EXPERIMENTAL METHODS SECTION
 
     public static void addEdge(NFAStateGraphBuilder edges, int from, int to, Set<String> edge) {
