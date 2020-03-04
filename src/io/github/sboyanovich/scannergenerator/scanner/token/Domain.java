@@ -26,7 +26,22 @@ public interface Domain {
         public String attribute(Text text, Fragment fragment) {
             return Utility.getTextFragmentAsString(text, fragment);
         }
+
+        @Override
+        public String toString() {
+            return "ERROR";
+        }
     };
 
-    Domain END_OF_PROGRAM = (text, fragment) -> new TEndOfProgram(fragment);
+    Domain END_OF_PROGRAM = new Domain() {
+        @Override
+        public Token createToken(Text text, Fragment fragment) {
+            return new TEndOfProgram(fragment);
+        }
+
+        @Override
+        public String toString() {
+            return "END_OF_PROGRAM";
+        }
+    };
 }
