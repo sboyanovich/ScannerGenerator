@@ -1,0 +1,111 @@
+WHITESPACE          := ([ \t\n]|\r\n)+
+
+HEX_NUMBER          := [0-9A-F]+
+DECIMAL_NUMBER      := [0-9]+
+HEX_ESCAPE          := \\U\+{HEX_NUMBER}
+DECIMAL_ESCAPE      := \\U\+#{DECIMAL_NUMBER}
+INPUT_CHAR          := [^\r\n\\]
+U_ESCAPE            := {DECIMAL_ESCAPE}|{HEX_ESCAPE}
+ESCAPE              := {U_ESCAPE}|(\\[btnfr\\*+|?.()[{}])
+
+CLASS_SINGLE_CHAR   := [^\r\n\-\\\^\]\b\f]
+CLASS_ESCAPE        := {U_ESCAPE}|(\\[btnfr\-\^\]\\])
+IDENTIFIER          := [_a-zA-Z][_a-zA-Z0-9]*
+
+%MODES REGEX CHAR_CLASS COMMENT
+
+%DOMAINS
+    RULE_END DEFINER COMMA DOT
+    MODES_SECTION_MARKER
+    RULES_SECTION_MARKER
+    LPAREN RPAREN
+    L_ANGLE_BRACKET R_ANGLE_BRACKET
+    CHAR_CLASS_OPEN CHAR_CLASS_CLOSE
+    CHAR_CLASS_RANGE_OP
+    CHAR_CLASS_NEG
+    CLASS_MINUS_OP
+    ITERATION_OP
+    POS_ITERATION_OP
+    UNION_OP
+    OPTION_OP
+
+%DOMAINS[String]
+    NAMED_EXPR DOMAINS_GROUP_MARKER IDENTIFIER
+
+%DOMAINS[Integer] CHAR
+
+%DOMAINS[IntPair] REPETITION_OP
+
+/*
+    First comment here. Rules section marker is useful so a state name identifier is not mistaken for
+    domain name.
+*/
+
+%%
+
+<REGEX>         WHITESPACE_IN_REGEX     := {WHITESPACE}                             handleWhitespaceInRegex;
+                WHITESPACE              := {WHITESPACE}                             ;
+                RULE_END                := ;                                        handleRuleEnd;
+                COMMA                   := ,                                        handleComma;
+                L_ANGLE_BRACKET         := <                                        handleLAngleBracket;
+                R_ANGLE_BRACKET         := >                                        handleRAngleBracket;
+                RULES_SECTION_MARKER    := %%                                       handleRulesSectionMarker;
+                DOMAINS_GROUP_MARKER    := %DOMAINS(\[{IDENTIFIER}])?               handleDomainsGroupMarker;
+                MODES_SECTION_MARKER    := %MODES                                   handleModesSectionMarker;
+                DEFINER                 := :=                                       handleDefiner;
+                IDENTIFIER              := {IDENTIFIER}                             handleIdentifier;
+<REGEX>         NAMED_EXPR              := {{IDENTIFIER}}                           handleNamedExpr;
+<REGEX>         LPAREN                  := \(                                       handleLParen;
+<REGEX>         RPAREN                  := \)                                       handleRParen;
+<REGEX>         CLASS_MINUS_OP          := \{-}                                     handleClassMinusOp;
+<REGEX>         REPETITION_OP           := {{DECIMAL_NUMBER}(,{DECIMAL_NUMBER}?)?}  handleRepetitionOp;
+<REGEX>         OPTION_OP               := \?                                       handleOptionOp;
+<REGEX>         UNION_OP                := \|                                       handleUnionOp;
+<REGEX>         POS_ITERATION_OP        := \+                                       handlePosIterationOp;
+<REGEX>         ITERATION_OP            := \*                                       handleIterationOp;
+<REGEX>         DOT                     := \.                                       handleDot;
+<CHAR_CLASS>    CHAR_CLASS_RANGE_OP     := -                                        handleCharClassRangeOp;
+<CHAR_CLASS>    CHAR_CLASS_NEG          := ^                                        handleCharClassNeg;
+<REGEX>         CHAR_CLASS_OPEN         := \[                                       handleCharClassOpen;
+<CHAR_CLASS>    CHAR_CLASS_CLOSE        := ]                                        handleCharClassClose;
+<REGEX>         CHAR                    := {INPUT_CHAR}|{ESCAPE}                    handleChar;
+<CHAR_CLASS>    CLASS_CHAR              := {CLASS_SINGLE_CHAR}|{CLASS_ESCAPE}       handleClassChar;
+                COMMENT_START           := /\*                                      handleCommentStart;
+<COMMENT>       NO_ASTERISK_SEQ         := [^*]*                                    handleNoAsteriskSeq;
+<COMMENT>       COMMENT_CLOSE           := \*/                                      handleCommentClose;
+<COMMENT>       ASTERISK                := \*                                       handleCommentAsterisk;
+
+/*
+
+### SYNTAX
+
+(axiom Spec)            = (Definition)* (ModesSection)? (DomainsSection)? RULES_SECTION_MARKER (Rule)* .
+(Definition)            = IDENTIFIER DEFINER (RegEx) .
+(ModesSection)          = MODES_SECTION_MARKER IDENTIFIER* .
+(DomainsSection)        = [DOMAINS_GROUP_MARKER IDENTIFIER*]+ .
+(Rule)                  = (ModeList)? IDENTIFIER? DEFINER (RegEx) IDENTIFIER? RULE_END .
+(ModeList)              = L_ANGLE_BRACKET IDENTIFIER [COMMA IDENTIFIER]* R_ANGLE_BRACKET .
+(RegEx)                 = (CRegEx) [ UNION_OP (CRegEx)]* .
+(CRegEx)                = (FRegEx) (FRegEx)* .
+(FRegEx)                = (LRegEx) [ POS_ITERATION_OP | ITERATION_OP | OPTION_OP | REPETITION_OP ]? .
+(LRegEx)                = CHAR | DOT | NAMED_EXPR | (CharClassExpression) | LPAREN (RegEx) RPAREN .
+(CharClassExpression)   = (CharClass) [CLASS_MINUS_OP (CharClass)]? .
+(CharClass)             = CHAR_CLASS_OPEN CHAR_CLASS_NEG? [CHAR [CHAR_CLASS_RANGE_OP CHAR]?]+  CHAR_CLASS_CLOSE .
+
+
+### FIRST sets (programmatically computed)
+
+FIRST(ModesSection) = [MODES_SECTION_MARKER]
+FIRST(CRegEx) = [NAMED_EXPR, LPAREN, DOT, CHAR, CHAR_CLASS_OPEN]
+FIRST(RegEx) = [NAMED_EXPR, LPAREN, DOT, CHAR, CHAR_CLASS_OPEN]
+FIRST(ModeList) = [L_ANGLE_BRACKET]
+FIRST(FRegEx) = [NAMED_EXPR, LPAREN, DOT, CHAR, CHAR_CLASS_OPEN]
+FIRST(Definition) = [IDENTIFIER]
+FIRST(LRegEx) = [NAMED_EXPR, LPAREN, DOT, CHAR, CHAR_CLASS_OPEN]
+FIRST(CharClass) = [CHAR_CLASS_OPEN]
+FIRST(Rule) = [DEFINER, L_ANGLE_BRACKET, IDENTIFIER]
+FIRST(Spec) = [RULES_SECTION_MARKER, IDENTIFIER, MODES_SECTION_MARKER, DOMAINS_GROUP_MARKER]
+FIRST(DomainsSection) = [DOMAINS_GROUP_MARKER]
+FIRST(CharClassExpression) = [CHAR_CLASS_OPEN]
+
+*/

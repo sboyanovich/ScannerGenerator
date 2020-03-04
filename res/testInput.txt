@@ -15,12 +15,13 @@ PLUS        := \+
 
 %%
 
-{{INT_LITERAL}}			        :=	0|({NZ_DIGIT}{DIGIT}*)	    handleIntLiteral	    ;
-{{PLUS_OP}}			            :=	{PLUS}			            handlePlusOp		    ;
-{{IDENTIFIER}}			        :=	{IDENT}			            handleIdentifier	    ;
-{{COMMENT_START}}		        :=	/\*	    		            handleCommentStart	    ;
-<COMMENT> {{NO_ASTERISK_SEQ}}	:=	[^*]*			            handleNoAsteriskSeq 	;
-<COMMENT> {{COMMENT_CLOSE}}	    :=	\*/ 			            handleCommentClose	    ;
-<COMMENT> {{C_ASTERISK}}	    :=	\*		    	            handleCommentAsterisk	;
+WHITESPACE                  :=    ([ \t\n]|\r\n)+                                     ;
+INT_LITERAL                 :=    0|({NZ_DIGIT}{DIGIT}*)        handleIntLiteral      ;
+PLUS_OP                     :=    {PLUS}                        handlePlusOp          ;
+IDENTIFIER                  :=    {IDENT}                       handleIdentifier      ;
+COMMENT_START               :=    /\*                           handleCommentStart    ;
+<COMMENT>                   :=    [^*]*                         handleNoAsteriskSeq   ;
+<COMMENT> COMMENT_CLOSE     :=    \*/                           handleCommentClose    ;
+<COMMENT>                   :=    \*                            handleCommentAsterisk ;
 
 
