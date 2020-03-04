@@ -7,12 +7,6 @@ import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 
 public enum SimpleDomains implements Domain {
-    WHITESPACE_IN_REGEX {
-        @Override
-        public Token createToken(Text text, Fragment fragment) {
-            return new BasicToken(fragment, WHITESPACE_IN_REGEX);
-        }
-    },
     RULE_END {
         @Override
         public Token createToken(Text text, Fragment fragment) {
@@ -125,12 +119,6 @@ public enum SimpleDomains implements Domain {
         @Override
         public Token createToken(Text text, Fragment fragment) {
             return new BasicToken(fragment, OPTION_OP);
-        }
-    },
-    WHITESPACE {
-        @Override
-        public Token createToken(Text text, Fragment fragment) {
-            return new BasicToken(fragment, SimpleDomains.WHITESPACE);
         }
     }
 }

@@ -6,7 +6,6 @@ public enum StateTags implements StateTag {
     WHITESPACE_IN_REGEX,
     WHITESPACE,
     IDENTIFIER,
-    STATE_NAME,
     DOMAINS_GROUP_MARKER,
     RULE_END,
     MODES_SECTION_MARKER,
@@ -25,9 +24,14 @@ public enum StateTags implements StateTag {
     LPAREN,
     RPAREN,
     CHAR,
+    CLASS_CHAR,
     DOT,
     ITERATION_OP,
     POS_ITERATION_OP,
     UNION_OP,
-    OPTION_OP
+    OPTION_OP,
+    COMMENT_START,
+    COMMENT_CLOSE,
+    NO_ASTERISK_SEQ,
+    ASTERISK
 }

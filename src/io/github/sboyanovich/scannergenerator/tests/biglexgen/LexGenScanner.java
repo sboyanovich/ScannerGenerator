@@ -27,7 +27,8 @@ public class LexGenScanner {
     private Map<String, Integer> modeNamesInv = Map.of(
             "INITIAL", 0,
             "REGEX", 1,
-            "CHAR_CLASS", 2
+            "CHAR_CLASS", 2,
+            "COMMENT", 3
     );
 
     private MockCompiler compiler;
@@ -57,7 +58,7 @@ public class LexGenScanner {
                 .setAllFinalStatesTo(WHITESPACE_IN_REGEX);
 
         NFA classSingleCharNFA = NFA.acceptsAllSymbolsButThese(
-                alphabetSize, Set.of("\r", "\b", "\t", "\n", "\f", "\\", "-", "^", "[", "]"));
+                alphabetSize, Set.of("\r", "\b", "\n", "\f", "\\", "-", "^", "]"));
 
         NFA decimalDigitsNFA = NFA.acceptsThisRange(alphabetSize, "0", "9");
         NFA hexDigitsNFA = decimalDigitsNFA
@@ -81,12 +82,12 @@ public class LexGenScanner {
                                 alphabetSize,
                                 Set.of(
                                         "\\b", "\\t", "\\n", "\\f", "\\r", "\\\\",
-                                        "\\-", "\\^", "\\[", "\\]")
+                                        "\\-", "\\^", "\\]")
                         )
                 );
 
         NFA classCharNFA = classSingleCharNFA.union(classEscapeNFA)
-                .setAllFinalStatesTo(CHAR);
+                .setAllFinalStatesTo(CLASS_CHAR);
 
         NFA escapeNFA = uEscapeNFA
                 .union(
@@ -94,14 +95,14 @@ public class LexGenScanner {
                                 alphabetSize,
                                 Set.of(
                                         "\\b", "\\t", "\\n", "\\f", "\\r", "\\\\",
-                                        "\\\"", "\\'", "\\*", "\\+", "\\|", "\\?",
-                                        "\\.", "\\(", "\\)"
+                                        "\\*", "\\+", "\\|", "\\?",
+                                        "\\.", "\\(", "\\)", "\\[", "\\{", "\\}"
                                 )
                         )
                 );
 
         NFA inputCharNFA = NFA.acceptsAllSymbolsButThese(
-                alphabetSize, Set.of("\r", "\n")
+                alphabetSize, Set.of("\r", "\n", "\\")
         );
 
         NFA underscoreNFA = NFA.singleLetterLanguage(alphabetSize, "_");
@@ -191,14 +192,24 @@ public class LexGenScanner {
                                 .optional()
                 )
                 .setAllFinalStatesTo(DOMAINS_GROUP_MARKER);
-        NFA stateNameNFA = NFA.acceptsThisWord(alphabetSize, "{{")
-                .concatenation(identifierNFA)
-                .concatenation(NFA.acceptsThisWord(alphabetSize, "}}"))
-                .setAllFinalStatesTo(STATE_NAME);
+
+        NFA commentStartNFA = NFA.acceptsThisWord(alphabetSize, "/*")
+                .setAllFinalStatesTo(COMMENT_START);
+        NFA noAsteriskSeqNFA = NFA.acceptsAllSymbolsButThese(alphabetSize, Set.of("*")).iteration()
+                .setAllFinalStatesTo(NO_ASTERISK_SEQ);
+        NFA commentCloseNFA = NFA.acceptsThisWord(alphabetSize, "*/")
+                .setAllFinalStatesTo(COMMENT_CLOSE);
+        NFA asteriskNFA = NFA.singleLetterLanguage(alphabetSize, "*")
+                .setAllFinalStatesTo(ASTERISK);
 
         List<StateTag> priorityList = new ArrayList<>(
                 List.of(
+                        ASTERISK,
+                        COMMENT_CLOSE,
+                        NO_ASTERISK_SEQ,
+                        COMMENT_START,
                         CHAR,
+                        CLASS_CHAR,
                         CHAR_CLASS_OPEN,
                         CHAR_CLASS_CLOSE,
                         CHAR_CLASS_NEG,
@@ -218,7 +229,6 @@ public class LexGenScanner {
                         MODES_SECTION_MARKER,
                         DOMAINS_GROUP_MARKER,
                         RULES_SECTION_MARKER,
-                        STATE_NAME,
                         L_ANGLE_BRACKET,
                         R_ANGLE_BRACKET,
                         COMMA,
@@ -239,11 +249,11 @@ public class LexGenScanner {
                 .union(modesSectionMarkerNFA)
                 .union(domainsGroupMarkerNFA)
                 .union(rulesSectionMarkerNFA)
-                .union(stateNameNFA)
                 .union(lAngleBracketNFA)
                 .union(rAngleBracketNFA)
                 .union(commaNFA)
-                .union(ruleEndNFA);
+                .union(ruleEndNFA)
+                .union(commentStartNFA);
 
         NFA mode1 = whitespaceInRegexNFA
                 .union(charClassOpenNFA)
@@ -264,6 +274,8 @@ public class LexGenScanner {
                 .union(charClassNegNFA)
                 .union(charClassCloseNFA);
 
+        NFA mode3 = noAsteriskSeqNFA.union(commentCloseNFA).union(asteriskNFA);
+
         System.out.println("Mode 0");
         LexicalRecognizer m0 = buildRecognizer(mode0, priorityMap);
         System.out.println();
@@ -273,8 +285,11 @@ public class LexGenScanner {
         System.out.println("Mode 2");
         LexicalRecognizer m2 = buildRecognizer(mode2, priorityMap);
         System.out.println();
+        System.out.println("Mode 3");
+        LexicalRecognizer m3 = buildRecognizer(mode3, priorityMap);
+        System.out.println();
 
-        this.recognizers = List.of(m0, m1, m2);
+        this.recognizers = List.of(m0, m1, m2, m3);
 
         //not exactly necessary
         resetCurrState();
@@ -394,7 +409,8 @@ public class LexGenScanner {
         while (true) {
             int currCodePoint = getCurrentCodePoint();
 
-            if (currCodePoint == Text.EOI) {
+            /// This guards against finding EOI while completing an earlier started token
+            if (currCodePoint == Text.EOI && this.currPos.equals(this.start)) {
                 return new TEndOfProgram(new Fragment(currPos, currPos));
             }
 
@@ -489,6 +505,9 @@ public class LexGenScanner {
                         case CHAR:
                             optToken = handleChar(this.inputText, scannedFragment);
                             break;
+                        case CLASS_CHAR:
+                            optToken = handleClassChar(this.inputText, scannedFragment);
+                            break;
                         case IDENTIFIER:
                             optToken = handleIdentifier(this.inputText, scannedFragment);
                             break;
@@ -504,9 +523,6 @@ public class LexGenScanner {
                         case RULES_SECTION_MARKER:
                             optToken = handleRulesSectionMarker(this.inputText, scannedFragment);
                             break;
-                        case STATE_NAME:
-                            optToken = handleStateName(this.inputText, scannedFragment);
-                            break;
                         case L_ANGLE_BRACKET:
                             optToken = handleLAngleBracket(this.inputText, scannedFragment);
                             break;
@@ -518,6 +534,18 @@ public class LexGenScanner {
                             break;
                         case RULE_END:
                             optToken = handleRuleEnd(this.inputText, scannedFragment);
+                            break;
+                        case COMMENT_START:
+                            optToken = handleCommentStart(this.inputText, scannedFragment);
+                            break;
+                        case NO_ASTERISK_SEQ:
+                            optToken = handleNoAsteriskSeq(this.inputText, scannedFragment);
+                            break;
+                        case ASTERISK:
+                            optToken = handleAsterisk(this.inputText, scannedFragment);
+                            break;
+                        case COMMENT_CLOSE:
+                            optToken = handleCommentClose(this.inputText, scannedFragment);
                             break;
                         case WHITESPACE:
                             setStartToCurrentPosition();
@@ -588,6 +616,10 @@ public class LexGenScanner {
         return Optional.of(DomainsWithIntegerAttribute.CHAR.createToken(text, fragment));
     }
 
+    Optional<Token> handleClassChar(Text text, Fragment fragment) {
+        return Optional.of(DomainsWithIntegerAttribute.CHAR.createToken(text, fragment));
+    }
+
     Optional<Token> handleNamedExpr(Text text, Fragment fragment) {
         return Optional.of(DomainsWithStringAttribute.NAMED_EXPR.createToken(text, fragment));
     }
@@ -637,11 +669,26 @@ public class LexGenScanner {
         return Optional.of(DomainsWithStringAttribute.DOMAINS_GROUP_MARKER.createToken(text, fragment));
     }
 
-    Optional<Token> handleStateName(Text text, Fragment fragment) {
-        return Optional.of(DomainsWithStringAttribute.STATE_NAME.createToken(text, fragment));
+    Optional<Token> handleWhitespaceInRegex(Text text, Fragment fragment) {
+        switchToMode("INITIAL");
+        setStartToCurrentPosition();
+        return Optional.empty();
     }
 
-    Optional<Token> handleWhitespaceInRegex(Text text, Fragment fragment) {
+    Optional<Token> handleCommentStart(Text text, Fragment fragment) {
+        switchToMode("COMMENT");
+        return Optional.empty();
+    }
+
+    Optional<Token> handleNoAsteriskSeq(Text text, Fragment fragment) {
+        return Optional.empty();
+    }
+
+    Optional<Token> handleAsterisk(Text text, Fragment fragment) {
+        return Optional.empty();
+    }
+
+    Optional<Token> handleCommentClose(Text text, Fragment fragment) {
         switchToMode("INITIAL");
         setStartToCurrentPosition();
         return Optional.empty();

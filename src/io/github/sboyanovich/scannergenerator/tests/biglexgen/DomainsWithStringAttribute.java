@@ -36,18 +36,6 @@ public enum DomainsWithStringAttribute implements DomainWithAttribute<String> {
             return new TokenWithAttribute<>(fragment, DOMAINS_GROUP_MARKER, attribute(text, fragment));
         }
     },
-    STATE_NAME {
-        @Override
-        public String attribute(Text text, Fragment fragment) {
-            String s = getTextFragmentAsString(text, fragment);
-            return s.substring(2, s.length() - 2);
-        }
-
-        @Override
-        public TokenWithAttribute<String> createToken(Text text, Fragment fragment) {
-            return new TokenWithAttribute<>(fragment, STATE_NAME, attribute(text, fragment));
-        }
-    },
     IDENTIFIER {
         @Override
         public String attribute(Text text, Fragment fragment) {
