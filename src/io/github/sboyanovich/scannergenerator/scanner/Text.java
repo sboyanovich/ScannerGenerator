@@ -2,6 +2,7 @@ package io.github.sboyanovich.scannergenerator.scanner;
 
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
+import java.text.Normalizer;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,7 +17,7 @@ public class Text {
     }
 
     public Text(String text) {
-        this(text
+        this(Normalizer.normalize(text, Normalizer.Form.NFC)
                 .codePoints()
                 .boxed()
                 .collect(Collectors.toList())
