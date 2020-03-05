@@ -1,4 +1,6 @@
-package io.github.sboyanovich.scannergenerator.scanner;
+package io.github.sboyanovich.scannergenerator.tests;
+
+import io.github.sboyanovich.scannergenerator.scanner.*;
 
 import java.util.List;
 import java.util.Map;

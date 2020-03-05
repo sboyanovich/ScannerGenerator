@@ -5,6 +5,8 @@ import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.scanner.*;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
+import io.github.sboyanovich.scannergenerator.tests.ProCompiler;
+import io.github.sboyanovich.scannergenerator.tests.ProScanner;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.time.Duration;
