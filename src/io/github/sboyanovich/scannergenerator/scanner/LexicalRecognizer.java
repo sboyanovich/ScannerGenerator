@@ -5,10 +5,12 @@ import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
 import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
 
+import java.io.*;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
+import static io.github.sboyanovich.scannergenerator.utility.Utility.ensurePathExists;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.isInRange;
 
 /**
@@ -227,5 +229,81 @@ public final class LexicalRecognizer {
 
     public String displayEquivalenceMap(Function<Integer, String> alphabetInterpretation) {
         return generalizedSymbolsMap.displayClasses(alphabetInterpretation);
+    }
+
+    /// EXPERIMENTAL
+    public void writeToFile(String filename, Map<StateTag, Integer> indices) {
+        int domain = this.generalizedSymbolsMap.getDomain();
+        int eqcDomain = this.generalizedSymbolsMap.getEqClassDomain();
+        int numberOfStates = this.transitionTable.length;
+
+        try (DataOutputStream dos = new DataOutputStream(
+                new BufferedOutputStream(new FileOutputStream(ensurePathExists(filename))))
+        ) {
+            dos.writeInt(domain);
+            dos.writeInt(eqcDomain);
+            for (int i = 0; i < domain; i++) {
+                dos.writeInt(this.generalizedSymbolsMap.getEqClass(i));
+            }
+            dos.writeInt(this.initialState);
+            dos.writeInt(numberOfStates);
+            for (int[] row : this.transitionTable) {
+                for (int j = 0; j < eqcDomain; j++) {
+                    dos.writeInt(row[j]);
+                }
+            }
+            for (int i = 0; i < numberOfStates; i++) {
+                StateTag tag = getStateTag(i);
+                if (!tag.equals(StateTag.NOT_FINAL)) {
+                    dos.writeInt(i);
+                    dos.writeInt(indices.get(tag));
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // CALL ONLY ON GENERATED FILES
+    public LexicalRecognizer(String filename, List<StateTag> finalTags) {
+        try (DataInputStream dis = new DataInputStream(
+                new BufferedInputStream(new FileInputStream(filename)))
+        ) {
+            int domain = dis.readInt();
+            int eqcDomain = dis.readInt();
+            int[] map = new int[domain];
+
+            for (int i = 0; i < domain; i++) {
+                map[i] = dis.readInt();
+            }
+
+            this.generalizedSymbolsMap = new EquivalenceMap(domain, eqcDomain, map);
+
+            this.initialState = dis.readInt();
+            int numberOfStates = dis.readInt();
+
+            this.transitionTable = new int[numberOfStates][eqcDomain];
+
+            for (int i = 0; i < numberOfStates; i++) {
+                for (int j = 0; j < eqcDomain; j++) {
+                    this.transitionTable[i][j] = dis.readInt();
+                }
+            }
+
+            this.labels = new ArrayList<>();
+            for (int i = 0; i < numberOfStates; i++) {
+                this.labels.add(StateTag.NOT_FINAL);
+            }
+
+            while (dis.available() > 0) {
+                int state = dis.readInt();
+                int index = dis.readInt();
+                this.labels.set(state, finalTags.get(index));
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
