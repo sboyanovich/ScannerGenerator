@@ -3,8 +3,7 @@ package io.github.sboyanovich.scannergenerator.tests.biglexgen;
 import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.scanner.*;
-import io.github.sboyanovich.scannergenerator.scanner.token.TEndOfProgram;
-import io.github.sboyanovich.scannergenerator.scanner.token.TError;
+import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
@@ -15,7 +14,7 @@ import java.util.*;
 import static io.github.sboyanovich.scannergenerator.tests.biglexgen.LexGenScanner.Mode.*;
 import static io.github.sboyanovich.scannergenerator.tests.biglexgen.StateTags.*;
 
-public class LexGenScanner {
+public class LexGenScanner implements Iterator<Token> {
     enum Mode {
         INITIAL,
         REGEX,
@@ -26,28 +25,21 @@ public class LexGenScanner {
     private static final int NEWLINE = Utility.asCodePoint("\n");
     private static final int CARRET = Utility.asCodePoint("\r");
 
-    private List<LexicalRecognizer> recognizers;
+    private Map<Mode, LexicalRecognizer> recognizers;
     private Position currPos;
     private Position start;
     private Text inputText;
-    private int currentMode;
+    private Mode currentMode;
     private int currState;
-    private Map<Mode, Integer> modeIndices;
+    private boolean hasNext;
     private MockCompiler compiler;
 
     public LexGenScanner(String inputText) {
         this.inputText = new Text(inputText);
-        this.currentMode = 0;
+        this.currentMode = INITIAL;
         this.currPos = new Position();
         this.start = this.currPos;
-
-        int alphabetSize = Character.MAX_CODE_POINT + 1;
-
-        this.modeIndices = new HashMap<>();
-        this.modeIndices.put(INITIAL, 0);
-        this.modeIndices.put(REGEX, 1);
-        this.modeIndices.put(CHAR_CLASS, 2);
-        this.modeIndices.put(COMMENT, 3);
+        this.hasNext = true;
 
         boolean hasFiles = false;
 
@@ -85,12 +77,15 @@ public class LexGenScanner {
             finalTags.add(WHITESPACE);
             finalTags.add(WHITESPACE_IN_REGEX);
 
-            this.recognizers = new ArrayList<>();
-            this.recognizers.add(new LexicalRecognizer("INITIAL.reco", finalTags));
-            this.recognizers.add(new LexicalRecognizer("REGEX.reco", finalTags));
-            this.recognizers.add(new LexicalRecognizer("CHAR_CLASS.reco", finalTags));
-            this.recognizers.add(new LexicalRecognizer("COMMENT.reco", finalTags));
+            // Restoring recognizers from files.
+            this.recognizers = new HashMap<>();
+            this.recognizers.put(INITIAL, new LexicalRecognizer("INITIAL.reco", finalTags));
+            this.recognizers.put(REGEX, new LexicalRecognizer("REGEX.reco", finalTags));
+            this.recognizers.put(CHAR_CLASS, new LexicalRecognizer("CHAR_CLASS.reco", finalTags));
+            this.recognizers.put(COMMENT, new LexicalRecognizer("COMMENT.reco", finalTags));
         } else {
+
+            int alphabetSize = Character.MAX_CODE_POINT + 1;
 
             NFA spaceNFA = NFA.singleLetterLanguage(alphabetSize, " ");
             NFA tabNFA = NFA.singleLetterLanguage(alphabetSize, "\t");
@@ -339,7 +334,12 @@ public class LexGenScanner {
             LexicalRecognizer m3 = buildRecognizer(mode3, priorityMap);
             System.out.println();
 
-            this.recognizers = List.of(m0, m1, m2, m3);
+            // Restoring recognizers from files.
+            this.recognizers = new HashMap<>();
+            this.recognizers.put(INITIAL, m0);
+            this.recognizers.put(REGEX, m1);
+            this.recognizers.put(CHAR_CLASS, m2);
+            this.recognizers.put(COMMENT, m3);
         }
         // just in case
         resetCurrState();
@@ -389,14 +389,9 @@ public class LexGenScanner {
         this.currState = getCurrentRecognizer().getInitialState();
     }
 
-    // should be protected probably
-    protected void switchToMode(int mode) {
+    protected void switchToMode(Mode mode) {
         this.currentMode = mode;
         resetCurrState();
-    }
-
-    protected void switchToMode(Mode mode) {
-        switchToMode(modeIndices.get(mode));
     }
 
     private void advanceCurrentPosition() {
@@ -448,6 +443,16 @@ public class LexGenScanner {
         this.start = this.currPos;
     }
 
+    @Override
+    final public boolean hasNext() {
+        return this.hasNext;
+    }
+
+    @Override
+    final public Token next() {
+        return nextToken();
+    }
+
     public Token nextToken() {
         resetCurrState();
         setStartToCurrentPosition();
@@ -461,7 +466,8 @@ public class LexGenScanner {
 
             /// This guards against finding EOI while completing an earlier started token
             if (currCodePoint == Text.EOI && this.currPos.equals(this.start)) {
-                return new TEndOfProgram(new Fragment(currPos, currPos));
+                this.hasNext = false;
+                return Domain.END_OF_INPUT.createToken(this.inputText, new Fragment(currPos, currPos));
             }
 
             int nextState = getCurrentRecognizer().transition(this.currState, currCodePoint);
@@ -491,7 +497,7 @@ public class LexGenScanner {
                     }
                     switchToMode(INITIAL); // resetting to default mode after error recovery
                     Fragment invalidFragment = new Fragment(this.start, this.currPos);
-                    return new TError(invalidFragment, getTextFragment(invalidFragment));
+                    return Domain.ERROR.createToken(this.inputText, invalidFragment);
                 } else {
                     if (lastFinalState.isPresent()) {
                         this.currPos = lastInFinal;
@@ -599,7 +605,6 @@ public class LexGenScanner {
                             break;
                         case WHITESPACE:
                             setStartToCurrentPosition();
-                            resetCurrState();
                             break;
                         case WHITESPACE_IN_REGEX:
                             optToken = handleWhitespaceInRegex(this.inputText, scannedFragment);
