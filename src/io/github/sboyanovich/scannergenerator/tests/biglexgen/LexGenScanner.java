@@ -12,9 +12,17 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
+import static io.github.sboyanovich.scannergenerator.tests.biglexgen.LexGenScanner.Mode.*;
 import static io.github.sboyanovich.scannergenerator.tests.biglexgen.StateTags.*;
 
 public class LexGenScanner {
+    enum Mode {
+        INITIAL,
+        REGEX,
+        CHAR_CLASS,
+        COMMENT
+    }
+
     private static final int NEWLINE = Utility.asCodePoint("\n");
     private static final int CARRET = Utility.asCodePoint("\r");
 
@@ -24,13 +32,7 @@ public class LexGenScanner {
     private Text inputText;
     private int currentMode;
     private int currState;
-    private Map<String, Integer> modeNamesInv = Map.of(
-            "INITIAL", 0,
-            "REGEX", 1,
-            "CHAR_CLASS", 2,
-            "COMMENT", 3
-    );
-
+    private Map<Mode, Integer> modeIndices;
     private MockCompiler compiler;
 
     public LexGenScanner(String inputText) {
@@ -40,258 +42,306 @@ public class LexGenScanner {
         this.start = this.currPos;
 
         int alphabetSize = Character.MAX_CODE_POINT + 1;
-        //alphabetSize = 256;
 
-        NFA spaceNFA = NFA.singleLetterLanguage(alphabetSize, " ");
-        NFA tabNFA = NFA.singleLetterLanguage(alphabetSize, "\t");
-        NFA newlineNFA = NFA.singleLetterLanguage(alphabetSize, "\n");
-        NFA carretNFA = NFA.singleLetterLanguage(alphabetSize, "\r");
+        this.modeIndices = new HashMap<>();
+        this.modeIndices.put(INITIAL, 0);
+        this.modeIndices.put(REGEX, 1);
+        this.modeIndices.put(CHAR_CLASS, 2);
+        this.modeIndices.put(COMMENT, 3);
 
-        NFA whitespaceNFA = spaceNFA
-                .union(tabNFA)
-                .union(carretNFA.concatenation(newlineNFA))
-                .union(newlineNFA)
-                .positiveIteration()
-                .setAllFinalStatesTo(WHITESPACE);
+        boolean hasFiles = false;
 
-        NFA whitespaceInRegexNFA = whitespaceNFA
-                .setAllFinalStatesTo(WHITESPACE_IN_REGEX);
+        if (hasFiles) {
+            List<StateTag> finalTags = new ArrayList<>();
+            finalTags.add(ASTERISK);
+            finalTags.add(COMMENT_CLOSE);
+            finalTags.add(NO_ASTERISK_SEQ);
+            finalTags.add(COMMENT_START);
+            finalTags.add(CLASS_CHAR);
+            finalTags.add(CHAR);
+            finalTags.add(CHAR_CLASS_CLOSE);
+            finalTags.add(CHAR_CLASS_OPEN);
+            finalTags.add(CHAR_CLASS_NEG);
+            finalTags.add(CHAR_CLASS_RANGE_OP);
+            finalTags.add(DOT);
+            finalTags.add(ITERATION_OP);
+            finalTags.add(POS_ITERATION_OP);
+            finalTags.add(UNION_OP);
+            finalTags.add(OPTION_OP);
+            finalTags.add(REPETITION_OP);
+            finalTags.add(CLASS_MINUS_OP);
+            finalTags.add(RPAREN);
+            finalTags.add(LPAREN);
+            finalTags.add(NAMED_EXPR);
+            finalTags.add(IDENTIFIER);
+            finalTags.add(DEFINER);
+            finalTags.add(MODES_SECTION_MARKER);
+            finalTags.add(DOMAINS_GROUP_MARKER);
+            finalTags.add(RULES_SECTION_MARKER);
+            finalTags.add(R_ANGLE_BRACKET);
+            finalTags.add(L_ANGLE_BRACKET);
+            finalTags.add(COMMA);
+            finalTags.add(RULE_END);
+            finalTags.add(WHITESPACE);
+            finalTags.add(WHITESPACE_IN_REGEX);
 
-        NFA classSingleCharNFA = NFA.acceptsAllSymbolsButThese(
-                alphabetSize, Set.of("\r", "\b", "\n", "\f", "\\", "-", "^", "]"));
+            this.recognizers = new ArrayList<>();
+            this.recognizers.add(new LexicalRecognizer("INITIAL.reco", finalTags));
+            this.recognizers.add(new LexicalRecognizer("REGEX.reco", finalTags));
+            this.recognizers.add(new LexicalRecognizer("CHAR_CLASS.reco", finalTags));
+            this.recognizers.add(new LexicalRecognizer("COMMENT.reco", finalTags));
+        } else {
 
-        NFA decimalDigitsNFA = NFA.acceptsThisRange(alphabetSize, "0", "9");
-        NFA hexDigitsNFA = decimalDigitsNFA
-                .union(
-                        NFA.acceptsThisRange(alphabetSize, "A", "F")
-                );
+            NFA spaceNFA = NFA.singleLetterLanguage(alphabetSize, " ");
+            NFA tabNFA = NFA.singleLetterLanguage(alphabetSize, "\t");
+            NFA newlineNFA = NFA.singleLetterLanguage(alphabetSize, "\n");
+            NFA carretNFA = NFA.singleLetterLanguage(alphabetSize, "\r");
 
-        NFA decimalNumberNFA = decimalDigitsNFA.positiveIteration();
-        NFA hexNumberNFA = hexDigitsNFA.positiveIteration();
+            NFA whitespaceNFA = spaceNFA
+                    .union(tabNFA)
+                    .union(carretNFA.concatenation(newlineNFA))
+                    .union(newlineNFA)
+                    .positiveIteration()
+                    .setAllFinalStatesTo(WHITESPACE);
 
-        NFA decimalEscapeNFA = NFA.acceptsThisWord(alphabetSize, "\\U+#")
-                .concatenation(decimalNumberNFA);
-        NFA hexEscapeNFA = NFA.acceptsThisWord(alphabetSize, "\\U+")
-                .concatenation(hexNumberNFA);
+            NFA whitespaceInRegexNFA = whitespaceNFA
+                    .setAllFinalStatesTo(WHITESPACE_IN_REGEX);
 
-        NFA uEscapeNFA = decimalEscapeNFA.union(hexEscapeNFA);
+            NFA classSingleCharNFA = NFA.acceptsAllSymbolsButThese(
+                    alphabetSize, Set.of("\r", "\b", "\n", "\f", "\\", "-", "^", "]"));
 
-        NFA classEscapeNFA = uEscapeNFA
-                .union(
-                        NFA.acceptsAllTheseWords(
-                                alphabetSize,
-                                Set.of(
-                                        "\\b", "\\t", "\\n", "\\f", "\\r", "\\\\",
-                                        "\\-", "\\^", "\\]")
-                        )
-                );
+            NFA decimalDigitsNFA = NFA.acceptsThisRange(alphabetSize, "0", "9");
+            NFA hexDigitsNFA = decimalDigitsNFA
+                    .union(
+                            NFA.acceptsThisRange(alphabetSize, "A", "F")
+                    );
 
-        NFA classCharNFA = classSingleCharNFA.union(classEscapeNFA)
-                .setAllFinalStatesTo(CLASS_CHAR);
+            NFA decimalNumberNFA = decimalDigitsNFA.positiveIteration();
+            NFA hexNumberNFA = hexDigitsNFA.positiveIteration();
 
-        NFA escapeNFA = uEscapeNFA
-                .union(
-                        NFA.acceptsAllTheseWords(
-                                alphabetSize,
-                                Set.of(
-                                        "\\b", "\\t", "\\n", "\\f", "\\r", "\\\\",
-                                        "\\*", "\\+", "\\|", "\\?",
-                                        "\\.", "\\(", "\\)", "\\[", "\\{", "\\}"
-                                )
-                        )
-                );
+            NFA decimalEscapeNFA = NFA.acceptsThisWord(alphabetSize, "\\U+#")
+                    .concatenation(decimalNumberNFA);
+            NFA hexEscapeNFA = NFA.acceptsThisWord(alphabetSize, "\\U+")
+                    .concatenation(hexNumberNFA);
 
-        NFA inputCharNFA = NFA.acceptsAllSymbolsButThese(
-                alphabetSize, Set.of("\r", "\n", "\\")
-        );
+            NFA uEscapeNFA = decimalEscapeNFA.union(hexEscapeNFA);
 
-        NFA underscoreNFA = NFA.singleLetterLanguage(alphabetSize, "_");
-        NFA latinLettersNFA = NFA.acceptsThisRange(alphabetSize, "A", "Z")
-                .union(NFA.acceptsThisRange(alphabetSize, "a", "z"));
-        NFA idenStartNFA = latinLettersNFA.union(underscoreNFA);
-        NFA idenPartNFA = idenStartNFA.union(decimalDigitsNFA);
-        NFA identifierNFA = idenStartNFA.concatenation(idenPartNFA.iteration())
-                .setAllFinalStatesTo(IDENTIFIER);
+            NFA classEscapeNFA = uEscapeNFA
+                    .union(
+                            NFA.acceptsAllTheseWords(
+                                    alphabetSize,
+                                    Set.of(
+                                            "\\b", "\\t", "\\n", "\\f", "\\r", "\\\\",
+                                            "\\-", "\\^", "\\]")
+                            )
+                    );
 
-        NFA namedExprNFA = NFA.singleLetterLanguage(alphabetSize, "{")
-                .concatenation(identifierNFA)
-                .concatenation(NFA.singleLetterLanguage(alphabetSize, "}"))
-                .setAllFinalStatesTo(NAMED_EXPR);
+            NFA classCharNFA = classSingleCharNFA.union(classEscapeNFA)
+                    .setAllFinalStatesTo(CLASS_CHAR);
 
-        NFA charNFA = inputCharNFA.union(escapeNFA)
-                .setAllFinalStatesTo(CHAR);
+            NFA escapeNFA = uEscapeNFA
+                    .union(
+                            NFA.acceptsAllTheseWords(
+                                    alphabetSize,
+                                    Set.of(
+                                            "\\b", "\\t", "\\n", "\\f", "\\r", "\\\\",
+                                            "\\*", "\\+", "\\|", "\\?",
+                                            "\\.", "\\(", "\\)", "\\[", "\\{", "\\}"
+                                    )
+                            )
+                    );
 
-        NFA charClassRangeOpNFA = NFA.singleLetterLanguage(alphabetSize, "-")
-                .setAllFinalStatesTo(CHAR_CLASS_RANGE_OP);
+            NFA inputCharNFA = NFA.acceptsAllSymbolsButThese(
+                    alphabetSize, Set.of("\r", "\n", "\\")
+            );
 
-        NFA charClassOpenNFA = NFA.singleLetterLanguage(alphabetSize, "[")
-                .setAllFinalStatesTo(CHAR_CLASS_OPEN);
+            NFA underscoreNFA = NFA.singleLetterLanguage(alphabetSize, "_");
+            NFA latinLettersNFA = NFA.acceptsThisRange(alphabetSize, "A", "Z")
+                    .union(NFA.acceptsThisRange(alphabetSize, "a", "z"));
+            NFA idenStartNFA = latinLettersNFA.union(underscoreNFA);
+            NFA idenPartNFA = idenStartNFA.union(decimalDigitsNFA);
+            NFA identifierNFA = idenStartNFA.concatenation(idenPartNFA.iteration())
+                    .setAllFinalStatesTo(IDENTIFIER);
 
-        NFA charClassCloseNFA = NFA.singleLetterLanguage(alphabetSize, "]")
-                .setAllFinalStatesTo(CHAR_CLASS_CLOSE);
+            NFA namedExprNFA = NFA.singleLetterLanguage(alphabetSize, "{")
+                    .concatenation(identifierNFA)
+                    .concatenation(NFA.singleLetterLanguage(alphabetSize, "}"))
+                    .setAllFinalStatesTo(NAMED_EXPR);
 
-        NFA charClassNegNFA = NFA.singleLetterLanguage(alphabetSize, "^")
-                .setAllFinalStatesTo(CHAR_CLASS_NEG);
+            NFA charNFA = inputCharNFA.union(escapeNFA)
+                    .setAllFinalStatesTo(CHAR);
 
-        NFA dotNFA = NFA.singleLetterLanguage(alphabetSize, ".")
-                .setAllFinalStatesTo(DOT);
-        NFA iterationOpNFA = NFA.singleLetterLanguage(alphabetSize, "*")
-                .setAllFinalStatesTo(ITERATION_OP);
-        NFA posIterationOpNFA = NFA.singleLetterLanguage(alphabetSize, "+")
-                .setAllFinalStatesTo(POS_ITERATION_OP);
-        NFA unionOpNFA = NFA.singleLetterLanguage(alphabetSize, "|")
-                .setAllFinalStatesTo(UNION_OP);
-        NFA optionOpNFA = NFA.singleLetterLanguage(alphabetSize, "?")
-                .setAllFinalStatesTo(OPTION_OP);
+            NFA charClassRangeOpNFA = NFA.singleLetterLanguage(alphabetSize, "-")
+                    .setAllFinalStatesTo(CHAR_CLASS_RANGE_OP);
 
-        NFA lParenNFA = NFA.singleLetterLanguage(alphabetSize, "(")
-                .setAllFinalStatesTo(LPAREN);
-        NFA rParenNFA = NFA.singleLetterLanguage(alphabetSize, ")")
-                .setAllFinalStatesTo(RPAREN);
+            NFA charClassOpenNFA = NFA.singleLetterLanguage(alphabetSize, "[")
+                    .setAllFinalStatesTo(CHAR_CLASS_OPEN);
 
-        NFA classMinusOpNFA = NFA.acceptsThisWord(alphabetSize, "{-}")
-                .setAllFinalStatesTo(CLASS_MINUS_OP);
+            NFA charClassCloseNFA = NFA.singleLetterLanguage(alphabetSize, "]")
+                    .setAllFinalStatesTo(CHAR_CLASS_CLOSE);
 
-        NFA repetitionOpNFA = NFA.singleLetterLanguage(alphabetSize, "{")
-                .concatenation(decimalNumberNFA)
-                .concatenation(
-                        NFA.singleLetterLanguage(alphabetSize, ",")
-                                .concatenation(decimalNumberNFA.optional()).optional()
-                )
-                .concatenation(NFA.singleLetterLanguage(alphabetSize, "}"))
-                .setAllFinalStatesTo(REPETITION_OP);
+            NFA charClassNegNFA = NFA.singleLetterLanguage(alphabetSize, "^")
+                    .setAllFinalStatesTo(CHAR_CLASS_NEG);
 
-        NFA lAngleBracketNFA = NFA.singleLetterLanguage(alphabetSize, "<")
-                .setAllFinalStatesTo(L_ANGLE_BRACKET);
+            NFA dotNFA = NFA.singleLetterLanguage(alphabetSize, ".")
+                    .setAllFinalStatesTo(DOT);
+            NFA iterationOpNFA = NFA.singleLetterLanguage(alphabetSize, "*")
+                    .setAllFinalStatesTo(ITERATION_OP);
+            NFA posIterationOpNFA = NFA.singleLetterLanguage(alphabetSize, "+")
+                    .setAllFinalStatesTo(POS_ITERATION_OP);
+            NFA unionOpNFA = NFA.singleLetterLanguage(alphabetSize, "|")
+                    .setAllFinalStatesTo(UNION_OP);
+            NFA optionOpNFA = NFA.singleLetterLanguage(alphabetSize, "?")
+                    .setAllFinalStatesTo(OPTION_OP);
 
-        NFA rAngleBracketNFA = NFA.singleLetterLanguage(alphabetSize, ">")
-                .setAllFinalStatesTo(R_ANGLE_BRACKET);
+            NFA lParenNFA = NFA.singleLetterLanguage(alphabetSize, "(")
+                    .setAllFinalStatesTo(LPAREN);
+            NFA rParenNFA = NFA.singleLetterLanguage(alphabetSize, ")")
+                    .setAllFinalStatesTo(RPAREN);
 
-        NFA commaNFA = NFA.singleLetterLanguage(alphabetSize, ",")
-                .setAllFinalStatesTo(COMMA);
+            NFA classMinusOpNFA = NFA.acceptsThisWord(alphabetSize, "{-}")
+                    .setAllFinalStatesTo(CLASS_MINUS_OP);
 
-        NFA ruleEndNFA = NFA.singleLetterLanguage(alphabetSize, ";")
-                .setAllFinalStatesTo(RULE_END);
-        NFA rulesSectionMarkerNFA = NFA.acceptsThisWord(alphabetSize, "%%")
-                .setAllFinalStatesTo(RULES_SECTION_MARKER);
+            NFA repetitionOpNFA = NFA.singleLetterLanguage(alphabetSize, "{")
+                    .concatenation(decimalNumberNFA)
+                    .concatenation(
+                            NFA.singleLetterLanguage(alphabetSize, ",")
+                                    .concatenation(decimalNumberNFA.optional()).optional()
+                    )
+                    .concatenation(NFA.singleLetterLanguage(alphabetSize, "}"))
+                    .setAllFinalStatesTo(REPETITION_OP);
 
-        // DIRTY HACK TBH
-        NFA definerNFA = NFA.acceptsThisWord(alphabetSize, ":=")
-                .concatenation(
-                        NFA.acceptsAllTheseSymbols(alphabetSize, Set.of(" ", "\t"))
-                                .positiveIteration()
-                )
-                .setAllFinalStatesTo(DEFINER);
-        NFA modesSectionMarkerNFA = NFA.acceptsThisWord(alphabetSize, "%MODES")
-                .setAllFinalStatesTo(MODES_SECTION_MARKER);
-        NFA domainsGroupMarkerNFA = NFA.acceptsThisWord(alphabetSize, "%DOMAINS")
-                .concatenation(
-                        NFA.singleLetterLanguage(alphabetSize, "[")
-                                .concatenation(identifierNFA)
-                                .concatenation(NFA.singleLetterLanguage(alphabetSize, "]"))
-                                .optional()
-                )
-                .setAllFinalStatesTo(DOMAINS_GROUP_MARKER);
+            NFA lAngleBracketNFA = NFA.singleLetterLanguage(alphabetSize, "<")
+                    .setAllFinalStatesTo(L_ANGLE_BRACKET);
 
-        NFA commentStartNFA = NFA.acceptsThisWord(alphabetSize, "/*")
-                .setAllFinalStatesTo(COMMENT_START);
-        NFA noAsteriskSeqNFA = NFA.acceptsAllSymbolsButThese(alphabetSize, Set.of("*")).iteration()
-                .setAllFinalStatesTo(NO_ASTERISK_SEQ);
-        NFA commentCloseNFA = NFA.acceptsThisWord(alphabetSize, "*/")
-                .setAllFinalStatesTo(COMMENT_CLOSE);
-        NFA asteriskNFA = NFA.singleLetterLanguage(alphabetSize, "*")
-                .setAllFinalStatesTo(ASTERISK);
+            NFA rAngleBracketNFA = NFA.singleLetterLanguage(alphabetSize, ">")
+                    .setAllFinalStatesTo(R_ANGLE_BRACKET);
 
-        List<StateTag> priorityList = new ArrayList<>(
-                List.of(
-                        ASTERISK,
-                        COMMENT_CLOSE,
-                        NO_ASTERISK_SEQ,
-                        COMMENT_START,
-                        CHAR,
-                        CLASS_CHAR,
-                        CHAR_CLASS_OPEN,
-                        CHAR_CLASS_CLOSE,
-                        CHAR_CLASS_NEG,
-                        CHAR_CLASS_RANGE_OP,
-                        DOT,
-                        ITERATION_OP,
-                        POS_ITERATION_OP,
-                        UNION_OP,
-                        OPTION_OP,
-                        LPAREN,
-                        RPAREN,
-                        REPETITION_OP,
-                        CLASS_MINUS_OP,
-                        NAMED_EXPR,
-                        IDENTIFIER,
-                        DEFINER,
-                        MODES_SECTION_MARKER,
-                        DOMAINS_GROUP_MARKER,
-                        RULES_SECTION_MARKER,
-                        L_ANGLE_BRACKET,
-                        R_ANGLE_BRACKET,
-                        COMMA,
-                        RULE_END,
-                        WHITESPACE,
-                        WHITESPACE_IN_REGEX
-                )
-        );
+            NFA commaNFA = NFA.singleLetterLanguage(alphabetSize, ",")
+                    .setAllFinalStatesTo(COMMA);
 
-        Map<StateTag, Integer> priorityMap = new HashMap<>();
-        for (int i = 0; i < priorityList.size(); i++) {
-            priorityMap.put(priorityList.get(i), i);
+            NFA ruleEndNFA = NFA.singleLetterLanguage(alphabetSize, ";")
+                    .setAllFinalStatesTo(RULE_END);
+            NFA rulesSectionMarkerNFA = NFA.acceptsThisWord(alphabetSize, "%%")
+                    .setAllFinalStatesTo(RULES_SECTION_MARKER);
+
+            // DIRTY HACK TBH
+            NFA definerNFA = NFA.acceptsThisWord(alphabetSize, ":=")
+                    .concatenation(
+                            NFA.acceptsAllTheseSymbols(alphabetSize, Set.of(" ", "\t"))
+                                    .positiveIteration()
+                    )
+                    .setAllFinalStatesTo(DEFINER);
+            NFA modesSectionMarkerNFA = NFA.acceptsThisWord(alphabetSize, "%MODES")
+                    .setAllFinalStatesTo(MODES_SECTION_MARKER);
+            NFA domainsGroupMarkerNFA = NFA.acceptsThisWord(alphabetSize, "%DOMAINS")
+                    .concatenation(
+                            NFA.singleLetterLanguage(alphabetSize, "[")
+                                    .concatenation(identifierNFA)
+                                    .concatenation(NFA.singleLetterLanguage(alphabetSize, "]"))
+                                    .optional()
+                    )
+                    .setAllFinalStatesTo(DOMAINS_GROUP_MARKER);
+
+            NFA commentStartNFA = NFA.acceptsThisWord(alphabetSize, "/*")
+                    .setAllFinalStatesTo(COMMENT_START);
+            NFA noAsteriskSeqNFA = NFA.acceptsAllSymbolsButThese(alphabetSize, Set.of("*")).iteration()
+                    .setAllFinalStatesTo(NO_ASTERISK_SEQ);
+            NFA commentCloseNFA = NFA.acceptsThisWord(alphabetSize, "*/")
+                    .setAllFinalStatesTo(COMMENT_CLOSE);
+            NFA asteriskNFA = NFA.singleLetterLanguage(alphabetSize, "*")
+                    .setAllFinalStatesTo(ASTERISK);
+
+            List<StateTag> priorityList = new ArrayList<>(
+                    List.of(
+                            ASTERISK,
+                            COMMENT_CLOSE,
+                            NO_ASTERISK_SEQ,
+                            COMMENT_START,
+                            CHAR,
+                            CLASS_CHAR,
+                            CHAR_CLASS_OPEN,
+                            CHAR_CLASS_CLOSE,
+                            CHAR_CLASS_NEG,
+                            CHAR_CLASS_RANGE_OP,
+                            DOT,
+                            ITERATION_OP,
+                            POS_ITERATION_OP,
+                            UNION_OP,
+                            OPTION_OP,
+                            LPAREN,
+                            RPAREN,
+                            REPETITION_OP,
+                            CLASS_MINUS_OP,
+                            NAMED_EXPR,
+                            IDENTIFIER,
+                            DEFINER,
+                            MODES_SECTION_MARKER,
+                            DOMAINS_GROUP_MARKER,
+                            RULES_SECTION_MARKER,
+                            L_ANGLE_BRACKET,
+                            R_ANGLE_BRACKET,
+                            COMMA,
+                            RULE_END,
+                            WHITESPACE,
+                            WHITESPACE_IN_REGEX
+                    )
+            );
+
+            Map<StateTag, Integer> priorityMap = new HashMap<>();
+            for (int i = 0; i < priorityList.size(); i++) {
+                priorityMap.put(priorityList.get(i), i);
+            }
+
+            NFA mode0 = whitespaceNFA
+                    .union(identifierNFA)
+                    .union(definerNFA)
+                    .union(modesSectionMarkerNFA)
+                    .union(domainsGroupMarkerNFA)
+                    .union(rulesSectionMarkerNFA)
+                    .union(lAngleBracketNFA)
+                    .union(rAngleBracketNFA)
+                    .union(commaNFA)
+                    .union(ruleEndNFA)
+                    .union(commentStartNFA);
+
+            NFA mode1 = whitespaceInRegexNFA
+                    .union(charClassOpenNFA)
+                    .union(dotNFA)
+                    .union(iterationOpNFA)
+                    .union(posIterationOpNFA)
+                    .union(unionOpNFA)
+                    .union(optionOpNFA)
+                    .union(lParenNFA)
+                    .union(rParenNFA)
+                    .union(namedExprNFA)
+                    .union(classMinusOpNFA)
+                    .union(repetitionOpNFA)
+                    .union(charNFA);
+
+            NFA mode2 = classCharNFA
+                    .union(charClassRangeOpNFA)
+                    .union(charClassNegNFA)
+                    .union(charClassCloseNFA);
+
+            NFA mode3 = noAsteriskSeqNFA.union(commentCloseNFA).union(asteriskNFA);
+
+            System.out.println("Mode 0");
+            LexicalRecognizer m0 = buildRecognizer(mode0, priorityMap);
+            System.out.println();
+            System.out.println("Mode 1");
+            LexicalRecognizer m1 = buildRecognizer(mode1, priorityMap);
+            System.out.println();
+            System.out.println("Mode 2");
+            LexicalRecognizer m2 = buildRecognizer(mode2, priorityMap);
+            System.out.println();
+            System.out.println("Mode 3");
+            LexicalRecognizer m3 = buildRecognizer(mode3, priorityMap);
+            System.out.println();
+
+            this.recognizers = List.of(m0, m1, m2, m3);
         }
-
-        NFA mode0 = whitespaceNFA
-                .union(identifierNFA)
-                .union(definerNFA)
-                .union(modesSectionMarkerNFA)
-                .union(domainsGroupMarkerNFA)
-                .union(rulesSectionMarkerNFA)
-                .union(lAngleBracketNFA)
-                .union(rAngleBracketNFA)
-                .union(commaNFA)
-                .union(ruleEndNFA)
-                .union(commentStartNFA);
-
-        NFA mode1 = whitespaceInRegexNFA
-                .union(charClassOpenNFA)
-                .union(dotNFA)
-                .union(iterationOpNFA)
-                .union(posIterationOpNFA)
-                .union(unionOpNFA)
-                .union(optionOpNFA)
-                .union(lParenNFA)
-                .union(rParenNFA)
-                .union(namedExprNFA)
-                .union(classMinusOpNFA)
-                .union(repetitionOpNFA)
-                .union(charNFA);
-
-        NFA mode2 = classCharNFA
-                .union(charClassRangeOpNFA)
-                .union(charClassNegNFA)
-                .union(charClassCloseNFA);
-
-        NFA mode3 = noAsteriskSeqNFA.union(commentCloseNFA).union(asteriskNFA);
-
-        System.out.println("Mode 0");
-        LexicalRecognizer m0 = buildRecognizer(mode0, priorityMap);
-        System.out.println();
-        System.out.println("Mode 1");
-        LexicalRecognizer m1 = buildRecognizer(mode1, priorityMap);
-        System.out.println();
-        System.out.println("Mode 2");
-        LexicalRecognizer m2 = buildRecognizer(mode2, priorityMap);
-        System.out.println();
-        System.out.println("Mode 3");
-        LexicalRecognizer m3 = buildRecognizer(mode3, priorityMap);
-        System.out.println();
-
-        this.recognizers = List.of(m0, m1, m2, m3);
-
-        //not exactly necessary
+        // just in case
         resetCurrState();
 
         this.compiler = new MockCompiler();
@@ -340,13 +390,13 @@ public class LexGenScanner {
     }
 
     // should be protected probably
-    void switchToMode(int mode) {
+    protected void switchToMode(int mode) {
         this.currentMode = mode;
         resetCurrState();
     }
 
-    void switchToMode(String mode) {
-        switchToMode(modeNamesInv.get(mode));
+    protected void switchToMode(Mode mode) {
+        switchToMode(modeIndices.get(mode));
     }
 
     private void advanceCurrentPosition() {
@@ -400,7 +450,7 @@ public class LexGenScanner {
 
     public Token nextToken() {
         resetCurrState();
-        this.start = currPos;
+        setStartToCurrentPosition();
 
         // Save last final state encountered
         OptionalInt lastFinalState = OptionalInt.empty();
@@ -439,7 +489,7 @@ public class LexGenScanner {
                     while ((getCurrentCodePoint() != Text.EOI) && !atPotentialTokenStart()) {
                         advanceCurrentPosition();
                     }
-                    switchToMode("INITIAL"); // resetting to default mode after error recovery
+                    switchToMode(INITIAL); // resetting to default mode after error recovery
                     Fragment invalidFragment = new Fragment(this.start, this.currPos);
                     return new TError(invalidFragment, getTextFragment(invalidFragment));
                 } else {
@@ -566,130 +616,130 @@ public class LexGenScanner {
         }
     }
 
-    Optional<Token> handleLParen(Text text, Fragment fragment) {
+    protected Optional<Token> handleLParen(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.LPAREN.createToken(text, fragment));
     }
 
-    Optional<Token> handleRParen(Text text, Fragment fragment) {
+    protected Optional<Token> handleRParen(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.RPAREN.createToken(text, fragment));
     }
 
-    Optional<Token> handleOptionOp(Text text, Fragment fragment) {
+    protected Optional<Token> handleOptionOp(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.OPTION_OP.createToken(text, fragment));
     }
 
-    Optional<Token> handleUnionOp(Text text, Fragment fragment) {
+    protected Optional<Token> handleUnionOp(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.UNION_OP.createToken(text, fragment));
     }
 
-    Optional<Token> handlePosIterationOp(Text text, Fragment fragment) {
+    protected Optional<Token> handlePosIterationOp(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.POS_ITERATION_OP.createToken(text, fragment));
     }
 
-    Optional<Token> handleIterationOp(Text text, Fragment fragment) {
+    protected Optional<Token> handleIterationOp(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.ITERATION_OP.createToken(text, fragment));
     }
 
-    Optional<Token> handleDot(Text text, Fragment fragment) {
+    protected Optional<Token> handleDot(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.DOT.createToken(text, fragment));
     }
 
-    Optional<Token> handleCharClassRangeOp(Text text, Fragment fragment) {
+    protected Optional<Token> handleCharClassRangeOp(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.CHAR_CLASS_RANGE_OP.createToken(text, fragment));
     }
 
-    Optional<Token> handleCharClassNeg(Text text, Fragment fragment) {
+    protected Optional<Token> handleCharClassNeg(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.CHAR_CLASS_NEG.createToken(text, fragment));
     }
 
-    Optional<Token> handleCharClassOpen(Text text, Fragment fragment) {
-        switchToMode("CHAR_CLASS");
+    protected Optional<Token> handleCharClassOpen(Text text, Fragment fragment) {
+        switchToMode(CHAR_CLASS);
         return Optional.of(SimpleDomains.CHAR_CLASS_OPEN.createToken(text, fragment));
     }
 
-    Optional<Token> handleCharClassClose(Text text, Fragment fragment) {
-        switchToMode("REGEX");
+    protected Optional<Token> handleCharClassClose(Text text, Fragment fragment) {
+        switchToMode(REGEX);
         return Optional.of(SimpleDomains.CHAR_CLASS_CLOSE.createToken(text, fragment));
     }
 
-    Optional<Token> handleChar(Text text, Fragment fragment) {
+    protected Optional<Token> handleChar(Text text, Fragment fragment) {
         return Optional.of(DomainsWithIntegerAttribute.CHAR.createToken(text, fragment));
     }
 
-    Optional<Token> handleClassChar(Text text, Fragment fragment) {
+    protected Optional<Token> handleClassChar(Text text, Fragment fragment) {
         return Optional.of(DomainsWithIntegerAttribute.CHAR.createToken(text, fragment));
     }
 
-    Optional<Token> handleNamedExpr(Text text, Fragment fragment) {
+    protected Optional<Token> handleNamedExpr(Text text, Fragment fragment) {
         return Optional.of(DomainsWithStringAttribute.NAMED_EXPR.createToken(text, fragment));
     }
 
-    Optional<Token> handleClassMinusOp(Text text, Fragment fragment) {
+    protected Optional<Token> handleClassMinusOp(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.CLASS_MINUS_OP.createToken(text, fragment));
     }
 
-    Optional<Token> handleRepetitionOp(Text text, Fragment fragment) {
+    protected Optional<Token> handleRepetitionOp(Text text, Fragment fragment) {
         return Optional.of(DomainsWithIntPairAttribute.REPETITION_OP.createToken(text, fragment));
     }
 
-    Optional<Token> handleLAngleBracket(Text text, Fragment fragment) {
+    protected Optional<Token> handleLAngleBracket(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.L_ANGLE_BRACKET.createToken(text, fragment));
     }
 
-    Optional<Token> handleRAngleBracket(Text text, Fragment fragment) {
+    protected Optional<Token> handleRAngleBracket(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.R_ANGLE_BRACKET.createToken(text, fragment));
     }
 
-    Optional<Token> handleDefiner(Text text, Fragment fragment) {
-        switchToMode("REGEX");
+    protected Optional<Token> handleDefiner(Text text, Fragment fragment) {
+        switchToMode(REGEX);
         return Optional.of(SimpleDomains.DEFINER.createToken(text, fragment));
     }
 
-    Optional<Token> handleRulesSectionMarker(Text text, Fragment fragment) {
+    protected Optional<Token> handleRulesSectionMarker(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.RULES_SECTION_MARKER.createToken(text, fragment));
     }
 
-    Optional<Token> handleRuleEnd(Text text, Fragment fragment) {
+    protected Optional<Token> handleRuleEnd(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.RULE_END.createToken(text, fragment));
     }
 
-    Optional<Token> handleComma(Text text, Fragment fragment) {
+    protected Optional<Token> handleComma(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.COMMA.createToken(text, fragment));
     }
 
-    Optional<Token> handleModesSectionMarker(Text text, Fragment fragment) {
+    protected Optional<Token> handleModesSectionMarker(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.MODES_SECTION_MARKER.createToken(text, fragment));
     }
 
-    Optional<Token> handleIdentifier(Text text, Fragment fragment) {
+    protected Optional<Token> handleIdentifier(Text text, Fragment fragment) {
         return Optional.of(DomainsWithStringAttribute.IDENTIFIER.createToken(text, fragment));
     }
 
-    Optional<Token> handleDomainsGroupMarker(Text text, Fragment fragment) {
+    protected Optional<Token> handleDomainsGroupMarker(Text text, Fragment fragment) {
         return Optional.of(DomainsWithStringAttribute.DOMAINS_GROUP_MARKER.createToken(text, fragment));
     }
 
-    Optional<Token> handleWhitespaceInRegex(Text text, Fragment fragment) {
-        switchToMode("INITIAL");
+    protected Optional<Token> handleWhitespaceInRegex(Text text, Fragment fragment) {
+        switchToMode(INITIAL);
         setStartToCurrentPosition();
         return Optional.empty();
     }
 
-    Optional<Token> handleCommentStart(Text text, Fragment fragment) {
-        switchToMode("COMMENT");
+    protected Optional<Token> handleCommentStart(Text text, Fragment fragment) {
+        switchToMode(COMMENT);
         return Optional.empty();
     }
 
-    Optional<Token> handleNoAsteriskSeq(Text text, Fragment fragment) {
+    protected Optional<Token> handleNoAsteriskSeq(Text text, Fragment fragment) {
         return Optional.empty();
     }
 
-    Optional<Token> handleAsterisk(Text text, Fragment fragment) {
+    protected Optional<Token> handleAsterisk(Text text, Fragment fragment) {
         return Optional.empty();
     }
 
-    Optional<Token> handleCommentClose(Text text, Fragment fragment) {
-        switchToMode("INITIAL");
+    protected Optional<Token> handleCommentClose(Text text, Fragment fragment) {
+        switchToMode(INITIAL);
         setStartToCurrentPosition();
         return Optional.empty();
     }

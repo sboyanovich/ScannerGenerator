@@ -52,7 +52,7 @@ IDENTIFIER          := [_a-zA-Z][_a-zA-Z0-9]*
                 RULES_SECTION_MARKER    := %%                                       handleRulesSectionMarker;
                 DOMAINS_GROUP_MARKER    := %DOMAINS(\[{IDENTIFIER}])?               handleDomainsGroupMarker;
                 MODES_SECTION_MARKER    := %MODES                                   handleModesSectionMarker;
-                DEFINER                 := :=                                       handleDefiner;
+                DEFINER                 := :=[ \t]+                                 handleDefiner;
                 IDENTIFIER              := {IDENTIFIER}                             handleIdentifier;
 <REGEX>         NAMED_EXPR              := {{IDENTIFIER}}                           handleNamedExpr;
 <REGEX>         LPAREN                  := \(                                       handleLParen;

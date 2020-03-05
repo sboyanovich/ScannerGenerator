@@ -255,12 +255,17 @@ public class Utility {
         return result.toString();
     }
 
-    public static void writeTextToFile(String text, String path) {
+    public static File ensurePathExists(String path) {
         File filePath = new File(path);
         File parentFile = filePath.getParentFile();
         if (parentFile != null) {
-            boolean dirsMade = parentFile.mkdirs();
+            parentFile.mkdirs();
         }
+        return filePath;
+    }
+
+    public static void writeTextToFile(String text, String path) {
+        File filePath = ensurePathExists(path);
         try (Writer writer = new BufferedWriter(new FileWriter(filePath))) {
             writer.write(text);
         } catch (IOException e) {

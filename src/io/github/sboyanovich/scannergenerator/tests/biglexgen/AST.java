@@ -1,6 +1,11 @@
 package io.github.sboyanovich.scannergenerator.tests.biglexgen;
 
+import io.github.sboyanovich.scannergenerator.automata.NFA;
+
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 
@@ -129,8 +134,19 @@ public abstract class AST {
         private Regex() {
         }
 
+        abstract NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize);
+
         public static class Union extends Regex {
             List<Regex> operands;
+
+            @Override
+            NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
+                NFA result = NFA.emptyLanguage(alphabetSize);
+                for (Regex operand : operands) {
+                    result = result.union(operand.buildNFA(namedExpressions, alphabetSize));
+                }
+                return result;
+            }
 
             @Override
             StringBuilder dotVisit() {
@@ -152,6 +168,16 @@ public abstract class AST {
 
         public static class Concatenation extends Regex {
             List<Regex> operands;
+
+            @Override
+            NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
+                NFA result = NFA.emptyStringLanguage(alphabetSize);
+                for (Regex operand : operands) {
+                    result = result.concatenation(operand.buildNFA(namedExpressions, alphabetSize));
+                }
+                return result;
+            }
+
 
             @Override
             StringBuilder dotVisit() {
@@ -176,6 +202,11 @@ public abstract class AST {
             Regex a;
 
             @Override
+            NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
+                return a.buildNFA(namedExpressions, alphabetSize).iteration();
+            }
+
+            @Override
             StringBuilder dotVisit() {
                 StringBuilder result = new StringBuilder();
 
@@ -191,6 +222,11 @@ public abstract class AST {
 
         public static class PosIteration extends Regex {
             Regex a;
+
+            @Override
+            NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
+                return a.buildNFA(namedExpressions, alphabetSize).positiveIteration();
+            }
 
             @Override
             StringBuilder dotVisit() {
@@ -210,6 +246,11 @@ public abstract class AST {
             Regex a;
 
             @Override
+            NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
+                return a.buildNFA(namedExpressions, alphabetSize).optional();
+            }
+
+            @Override
             StringBuilder dotVisit() {
                 StringBuilder result = new StringBuilder();
 
@@ -227,6 +268,19 @@ public abstract class AST {
             Regex a;
             int from;
             int to;
+
+            @Override
+            NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
+                NFA aNFA = a.buildNFA(namedExpressions, alphabetSize);
+                NFA result = aNFA.power(from);
+
+                if (to == -1) {
+                    result = result.concatenation(aNFA).iteration();
+                } else if (to > from) {
+                    result = result.concatenation(aNFA.power(to - from).optional());
+                }
+                return result;
+            }
 
             @Override
             StringBuilder dotVisit() {
@@ -258,6 +312,11 @@ public abstract class AST {
             int codePoint;
 
             @Override
+            NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
+                return NFA.singleLetterLanguage(alphabetSize, codePoint);
+            }
+
+            @Override
             StringBuilder dotVisit() {
                 StringBuilder result = new StringBuilder();
 
@@ -268,6 +327,12 @@ public abstract class AST {
         }
 
         public static class Dot extends Regex {
+
+            @Override
+            NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
+                return NFA.acceptsAllSymbolsButThese(alphabetSize, Set.of("\n"));
+            }
+
             @Override
             StringBuilder dotVisit() {
                 StringBuilder result = new StringBuilder();
@@ -282,6 +347,11 @@ public abstract class AST {
             String name;
 
             @Override
+            NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
+                return namedExpressions.get(name);
+            }
+
+            @Override
             StringBuilder dotVisit() {
                 StringBuilder result = new StringBuilder();
 
@@ -294,6 +364,38 @@ public abstract class AST {
         public static class CharClass extends Regex {
             boolean exclusive;
             List<CharOrRange> charsOrRanges;
+
+            boolean containsCodePoint(int codePoint) {
+                if (exclusive) {
+                    for (var cor : charsOrRanges) {
+                        if (cor.containsCodePoint(codePoint)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                } else {
+                    for (var cor : charsOrRanges) {
+                        if (cor.containsCodePoint(codePoint)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            }
+
+            @Override
+            NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
+                Set<Integer> codePoints = new HashSet<>();
+                for (var cor : charsOrRanges) {
+                    codePoints.addAll(cor.getCodePoints());
+                }
+
+                if (exclusive) {
+                    return NFA.acceptsAllCodePointsButThese(alphabetSize, codePoints);
+                } else {
+                    return NFA.acceptsAllTheseCodePoints(alphabetSize, codePoints);
+                }
+            }
 
             @Override
             StringBuilder dotVisit() {
@@ -323,8 +425,22 @@ public abstract class AST {
             private CharOrRange() {
             }
 
+            abstract Set<Integer> getCodePoints();
+
+            abstract boolean containsCodePoint(int codePoint);
+
             public static class ClassChar extends CharOrRange {
                 int codePoint;
+
+                @Override
+                boolean containsCodePoint(int codePoint) {
+                    return this.codePoint == codePoint;
+                }
+
+                @Override
+                Set<Integer> getCodePoints() {
+                    return Set.of(codePoint);
+                }
 
                 @Override
                 StringBuilder dotVisit() {
@@ -341,6 +457,20 @@ public abstract class AST {
                 int cpb;
 
                 @Override
+                boolean containsCodePoint(int codePoint) {
+                    return cpa <= codePoint && codePoint <= cpb;
+                }
+
+                @Override
+                Set<Integer> getCodePoints() {
+                    Set<Integer> result = new HashSet<>();
+                    for (int i = cpa; i <= cpb; i++) {
+                        result.add(i);
+                    }
+                    return result;
+                }
+
+                @Override
                 StringBuilder dotVisit() {
                     StringBuilder result = new StringBuilder();
 
@@ -354,6 +484,17 @@ public abstract class AST {
         public static class CharClassDiff extends Regex {
             CharClass a;
             CharClass b;
+
+            @Override
+            NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
+                Set<Integer> codePoints = new HashSet<>();
+                for (int i = 0; i < alphabetSize; i++) {
+                    if (a.containsCodePoint(i) && !b.containsCodePoint(i)) {
+                        codePoints.add(i);
+                    }
+                }
+                return NFA.acceptsAllTheseCodePoints(alphabetSize, codePoints);
+            }
 
             @Override
             StringBuilder dotVisit() {
