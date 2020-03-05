@@ -1,5 +1,6 @@
 package io.github.sboyanovich.scannergenerator.tests;
 
+import io.github.sboyanovich.scannergenerator.automata.StateTag;
 import io.github.sboyanovich.scannergenerator.scanner.*;
 
 import java.util.List;

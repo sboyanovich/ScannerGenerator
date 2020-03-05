@@ -3,6 +3,7 @@ package io.github.sboyanovich.scannergenerator.scanner;
 import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
+import io.github.sboyanovich.scannergenerator.automata.StateTag;
 import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
 
 import java.io.*;

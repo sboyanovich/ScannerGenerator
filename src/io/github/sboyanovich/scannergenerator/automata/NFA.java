@@ -1,6 +1,5 @@
 package io.github.sboyanovich.scannergenerator.automata;
 
-import io.github.sboyanovich.scannergenerator.scanner.StateTag;
 import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
 
 import java.util.*;
@@ -9,7 +8,7 @@ import java.util.stream.Collectors;
 
 import static io.github.sboyanovich.scannergenerator.automata.Utility.FINAL_DUMMY_PRIORITY_RANK;
 import static io.github.sboyanovich.scannergenerator.automata.Utility.NOT_FINAL_PRIORITY_RANK;
-import static io.github.sboyanovich.scannergenerator.scanner.StateTag.FINAL_DUMMY;
+import static io.github.sboyanovich.scannergenerator.automata.StateTag.FINAL_DUMMY;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 
 public class NFA {

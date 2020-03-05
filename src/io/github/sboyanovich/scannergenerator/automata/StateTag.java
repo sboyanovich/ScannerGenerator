@@ -1,4 +1,4 @@
-package io.github.sboyanovich.scannergenerator.scanner;
+package io.github.sboyanovich.scannergenerator.automata;
 
 public interface StateTag {
     static boolean isFinal(StateTag tag) {

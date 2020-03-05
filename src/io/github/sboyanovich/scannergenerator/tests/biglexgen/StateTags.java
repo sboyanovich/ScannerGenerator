@@ -1,6 +1,6 @@
 package io.github.sboyanovich.scannergenerator.tests.biglexgen;
 
-import io.github.sboyanovich.scannergenerator.scanner.StateTag;
+import io.github.sboyanovich.scannergenerator.automata.StateTag;
 
 public enum StateTags implements StateTag {
     WHITESPACE_IN_REGEX,

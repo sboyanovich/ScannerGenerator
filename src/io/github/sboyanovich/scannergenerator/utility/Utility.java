@@ -358,7 +358,7 @@ public class Utility {
         result.append("package ")
                 .append(packageName)
                 .append(";\n\n");
-        result.append("import io.github.sboyanovich.scannergenerator.scanner.StateTag;\n\n");
+        result.append("import io.github.sboyanovich.scannergenerator.automata.StateTag;\n\n");
         result.append("public enum StateTags implements StateTag {\n");
 
         if (stateNames.size() > 0) {

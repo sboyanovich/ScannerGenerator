@@ -3,7 +3,7 @@ package io.github.sboyanovich.scannergenerator.tests.mockjava;
 import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.scanner.LexicalRecognizer;
-import io.github.sboyanovich.scannergenerator.scanner.StateTag;
+import io.github.sboyanovich.scannergenerator.automata.StateTag;
 import io.github.sboyanovich.scannergenerator.tests.mockjava.data.states.OperatorsTags;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 

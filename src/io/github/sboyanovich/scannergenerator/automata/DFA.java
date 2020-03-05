@@ -1,6 +1,5 @@
 package io.github.sboyanovich.scannergenerator.automata;
 
-import io.github.sboyanovich.scannergenerator.scanner.StateTag;
 import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
 import io.github.sboyanovich.scannergenerator.utility.unionfind.DisjointSetForest;
 

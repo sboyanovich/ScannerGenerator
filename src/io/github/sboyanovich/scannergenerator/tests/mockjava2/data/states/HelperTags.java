@@ -1,6 +1,6 @@
 package io.github.sboyanovich.scannergenerator.tests.mockjava2.data.states;
 
-import io.github.sboyanovich.scannergenerator.scanner.StateTag;
+import io.github.sboyanovich.scannergenerator.automata.StateTag;
 
 public enum HelperTags implements StateTag {
     SLC_START,

@@ -2,6 +2,7 @@ package io.github.sboyanovich.scannergenerator.tests.lexgen;
 
 import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
+import io.github.sboyanovich.scannergenerator.automata.StateTag;
 import io.github.sboyanovich.scannergenerator.scanner.Compiler;
 import io.github.sboyanovich.scannergenerator.scanner.*;
 import io.github.sboyanovich.scannergenerator.scanner.Scanner;
