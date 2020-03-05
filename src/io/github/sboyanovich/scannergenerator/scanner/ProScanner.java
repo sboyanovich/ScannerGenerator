@@ -1,7 +1,6 @@
 package io.github.sboyanovich.scannergenerator.scanner;
 
-import io.github.sboyanovich.scannergenerator.scanner.token.TEndOfProgram;
-import io.github.sboyanovich.scannergenerator.scanner.token.TError;
+import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
@@ -106,7 +105,7 @@ public class ProScanner {
 
     public Token nextToken() {
         if (getCurrentCodePoint() == Text.EOI) {
-            return new TEndOfProgram(new Fragment(currPos, currPos));
+            return Domain.END_OF_INPUT.createToken(this.program, new Fragment(currPos, currPos));
         }
 
         int currState = getCurrentRecognizer().getInitialState();
@@ -143,7 +142,7 @@ public class ProScanner {
                     }
                     this.currentMode = 0; // resetting to default mode after error recovery
                     Fragment invalidFragment = new Fragment(start, this.currPos);
-                    return new TError(invalidFragment, getTextFragment(invalidFragment));
+                    return Domain.ERROR.createToken(this.program, invalidFragment);
                 } else {
                     if (lastFinalState.isPresent()) {
                         this.currPos = lastInFinal;

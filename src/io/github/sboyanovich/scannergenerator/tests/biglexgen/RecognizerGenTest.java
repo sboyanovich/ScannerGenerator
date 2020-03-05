@@ -24,7 +24,7 @@ public class RecognizerGenTest {
         MockCompiler compiler = scanner.getCompiler();
 
         Set<Domain> ignoredTokenTypes = Set.of(
-                Domain.END_OF_PROGRAM,
+                Domain.END_OF_INPUT,
                 Domain.ERROR
         );
 
@@ -34,7 +34,7 @@ public class RecognizerGenTest {
 
         Token t = scanner.nextToken();
         allTokens.add(t);
-        while (t.getTag() != Domain.END_OF_PROGRAM) {
+        while (t.getTag() != Domain.END_OF_INPUT) {
             if (!ignoredTokenTypes.contains(t.getTag())) {
                 System.out.println(t);
             }

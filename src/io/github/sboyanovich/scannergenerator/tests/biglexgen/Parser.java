@@ -55,7 +55,7 @@ public class Parser {
 
     private AST parse() {
         AST ast = spec();
-        expect(Domain.END_OF_PROGRAM);
+        expect(Domain.END_OF_INPUT);
         return ast;
     }
 

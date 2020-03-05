@@ -210,14 +210,14 @@ public class Test {
 
         Set<Domain> ignoredTokenTypes = Set.of(
                 SimpleDomains.WHITESPACE,
-                Domain.END_OF_PROGRAM,
+                Domain.END_OF_INPUT,
                 Domain.ERROR
         );
 
         int errCount = 0;
 
         Token t = scanner.nextToken();
-        while (t.getTag() != Domain.END_OF_PROGRAM) {
+        while (t.getTag() != Domain.END_OF_INPUT) {
             if (!ignoredTokenTypes.contains(t.getTag())) {
                 System.out.println(t);
             }

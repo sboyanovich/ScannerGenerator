@@ -3,8 +3,7 @@ package io.github.sboyanovich.scannergenerator.tests.lexgen3;
 import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.scanner.*;
-import io.github.sboyanovich.scannergenerator.scanner.token.TEndOfProgram;
-import io.github.sboyanovich.scannergenerator.scanner.token.TError;
+import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
@@ -295,7 +294,7 @@ public class LexGenScanner {
 
     public Token nextToken() {
         if (getCurrentCodePoint() == Text.EOI) {
-            return new TEndOfProgram(new Fragment(currPos, currPos));
+            return Domain.END_OF_INPUT.createToken(this.inputText, new Fragment(currPos, currPos));
         }
 
         resetCurrState();
@@ -335,7 +334,7 @@ public class LexGenScanner {
                     }
                     switchToMode(0); // resetting to default mode after error recovery
                     Fragment invalidFragment = new Fragment(start, this.currPos);
-                    return new TError(invalidFragment, getTextFragment(invalidFragment));
+                    return Domain.ERROR.createToken(this.inputText, invalidFragment);
                 } else {
                     if (lastFinalState.isPresent()) {
                         this.currPos = lastInFinal;

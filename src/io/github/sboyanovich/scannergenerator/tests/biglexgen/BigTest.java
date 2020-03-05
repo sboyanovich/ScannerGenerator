@@ -16,7 +16,7 @@ public class BigTest {
         MockCompiler compiler = scanner.getCompiler();
 
         Set<Domain> ignoredTokenTypes = Set.of(
-                Domain.END_OF_PROGRAM,
+                Domain.END_OF_INPUT,
                 Domain.ERROR
         );
 
@@ -24,9 +24,10 @@ public class BigTest {
 
         int errCount = 0;
 
-        Token t = scanner.nextToken();
-        allTokens.add(t);
-        while (t.getTag() != Domain.END_OF_PROGRAM) {
+        while (scanner.hasNext()) {
+            Token t = scanner.next();
+            allTokens.add(t);
+
             if (!ignoredTokenTypes.contains(t.getTag())) {
                 System.out.println(t);
             }
@@ -34,8 +35,6 @@ public class BigTest {
                 errCount++;
                 System.out.println(t.getCoords());
             }
-            t = scanner.nextToken();
-            allTokens.add(t);
         }
 
         System.out.println();
@@ -46,12 +45,11 @@ public class BigTest {
             System.out.println(entry.getValue() + " at " + entry.getKey());
         }
 
-        if(errCount == 0) {
+        if (errCount == 0) {
             AST ast = Parser.parse(allTokens.iterator());
             String dotAST = ast.toGraphVizDotString();
             System.out.println();
             System.out.println(dotAST);
         }
-
     }
 }
