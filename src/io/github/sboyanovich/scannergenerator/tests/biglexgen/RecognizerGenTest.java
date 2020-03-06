@@ -125,7 +125,8 @@ public class RecognizerGenTest {
                 modes.put(modeName, buildRecognizer(nfa, priorityMap));
             }
 
-            String prefix = "generated/";
+            String recognizersDirName = "recognizers";
+            String prefix = "res/generated/";
 
             for (String modeName : modes.keySet()) {
                 LexicalRecognizer recognizer = modes.get(modeName);
@@ -136,7 +137,9 @@ public class RecognizerGenTest {
                 System.out.println(modeName + ": ");
                 System.out.println(dot);
                 System.out.println();
-                recognizer.writeToFile(prefix + "recognizers/" + modeName + ".reco", priorityMap);
+                recognizer.writeToFile(
+                        prefix + recognizersDirName + "/" + modeName + ".reco", priorityMap
+                );
             }
 
             System.out.println();
@@ -203,7 +206,6 @@ public class RecognizerGenTest {
 
             final String INDENT_4 = "    ";
 
-            List<AST.Identifier> modeNames = spec.modes.modeNames;
             scannerCode.append(INDENT_4).append(INDENT_4).append("INITIAL");
             for (AST.Identifier mode : spec.modes.modeNames) {
                 scannerCode.append(",\n").append(INDENT_4).append(INDENT_4).append(mode.identifier);
@@ -243,7 +245,7 @@ public class RecognizerGenTest {
                     "        // Restoring recognizers from files.\n" +
                     "        this.recognizers = new HashMap<>();\n");
             for (String modeName : modes.keySet()) {
-                String fileName = prefix + "recognizers/" + modeName + ".reco";
+                String fileName = prefix + recognizersDirName + "/" + modeName + ".reco";
                 scannerCode
                         .append(INDENT_4)
                         .append(INDENT_4)

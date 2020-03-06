@@ -599,7 +599,7 @@ public class LexGenScanner implements Iterator<Token> {
                             optToken = handleNoAsteriskSeq(this.inputText, scannedFragment);
                             break;
                         case ASTERISK:
-                            optToken = handleAsterisk(this.inputText, scannedFragment);
+                            optToken = handleCommentAsterisk(this.inputText, scannedFragment);
                             break;
                         case COMMENT_CLOSE:
                             optToken = handleCommentClose(this.inputText, scannedFragment);
@@ -740,7 +740,7 @@ public class LexGenScanner implements Iterator<Token> {
         return Optional.empty();
     }
 
-    protected Optional<Token> handleAsterisk(Text text, Fragment fragment) {
+    protected Optional<Token> handleCommentAsterisk(Text text, Fragment fragment) {
         return Optional.empty();
     }
 

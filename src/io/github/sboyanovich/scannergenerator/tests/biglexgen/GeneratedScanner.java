@@ -296,7 +296,7 @@ public abstract class GeneratedScanner implements Iterator<Token> {
                             optToken = handleNoAsteriskSeq(this.inputText, scannedFragment);
                             break;
                         case ASTERISK:
-                            optToken = handleAsterisk(this.inputText, scannedFragment);
+                            optToken = handleCommentAsterisk(this.inputText, scannedFragment);
                             break;
                         case COMMENT_CLOSE:
                             optToken = handleCommentClose(this.inputText, scannedFragment);
@@ -377,7 +377,7 @@ public abstract class GeneratedScanner implements Iterator<Token> {
 
     protected abstract Optional<Token> handleNoAsteriskSeq(Text text, Fragment fragment);
 
-    protected abstract Optional<Token> handleAsterisk(Text text, Fragment fragment);
+    protected abstract Optional<Token> handleCommentAsterisk(Text text, Fragment fragment);
 
     protected abstract Optional<Token> handleCommentClose(Text text, Fragment fragment);
 }

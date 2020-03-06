@@ -177,7 +177,7 @@ public class MyScanner extends GeneratedScanner {
     }
 
     @Override
-    protected Optional<Token> handleAsterisk(Text text, Fragment fragment) {
+    protected Optional<Token> handleCommentAsterisk(Text text, Fragment fragment) {
         return Optional.empty();
     }
 

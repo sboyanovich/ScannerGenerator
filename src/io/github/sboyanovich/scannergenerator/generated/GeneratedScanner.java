@@ -77,10 +77,10 @@ public abstract class GeneratedScanner implements Iterator<Token> {
 
         // Restoring recognizers from files.
         this.recognizers = new HashMap<>();
-        this.recognizers.put(REGEX, new LexicalRecognizer("generated/recognizers/REGEX.reco", finalTags));
-        this.recognizers.put(INITIAL, new LexicalRecognizer("generated/recognizers/INITIAL.reco", finalTags));
-        this.recognizers.put(CHAR_CLASS, new LexicalRecognizer("generated/recognizers/CHAR_CLASS.reco", finalTags));
-        this.recognizers.put(COMMENT, new LexicalRecognizer("generated/recognizers/COMMENT.reco", finalTags));
+        this.recognizers.put(REGEX, new LexicalRecognizer("res/generated/recognizers/REGEX.reco", finalTags));
+        this.recognizers.put(INITIAL, new LexicalRecognizer("res/generated/recognizers/INITIAL.reco", finalTags));
+        this.recognizers.put(CHAR_CLASS, new LexicalRecognizer("res/generated/recognizers/CHAR_CLASS.reco", finalTags));
+        this.recognizers.put(COMMENT, new LexicalRecognizer("res/generated/recognizers/COMMENT.reco", finalTags));
 
         // just in case
         resetCurrState();
