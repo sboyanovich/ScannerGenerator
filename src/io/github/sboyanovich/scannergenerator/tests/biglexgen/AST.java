@@ -2,10 +2,7 @@ package io.github.sboyanovich.scannergenerator.tests.biglexgen;
 
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 
@@ -543,13 +540,21 @@ public abstract class AST {
 
         List<Identifier> domainNames;
 
+        List<String> getDomainNames() {
+            List<String> result = new ArrayList<>();
+            for (Identifier id : domainNames) {
+                result.add(id.identifier);
+            }
+            return result;
+        }
+
         public static class SimpleDomainGroup extends DomainGroup {
 
             @Override
             StringBuilder dotVisit() {
                 StringBuilder result = new StringBuilder();
 
-                result.append(AST.labelNode(number, "NoAttribute"));
+                result.append(AST.labelNode(number, "#NoAttribute"));
 
                 for (Identifier name : domainNames) {
                     result.append(AST.edgeString(number, name.number));
