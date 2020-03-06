@@ -319,7 +319,7 @@ public abstract class GeneratedScanner implements Iterator<Token> {
         }
     }
 
-    protected abstract void handleError(int codepoint, Mode mode, Position errorAt);
+    protected abstract void handleError(int codePoint, Mode mode, Position errorAt);
 
     protected abstract Optional<Token> handleLParen(Text text, Fragment fragment);
 

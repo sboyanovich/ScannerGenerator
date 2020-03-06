@@ -26,8 +26,8 @@ public class MyScanner extends GeneratedScanner {
     }
 
     @Override
-    protected void handleError(int codepoint, Mode mode, Position errorAt) {
-        this.compiler.addError(errorAt, "Unexpected symbol encountered: " + codepoint);
+    protected void handleError(int codePoint, Mode mode, Position errorAt) {
+        this.compiler.addError(errorAt, "Unexpected symbol encountered: " + codePoint);
     }
 
     @Override
