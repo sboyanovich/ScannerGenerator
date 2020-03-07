@@ -360,6 +360,11 @@ public class Parser {
             result.number = getNodeName();
             nextToken();
             return result;
+        } else if (sym.getTag().equals(EOF)) {
+            AST.Regex.Eof result = new AST.Regex.Eof();
+            result.number = getNodeName();
+            nextToken();
+            return result;
         } else if (sym.getTag().equals(NAMED_EXPR)) {
             AST.Regex.NamedExpr result = new AST.Regex.NamedExpr();
             result.number = getNodeName();

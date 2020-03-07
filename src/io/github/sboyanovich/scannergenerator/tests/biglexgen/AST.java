@@ -340,6 +340,18 @@ public abstract class AST {
             }
         }
 
+        public static class Eof extends Regex {
+            @Override
+            StringBuilder dotVisit() {
+                return AST.labelNode(number, "<<EOF>>");
+            }
+
+            @Override
+            NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
+                return NFA.singleLetterLanguage(alphabetSize, alphabetSize - 1);
+            }
+        }
+
         public static class NamedExpr extends Regex {
             String name;
 

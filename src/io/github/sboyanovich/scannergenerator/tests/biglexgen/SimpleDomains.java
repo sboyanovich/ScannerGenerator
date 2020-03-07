@@ -120,5 +120,11 @@ public enum SimpleDomains implements Domain {
         public Token createToken(Text text, Fragment fragment) {
             return new BasicToken(fragment, OPTION_OP);
         }
+    },
+    EOF {
+        @Override
+        public Token createToken(Text text, Fragment fragment) {
+            return new BasicToken(fragment, EOF);
+        }
     }
 }
