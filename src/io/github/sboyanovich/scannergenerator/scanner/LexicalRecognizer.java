@@ -267,6 +267,47 @@ public final class LexicalRecognizer {
     }
 
     // CALL ONLY ON GENERATED FILES
+    public LexicalRecognizer(InputStream is, List<StateTag> finalTags) {
+        try (DataInputStream dis = new DataInputStream(
+                new BufferedInputStream(is))
+        ) {
+            int domain = dis.readInt();
+            int eqcDomain = dis.readInt();
+            int[] map = new int[domain];
+
+            for (int i = 0; i < domain; i++) {
+                map[i] = dis.readInt();
+            }
+
+            this.generalizedSymbolsMap = new EquivalenceMap(domain, eqcDomain, map);
+
+            this.initialState = dis.readInt();
+            int numberOfStates = dis.readInt();
+
+            this.transitionTable = new int[numberOfStates][eqcDomain];
+
+            for (int i = 0; i < numberOfStates; i++) {
+                for (int j = 0; j < eqcDomain; j++) {
+                    this.transitionTable[i][j] = dis.readInt();
+                }
+            }
+
+            this.labels = new ArrayList<>();
+            for (int i = 0; i < numberOfStates; i++) {
+                this.labels.add(StateTag.NOT_FINAL);
+            }
+
+            while (dis.available() > 0) {
+                int state = dis.readInt();
+                int index = dis.readInt();
+                this.labels.set(state, finalTags.get(index));
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public LexicalRecognizer(String filename, List<StateTag> finalTags) {
         try (DataInputStream dis = new DataInputStream(
                 new BufferedInputStream(new FileInputStream(filename)))
