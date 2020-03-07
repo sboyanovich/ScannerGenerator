@@ -171,6 +171,43 @@ public class Utility {
         return lines.toString().substring(0, lines.length() - 1);
     }
 
+    /**
+     * reads text from file res/filename
+     */
+    public static String getTextFromFile(String filename) {
+        try (InputStream is = new FileInputStream("res/" + filename)) {
+            return getTextFromInputStream(is);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    public static String getTextFromResourceFile(String resourcePath) {
+        try (InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream(resourcePath)) {
+            return getTextFromInputStream(is);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    private static String getTextFromInputStream(InputStream is) {
+        StringBuilder lines = new StringBuilder();
+
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+            String currLine = br.readLine();
+            while (currLine != null) {
+                lines.append(currLine).append("\n");
+                currLine = br.readLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return lines.toString().substring(0, lines.length() - 1);
+    }
+
     // for DEBUG
     public static void printTransitionTable(int[][] transitionTable, int paddingTo) {
         for (int[] aTransitionTable : transitionTable) {
