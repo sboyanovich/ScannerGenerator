@@ -12,7 +12,7 @@ import java.util.SortedMap;
 
 public class BigTestGen {
     public static void main(String[] args) {
-        String text = Utility.getText("testInputM1.txt");
+        String text = Utility.getTextFromResourceFile("testInputM1.txt");
 
         MyScanner scanner = new MyScanner(text);
         MockCompiler compiler = scanner.getCompiler();
