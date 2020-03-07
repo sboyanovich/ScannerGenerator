@@ -3,7 +3,10 @@ package io.github.sboyanovich.scannergenerator.tests.biglexgen;
 import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.automata.StateTag;
-import io.github.sboyanovich.scannergenerator.scanner.*;
+import io.github.sboyanovich.scannergenerator.scanner.Fragment;
+import io.github.sboyanovich.scannergenerator.scanner.LexicalRecognizer;
+import io.github.sboyanovich.scannergenerator.scanner.Position;
+import io.github.sboyanovich.scannergenerator.scanner.Text;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
@@ -86,7 +89,8 @@ public class LexGenScanner implements Iterator<Token> {
             this.recognizers.put(COMMENT, new LexicalRecognizer("COMMENT.reco", finalTags));
         } else {
 
-            int alphabetSize = Character.MAX_CODE_POINT + 1;
+            // additional +1 will serve as <<EOF>>
+            int alphabetSize = Character.MAX_CODE_POINT + 1 + 1;
 
             NFA spaceNFA = NFA.singleLetterLanguage(alphabetSize, " ");
             NFA tabNFA = NFA.singleLetterLanguage(alphabetSize, "\t");
@@ -142,7 +146,7 @@ public class LexGenScanner implements Iterator<Token> {
                                     Set.of(
                                             "\\b", "\\t", "\\n", "\\f", "\\r", "\\\\",
                                             "\\*", "\\+", "\\|", "\\?",
-                                            "\\.", "\\(", "\\)", "\\[", "\\{", "\\}"
+                                            "\\.", "\\(", "\\)", "\\[", "\\{", "\\}", "\\<", "\\>"
                                     )
                             )
                     );
@@ -166,6 +170,9 @@ public class LexGenScanner implements Iterator<Token> {
 
             NFA charNFA = inputCharNFA.union(escapeNFA)
                     .setAllFinalStatesTo(CHAR);
+
+            NFA eofNFA = NFA.acceptsThisWord(alphabetSize, "<<EOF>>")
+                    .setAllFinalStatesTo(EOF);
 
             NFA charClassRangeOpNFA = NFA.singleLetterLanguage(alphabetSize, "-")
                     .setAllFinalStatesTo(CHAR_CLASS_RANGE_OP);
@@ -280,7 +287,8 @@ public class LexGenScanner implements Iterator<Token> {
                             COMMA,
                             RULE_END,
                             WHITESPACE,
-                            WHITESPACE_IN_REGEX
+                            WHITESPACE_IN_REGEX,
+                            EOF
                     )
             );
 
@@ -313,7 +321,8 @@ public class LexGenScanner implements Iterator<Token> {
                     .union(namedExprNFA)
                     .union(classMinusOpNFA)
                     .union(repetitionOpNFA)
-                    .union(charNFA);
+                    .union(charNFA)
+                    .union(eofNFA);
 
             NFA mode2 = classCharNFA
                     .union(charClassRangeOpNFA)
@@ -335,7 +344,6 @@ public class LexGenScanner implements Iterator<Token> {
             LexicalRecognizer m3 = buildRecognizer(mode3, priorityMap);
             System.out.println();
 
-            // Restoring recognizers from files.
             this.recognizers = new HashMap<>();
             this.recognizers.put(INITIAL, m0);
             this.recognizers.put(REGEX, m1);
@@ -465,12 +473,6 @@ public class LexGenScanner implements Iterator<Token> {
         while (true) {
             int currCodePoint = getCurrentCodePoint();
 
-            /// This guards against finding EOI while completing an earlier started token
-            if (currCodePoint == Text.EOI && this.currPos.equals(this.start)) {
-                this.hasNext = false;
-                return Domain.END_OF_INPUT.createToken(this.inputText, new Fragment(currPos, currPos));
-            }
-
             int nextState = getCurrentRecognizer().transition(this.currState, currCodePoint);
 
             if (isFinal(this.currState)) {
@@ -484,9 +486,19 @@ public class LexGenScanner implements Iterator<Token> {
             } else {
                 // it's time to stop
 
-                // we've found an error
+                // nothing matched
                 if (!isFinal(this.currState) && !lastFinalState.isPresent()) {
 
+                    /// This guards against finding EOI while completing an earlier started token
+                    if (
+                            (currCodePoint == Text.EOI || currCodePoint == this.inputText.getAltEoi()) &&
+                                    this.currPos.equals(this.start)
+                    ) {
+                        this.hasNext = false;
+                        return Domain.END_OF_INPUT.createToken(this.inputText, new Fragment(currPos, currPos));
+                    }
+
+                    // we've found an error
                     /// ERROR HANDLING CODE GOES HERE!
                     this.compiler.addError(this.currPos, "Unexpected symbol encountered: " + currCodePoint);
 
@@ -603,6 +615,9 @@ public class LexGenScanner implements Iterator<Token> {
                             break;
                         case COMMENT_CLOSE:
                             optToken = handleCommentClose(this.inputText, scannedFragment);
+                            break;
+                        case EOF:
+                            optToken = handleEof(this.inputText, scannedFragment);
                             break;
                         case WHITESPACE:
                             setStartToCurrentPosition();
@@ -748,6 +763,10 @@ public class LexGenScanner implements Iterator<Token> {
         switchToMode(INITIAL);
         setStartToCurrentPosition();
         return Optional.empty();
+    }
+
+    protected Optional<Token> handleEof(Text text, Fragment fragment) {
+        return Optional.of(SimpleDomains.EOF.createToken(text, fragment));
     }
 
     public MockCompiler getCompiler() {
