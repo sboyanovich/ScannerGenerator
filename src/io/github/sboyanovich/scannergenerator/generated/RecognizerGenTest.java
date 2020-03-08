@@ -17,7 +17,15 @@ import java.util.stream.Collectors;
 
 public class RecognizerGenTest {
     public static void main(String[] args) {
-        String text = Utility.getText("testInputM1.txt");
+        String appName = "xgen";
+        if(args.length < 1) {
+            System.err.println("USAGE: "+appName + " <input_file>");
+            System.exit(1);
+        }
+
+        String inputFile = args[0];
+
+        String text = Utility.getText(inputFile);
 
         int maxCodePoint = Character.MAX_CODE_POINT;
         int aeoi = maxCodePoint + 1;

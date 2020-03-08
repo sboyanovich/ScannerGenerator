@@ -1,6 +1,6 @@
 <component name="ArtifactManager">
-  <artifact type="jar" name="ScannerGenerator:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/ScannerGenerator_jar</output-path>
+  <artifact type="jar" name="xscan:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/xscan_jar</output-path>
     <root id="archive" name="ScannerGenerator.jar">
       <element id="module-output" name="ScannerGenerator" />
     </root>
