@@ -20,6 +20,7 @@ public class RecognizerGenTest {
         String text = Utility.getText("testInputM1.txt");
 
         int maxCodePoint = Character.MAX_CODE_POINT;
+        int aeoi = maxCodePoint + 1;
         int alphabetSize = maxCodePoint + 1 + 1;
 
         LexGenScanner scanner = new LexGenScanner(text);
@@ -127,7 +128,7 @@ public class RecognizerGenTest {
             }
 
             String recognizersDirName = "recognizers";
-            String prefix = "res/generated/";
+            String prefix = "generated/";
 
             for (String modeName : modes.keySet()) {
                 LexicalRecognizer recognizer = modes.get(modeName);
@@ -203,7 +204,7 @@ public class RecognizerGenTest {
                     .append("import static ").append(packageName).append(".").append(stateTagsEnumName)
                     .append(".*;\n\n")
                     .append("public abstract class ").append(scannerClassName)
-                    .append(" implements Iterator<Token> {\n    enum Mode {\n");
+                    .append(" implements Iterator<Token> {\n    protected enum Mode {\n");
 
             final String INDENT_4 = "    ";
 
