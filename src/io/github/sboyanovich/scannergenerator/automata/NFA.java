@@ -6,9 +6,9 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static io.github.sboyanovich.scannergenerator.automata.StateTag.FINAL_DUMMY;
 import static io.github.sboyanovich.scannergenerator.automata.Utility.FINAL_DUMMY_PRIORITY_RANK;
 import static io.github.sboyanovich.scannergenerator.automata.Utility.NOT_FINAL_PRIORITY_RANK;
-import static io.github.sboyanovich.scannergenerator.automata.StateTag.FINAL_DUMMY;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
 
 public class NFA {
@@ -106,9 +106,14 @@ public class NFA {
         return acceptsAllTheseCodePoints(alphabetSize, acceptedCodePoints);
     }
 
+    // won't accept EOF(AEOI). Client likely wants only ordinary symbols
     public static NFA acceptsAllSymbolsButThese(int alphabetSize, Set<String> symbols) {
-        Set<Integer> codePoints = symbols.stream()
-                .map(io.github.sboyanovich.scannergenerator.utility.Utility::asCodePoint).collect(Collectors.toSet());
+        int aeoi = alphabetSize - 1;
+        Set<Integer> codePoints = new HashSet<>();
+        codePoints.add(aeoi);
+        symbols.stream()
+                .map(io.github.sboyanovich.scannergenerator.utility.Utility::asCodePoint)
+                .forEach(codePoints::add);
         return acceptsAllCodePointsButThese(alphabetSize, codePoints);
     }
 
