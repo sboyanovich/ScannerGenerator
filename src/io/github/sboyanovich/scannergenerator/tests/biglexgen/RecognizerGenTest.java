@@ -192,12 +192,15 @@ public class RecognizerGenTest {
             StringBuilder scannerCode = new StringBuilder();
             scannerCode.append("package ").append(packageName).append(";\n\n")
                     .append("import io.github.sboyanovich.scannergenerator.automata.StateTag;\n" +
-                            "import io.github.sboyanovich.scannergenerator.scanner.*;\n" +
+                            "import io.github.sboyanovich.scannergenerator.scanner.Fragment;\n" +
+                            "import io.github.sboyanovich.scannergenerator.scanner.LexicalRecognizer;\n" +
+                            "import io.github.sboyanovich.scannergenerator.scanner.Position;\n" +
+                            "import io.github.sboyanovich.scannergenerator.scanner.Text;\n" +
                             "import io.github.sboyanovich.scannergenerator.scanner.token.Domain;\n" +
                             "import io.github.sboyanovich.scannergenerator.scanner.token.Token;\n" +
                             "import io.github.sboyanovich.scannergenerator.utility.Utility;\n" +
                             "\n" +
-                            "import java.util.*;\n")
+                            "import java.util.*;\n\n")
                     .append("import static ").append(packageName).append(".").append(scannerClassName)
                     .append(".Mode.*;\n")
                     .append("import static ").append(packageName).append(".").append(stateTagsEnumName)
