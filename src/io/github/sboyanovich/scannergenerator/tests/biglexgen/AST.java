@@ -400,6 +400,8 @@ public abstract class AST {
                 }
 
                 if (exclusive) {
+                    int aeoi = alphabetSize - 1;
+                    codePoints.add(aeoi); // to disallow EOF (AEOI)
                     return NFA.acceptsAllCodePointsButThese(alphabetSize, codePoints);
                 } else {
                     return NFA.acceptsAllTheseCodePoints(alphabetSize, codePoints);
