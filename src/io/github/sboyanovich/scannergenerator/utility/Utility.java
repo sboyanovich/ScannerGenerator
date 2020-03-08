@@ -35,7 +35,7 @@ public class Utility {
         return new String(new int[]{codePoint}, 0, 1);
     }
 
-    public static String defaultUnicodeInterpretation(int codepoint) {
+    public static String defaultUnicodeInterpretation(int codepoint, int maxCodePoint) {
         switch (codepoint) {
             case 9:
                 return "TAB";
@@ -66,6 +66,9 @@ public class Utility {
             case 382:
                 return "ž";
         }
+        if (codepoint == maxCodePoint + 1) {
+            return "<<EOF>>";
+        }
         if (isInRange(codepoint, 33, 126) ||
                 isInRange(codepoint, 162, 165)) {
             return asString(codepoint);
@@ -77,6 +80,10 @@ public class Utility {
         }
 
         return "U+#" + codepoint;
+    }
+
+    public static String defaultUnicodeInterpretation(int codepoint) {
+        return defaultUnicodeInterpretation(codepoint, Character.MAX_CODE_POINT);
     }
 
     /**
