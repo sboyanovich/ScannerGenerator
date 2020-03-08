@@ -34,5 +34,8 @@ public enum StateTags implements StateTag {
     COMMENT_CLOSE,
     NO_ASTERISK_SEQ,
     ASTERISK,
-    EOF
+    EOF,
+    SLC_START,
+    SLC_CLOSE,
+    SLC_REG
 }
