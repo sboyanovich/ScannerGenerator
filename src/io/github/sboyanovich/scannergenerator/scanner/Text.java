@@ -46,7 +46,13 @@ public class Text {
     }
 
     public Text subtext(int start, int follow) {
-        return new Text(this.codePoints.subList(start, follow), getAltEoi());
+        int end = follow;
+        int size = this.codePoints.size();
+        // ensuring there's only one EOF in sequence
+        if (size - 1 < end) {
+            end = size - 1;
+        }
+        return new Text(this.codePoints.subList(start, end), getAltEoi());
     }
 
     @Override
