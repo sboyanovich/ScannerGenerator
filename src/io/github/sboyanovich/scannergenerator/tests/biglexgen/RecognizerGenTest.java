@@ -127,8 +127,13 @@ public class RecognizerGenTest {
                 modes.put(modeName, buildRecognizer(nfa, priorityMap));
             }
 
+            /// PARAMS
             String recognizersDirName = "recognizers";
             String prefix = "generated/";
+            String packageName = "io.github.sboyanovich.scannergenerator.generated";
+            String stateTagsEnumName = "StateTags";
+            String simpleDomainsEnumName = "SimpleDomains";
+            String scannerClassName = "GeneratedScanner";
 
             for (String modeName : modes.keySet()) {
                 LexicalRecognizer recognizer = modes.get(modeName);
@@ -157,16 +162,12 @@ public class RecognizerGenTest {
 */
             List<String> stateNames = priorityList.stream().map(Objects::toString).collect(Collectors.toList());
 
-            String packageName = "io.github.sboyanovich.scannergenerator.generated";
             String stateTagsEnum = Utility.generateStateTagsEnum(stateNames, packageName);
-
-            String stateTagsEnumName = "StateTags";
 
             Utility.writeTextToFile(stateTagsEnum, prefix + stateTagsEnumName + ".java");
 
             List<AST.DomainGroup> domainGroupList = spec.domainGroups.domainGroups;
 
-            String simpleDomainsEnumName = "SimpleDomains";
 
             for (AST.DomainGroup domainGroup : domainGroupList) {
                 List<String> domainNames = domainGroup.getDomainNames();
@@ -187,8 +188,6 @@ public class RecognizerGenTest {
                     Utility.writeTextToFile(domainEnum, prefix + enumName + ".java");
                 }
             }
-
-            String scannerClassName = "GeneratedScanner";
 
             StringBuilder scannerCode = new StringBuilder();
             scannerCode.append("package ").append(packageName).append(";\n\n")

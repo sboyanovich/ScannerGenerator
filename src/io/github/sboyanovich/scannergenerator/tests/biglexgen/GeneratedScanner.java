@@ -15,11 +15,12 @@ import static io.github.sboyanovich.scannergenerator.tests.biglexgen.GeneratedSc
 import static io.github.sboyanovich.scannergenerator.tests.biglexgen.StateTags.*;
 
 public abstract class GeneratedScanner implements Iterator<Token> {
-    enum Mode {
+    protected enum Mode {
         INITIAL,
         REGEX,
         CHAR_CLASS,
-        COMMENT
+        COMMENT,
+        SL_COMMENT
     }
 
     private static final int NEWLINE = Utility.asCodePoint("\n");
@@ -43,6 +44,9 @@ public abstract class GeneratedScanner implements Iterator<Token> {
 
         // Building tag list for correct restoring of recognizers from files.
         List<StateTag> finalTags = new ArrayList<>();
+        finalTags.add(SLC_REG);
+        finalTags.add(SLC_CLOSE);
+        finalTags.add(SLC_START);
         finalTags.add(ASTERISK);
         finalTags.add(COMMENT_CLOSE);
         finalTags.add(NO_ASTERISK_SEQ);
@@ -53,6 +57,7 @@ public abstract class GeneratedScanner implements Iterator<Token> {
         finalTags.add(CHAR_CLASS_OPEN);
         finalTags.add(CHAR_CLASS_NEG);
         finalTags.add(CHAR_CLASS_RANGE_OP);
+        finalTags.add(EOF);
         finalTags.add(DOT);
         finalTags.add(ITERATION_OP);
         finalTags.add(POS_ITERATION_OP);
@@ -77,10 +82,11 @@ public abstract class GeneratedScanner implements Iterator<Token> {
 
         // Restoring recognizers from files.
         this.recognizers = new HashMap<>();
-        this.recognizers.put(INITIAL, new LexicalRecognizer("res/INITIAL.reco", finalTags));
-        this.recognizers.put(REGEX, new LexicalRecognizer("res/REGEX.reco", finalTags));
-        this.recognizers.put(CHAR_CLASS, new LexicalRecognizer("res/CHAR_CLASS.reco", finalTags));
-        this.recognizers.put(COMMENT, new LexicalRecognizer("res/COMMENT.reco", finalTags));
+        this.recognizers.put(REGEX, new LexicalRecognizer("generated/recognizers/REGEX.reco", finalTags));
+        this.recognizers.put(INITIAL, new LexicalRecognizer("generated/recognizers/INITIAL.reco", finalTags));
+        this.recognizers.put(SL_COMMENT, new LexicalRecognizer("generated/recognizers/SL_COMMENT.reco", finalTags));
+        this.recognizers.put(CHAR_CLASS, new LexicalRecognizer("generated/recognizers/CHAR_CLASS.reco", finalTags));
+        this.recognizers.put(COMMENT, new LexicalRecognizer("generated/recognizers/COMMENT.reco", finalTags));
 
         // just in case
         resetCurrState();
@@ -180,7 +186,6 @@ public abstract class GeneratedScanner implements Iterator<Token> {
 
                 // nothing matched
                 if (!isFinal(this.currState) && !lastFinalState.isPresent()) {
-
                     /// This guards against finding EOI while completing an earlier started token
                     if (
                             (currCodePoint == Text.EOI || currCodePoint == this.inputText.getAltEoi()) &&
@@ -216,24 +221,58 @@ public abstract class GeneratedScanner implements Iterator<Token> {
                     Optional<Token> optToken = Optional.empty();
 
                     // this cast should always work, provided all final ones are in one enum
+                    // alternative: switch vs instanceof
                     StateTags tag = (StateTags) getCurrentRecognizer().getStateTag(this.currState);
 
                     /// TIP: for ignored expressions (e.g. whitespace) case should just reset start
                     switch (tag) {
+                        case WHITESPACE_IN_REGEX:
+                            optToken = handleWhitespaceInRegex(this.inputText, scannedFragment);
+                            break;
+                        case WHITESPACE:
+                            setStartToCurrentPosition();
+                            break;
+                        case RULE_END:
+                            optToken = handleRuleEnd(this.inputText, scannedFragment);
+                            break;
+                        case COMMA:
+                            optToken = handleComma(this.inputText, scannedFragment);
+                            break;
+                        case L_ANGLE_BRACKET:
+                            optToken = handleLAngleBracket(this.inputText, scannedFragment);
+                            break;
+                        case R_ANGLE_BRACKET:
+                            optToken = handleRAngleBracket(this.inputText, scannedFragment);
+                            break;
+                        case RULES_SECTION_MARKER:
+                            optToken = handleRulesSectionMarker(this.inputText, scannedFragment);
+                            break;
+                        case DOMAINS_GROUP_MARKER:
+                            optToken = handleDomainsGroupMarker(this.inputText, scannedFragment);
+                            break;
+                        case MODES_SECTION_MARKER:
+                            optToken = handleModesSectionMarker(this.inputText, scannedFragment);
+                            break;
+                        case DEFINER:
+                            optToken = handleDefiner(this.inputText, scannedFragment);
+                            break;
+                        case IDENTIFIER:
+                            optToken = handleIdentifier(this.inputText, scannedFragment);
+                            break;
                         case NAMED_EXPR:
                             optToken = handleNamedExpr(this.inputText, scannedFragment);
-                            break;
-                        case CLASS_MINUS_OP:
-                            optToken = handleClassMinusOp(this.inputText, scannedFragment);
-                            break;
-                        case REPETITION_OP:
-                            optToken = handleRepetitionOp(this.inputText, scannedFragment);
                             break;
                         case LPAREN:
                             optToken = handleLParen(this.inputText, scannedFragment);
                             break;
                         case RPAREN:
                             optToken = handleRParen(this.inputText, scannedFragment);
+                            break;
+                        case CLASS_MINUS_OP:
+                            optToken = handleClassMinusOp(this.inputText, scannedFragment);
+                            break;
+                        case REPETITION_OP:
+                            optToken = handleRepetitionOp(this.inputText, scannedFragment);
                             break;
                         case OPTION_OP:
                             optToken = handleOptionOp(this.inputText, scannedFragment);
@@ -249,6 +288,9 @@ public abstract class GeneratedScanner implements Iterator<Token> {
                             break;
                         case DOT:
                             optToken = handleDot(this.inputText, scannedFragment);
+                            break;
+                        case EOF:
+                            optToken = handleEof(this.inputText, scannedFragment);
                             break;
                         case CHAR_CLASS_RANGE_OP:
                             optToken = handleCharClassRangeOp(this.inputText, scannedFragment);
@@ -268,53 +310,26 @@ public abstract class GeneratedScanner implements Iterator<Token> {
                         case CLASS_CHAR:
                             optToken = handleClassChar(this.inputText, scannedFragment);
                             break;
-                        case IDENTIFIER:
-                            optToken = handleIdentifier(this.inputText, scannedFragment);
-                            break;
-                        case DEFINER:
-                            optToken = handleDefiner(this.inputText, scannedFragment);
-                            break;
-                        case MODES_SECTION_MARKER:
-                            optToken = handleModesSectionMarker(this.inputText, scannedFragment);
-                            break;
-                        case DOMAINS_GROUP_MARKER:
-                            optToken = handleDomainsGroupMarker(this.inputText, scannedFragment);
-                            break;
-                        case RULES_SECTION_MARKER:
-                            optToken = handleRulesSectionMarker(this.inputText, scannedFragment);
-                            break;
-                        case L_ANGLE_BRACKET:
-                            optToken = handleLAngleBracket(this.inputText, scannedFragment);
-                            break;
-                        case R_ANGLE_BRACKET:
-                            optToken = handleRAngleBracket(this.inputText, scannedFragment);
-                            break;
-                        case COMMA:
-                            optToken = handleComma(this.inputText, scannedFragment);
-                            break;
-                        case RULE_END:
-                            optToken = handleRuleEnd(this.inputText, scannedFragment);
-                            break;
                         case COMMENT_START:
                             optToken = handleCommentStart(this.inputText, scannedFragment);
                             break;
                         case NO_ASTERISK_SEQ:
                             optToken = handleNoAsteriskSeq(this.inputText, scannedFragment);
                             break;
-                        case ASTERISK:
-                            optToken = handleCommentAsterisk(this.inputText, scannedFragment);
-                            break;
                         case COMMENT_CLOSE:
                             optToken = handleCommentClose(this.inputText, scannedFragment);
                             break;
-                        case EOF:
-                            optToken = handleEof(this.inputText, scannedFragment);
+                        case ASTERISK:
+                            optToken = handleCommentAsterisk(this.inputText, scannedFragment);
                             break;
-                        case WHITESPACE:
-                            setStartToCurrentPosition();
+                        case SLC_START:
+                            optToken = handleSlcStart(this.inputText, scannedFragment);
                             break;
-                        case WHITESPACE_IN_REGEX:
-                            optToken = handleWhitespaceInRegex(this.inputText, scannedFragment);
+                        case SLC_CLOSE:
+                            optToken = handleSlcClose(this.inputText, scannedFragment);
+                            break;
+                        case SLC_REG:
+                            optToken = handleSlcReg(this.inputText, scannedFragment);
                             break;
                     }
 
@@ -330,9 +345,35 @@ public abstract class GeneratedScanner implements Iterator<Token> {
 
     protected abstract void handleError(int codePoint, Mode mode, Position errorAt);
 
+    protected abstract Optional<Token> handleWhitespaceInRegex(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleRuleEnd(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleComma(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleLAngleBracket(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleRAngleBracket(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleRulesSectionMarker(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleDomainsGroupMarker(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleModesSectionMarker(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleDefiner(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleIdentifier(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleNamedExpr(Text text, Fragment fragment);
+
     protected abstract Optional<Token> handleLParen(Text text, Fragment fragment);
 
     protected abstract Optional<Token> handleRParen(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleClassMinusOp(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleRepetitionOp(Text text, Fragment fragment);
 
     protected abstract Optional<Token> handleOptionOp(Text text, Fragment fragment);
 
@@ -343,6 +384,8 @@ public abstract class GeneratedScanner implements Iterator<Token> {
     protected abstract Optional<Token> handleIterationOp(Text text, Fragment fragment);
 
     protected abstract Optional<Token> handleDot(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleEof(Text text, Fragment fragment);
 
     protected abstract Optional<Token> handleCharClassRangeOp(Text text, Fragment fragment);
 
@@ -356,39 +399,18 @@ public abstract class GeneratedScanner implements Iterator<Token> {
 
     protected abstract Optional<Token> handleClassChar(Text text, Fragment fragment);
 
-    protected abstract Optional<Token> handleNamedExpr(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleClassMinusOp(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleRepetitionOp(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleLAngleBracket(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleRAngleBracket(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleDefiner(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleRulesSectionMarker(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleRuleEnd(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleComma(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleModesSectionMarker(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleIdentifier(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleDomainsGroupMarker(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleWhitespaceInRegex(Text text, Fragment fragment);
-
     protected abstract Optional<Token> handleCommentStart(Text text, Fragment fragment);
 
     protected abstract Optional<Token> handleNoAsteriskSeq(Text text, Fragment fragment);
 
-    protected abstract Optional<Token> handleCommentAsterisk(Text text, Fragment fragment);
-
     protected abstract Optional<Token> handleCommentClose(Text text, Fragment fragment);
 
-    protected abstract Optional<Token> handleEof(Text text, Fragment fragment);
+    protected abstract Optional<Token> handleCommentAsterisk(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleSlcStart(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleSlcClose(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleSlcReg(Text text, Fragment fragment);
+
 }

@@ -192,4 +192,19 @@ public class MyScanner extends GeneratedScanner {
     protected Optional<Token> handleEof(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.EOF.createToken(text, fragment));
     }
+
+    protected Optional<Token> handleSlcStart(Text text, Fragment fragment) {
+        switchToMode(SL_COMMENT);
+        return Optional.empty();
+    }
+
+    protected Optional<Token> handleSlcReg(Text text, Fragment fragment) {
+        return Optional.empty();
+    }
+
+    protected Optional<Token> handleSlcClose(Text text, Fragment fragment) {
+        switchToMode(INITIAL);
+        setStartToCurrentPosition();
+        return Optional.empty();
+    }
 }
