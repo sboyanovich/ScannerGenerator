@@ -75,12 +75,14 @@ IDENTIFIER          := [_a-zA-Z][_a-zA-Z0-9]*
 <REGEX>         CHAR                    := {INPUT_CHAR}|{ESCAPE}                    handleChar;
 <CHAR_CLASS>    CLASS_CHAR              := {CLASS_SINGLE_CHAR}|{CLASS_ESCAPE}       handleClassChar;
                 COMMENT_START           := /\*                                      handleCommentStart;
-<COMMENT>       NO_ASTERISK_SEQ         := [^*]*                                    handleNoAsteriskSeq;
+<COMMENT>       NO_ASTERISK_SEQ         := [^*]+                                    handleNoAsteriskSeq;
 <COMMENT>       COMMENT_CLOSE           := \*/                                      handleCommentClose;
 <COMMENT>       ASTERISK                := \*                                       handleCommentAsterisk;
                 SLC_START               := //                                       handleSlcStart;
 <SL_COMMENT>    SLC_CLOSE               := (\r?\n)|<<EOF>>                          handleSlcClose;
-<SL_COMMENT>    SLC_REG                 := .*                                       handleSlcReg;
+<SL_COMMENT>    SLC_REG                 := .+                                       handleSlcReg;
+
+// PROTIP: Matching empty strings may lead to infinite loops.
 
 /*
 

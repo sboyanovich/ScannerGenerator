@@ -209,7 +209,7 @@ public class LexGenScanner implements Iterator<Token> {
 
         NFA commentStartNFA = NFA.acceptsThisWord(alphabetSize, "/*")
                 .setAllFinalStatesTo(COMMENT_START);
-        NFA noAsteriskSeqNFA = NFA.acceptsAllSymbolsButThese(alphabetSize, Set.of("*")).iteration()
+        NFA noAsteriskSeqNFA = NFA.acceptsAllSymbolsButThese(alphabetSize, Set.of("*")).positiveIteration()
                 .setAllFinalStatesTo(NO_ASTERISK_SEQ);
         NFA commentCloseNFA = NFA.acceptsThisWord(alphabetSize, "*/")
                 .setAllFinalStatesTo(COMMENT_CLOSE);
@@ -222,7 +222,7 @@ public class LexGenScanner implements Iterator<Token> {
                 .concatenation(NFA.singleLetterLanguage(alphabetSize, "\n"))
                 .union(NFA.singleLetterLanguage(alphabetSize, aeoi))
                 .setAllFinalStatesTo(SLC_CLOSE);
-        NFA slcRegNFA = NFA.acceptsAllSymbolsButThese(alphabetSize, Set.of("\n")).iteration()
+        NFA slcRegNFA = NFA.acceptsAllSymbolsButThese(alphabetSize, Set.of("\n")).positiveIteration()
                 .setAllFinalStatesTo(SLC_REG);
 
         List<StateTag> priorityList = new ArrayList<>(
