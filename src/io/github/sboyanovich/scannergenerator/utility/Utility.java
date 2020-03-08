@@ -151,14 +151,14 @@ public class Utility {
     }
 
     /**
-     * reads text from file res/filename
+     * reads text from file filename
      */
     public static String getText(String filename) {
         StringBuilder lines = new StringBuilder();
 
         FileReader fr;
         try {
-            fr = new FileReader("res/" + filename);
+            fr = new FileReader(filename);
             BufferedReader br = new BufferedReader(fr);
             String currLine = br.readLine();
             while (currLine != null) {
