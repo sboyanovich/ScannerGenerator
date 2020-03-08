@@ -15,11 +15,12 @@ import static io.github.sboyanovich.scannergenerator.generated.GeneratedScanner.
 import static io.github.sboyanovich.scannergenerator.generated.StateTags.*;
 
 public abstract class GeneratedScanner implements Iterator<Token> {
-    enum Mode {
+    protected enum Mode {
         INITIAL,
         REGEX,
         CHAR_CLASS,
-        COMMENT
+        COMMENT,
+        SL_COMMENT
     }
 
     private static final int NEWLINE = Utility.asCodePoint("\n");
@@ -43,6 +44,9 @@ public abstract class GeneratedScanner implements Iterator<Token> {
 
         // Building tag list for correct restoring of recognizers from files.
         List<StateTag> finalTags = new ArrayList<>();
+        finalTags.add(SLC_REG);
+        finalTags.add(SLC_CLOSE);
+        finalTags.add(SLC_START);
         finalTags.add(ASTERISK);
         finalTags.add(COMMENT_CLOSE);
         finalTags.add(NO_ASTERISK_SEQ);
@@ -53,6 +57,7 @@ public abstract class GeneratedScanner implements Iterator<Token> {
         finalTags.add(CHAR_CLASS_OPEN);
         finalTags.add(CHAR_CLASS_NEG);
         finalTags.add(CHAR_CLASS_RANGE_OP);
+        finalTags.add(EOF);
         finalTags.add(DOT);
         finalTags.add(ITERATION_OP);
         finalTags.add(POS_ITERATION_OP);
@@ -83,6 +88,9 @@ public abstract class GeneratedScanner implements Iterator<Token> {
         this.recognizers.put(INITIAL, new LexicalRecognizer(
                 ClassLoader.getSystemClassLoader()
                         .getResourceAsStream("generated/recognizers/INITIAL.reco"), finalTags));
+        this.recognizers.put(SL_COMMENT, new LexicalRecognizer(
+                ClassLoader.getSystemClassLoader()
+                        .getResourceAsStream("generated/recognizers/SL_COMMENT.reco"), finalTags));
         this.recognizers.put(CHAR_CLASS, new LexicalRecognizer(
                 ClassLoader.getSystemClassLoader()
                         .getResourceAsStream("generated/recognizers/CHAR_CLASS.reco"), finalTags));
@@ -173,13 +181,6 @@ public abstract class GeneratedScanner implements Iterator<Token> {
 
         while (true) {
             int currCodePoint = getCurrentCodePoint();
-
-            /// This guards against finding EOI while completing an earlier started token
-            if (currCodePoint == Text.EOI && this.currPos.equals(this.start)) {
-                this.hasNext = false;
-                return Domain.END_OF_INPUT.createToken(this.inputText, new Fragment(currPos, currPos));
-            }
-
             int nextState = getCurrentRecognizer().transition(this.currState, currCodePoint);
 
             if (isFinal(this.currState)) {
@@ -193,8 +194,18 @@ public abstract class GeneratedScanner implements Iterator<Token> {
             } else {
                 // it's time to stop
 
-                // we've found an error
+                // nothing matched
                 if (!isFinal(this.currState) && !lastFinalState.isPresent()) {
+                    /// This guards against finding EOI while completing an earlier started token
+                    if (
+                            (currCodePoint == Text.EOI || currCodePoint == this.inputText.getAltEoi()) &&
+                                    this.currPos.equals(this.start)
+                    ) {
+                        this.hasNext = false;
+                        return Domain.END_OF_INPUT.createToken(this.inputText, new Fragment(currPos, currPos));
+                    }
+
+                    // we've found an error
 
                     /// ERROR HANDLING CODE GOES HERE!
                     handleError(currCodePoint, this.currentMode, this.currPos);
@@ -288,6 +299,9 @@ public abstract class GeneratedScanner implements Iterator<Token> {
                         case DOT:
                             optToken = handleDot(this.inputText, scannedFragment);
                             break;
+                        case EOF:
+                            optToken = handleEof(this.inputText, scannedFragment);
+                            break;
                         case CHAR_CLASS_RANGE_OP:
                             optToken = handleCharClassRangeOp(this.inputText, scannedFragment);
                             break;
@@ -317,6 +331,15 @@ public abstract class GeneratedScanner implements Iterator<Token> {
                             break;
                         case ASTERISK:
                             optToken = handleCommentAsterisk(this.inputText, scannedFragment);
+                            break;
+                        case SLC_START:
+                            optToken = handleSlcStart(this.inputText, scannedFragment);
+                            break;
+                        case SLC_CLOSE:
+                            optToken = handleSlcClose(this.inputText, scannedFragment);
+                            break;
+                        case SLC_REG:
+                            optToken = handleSlcReg(this.inputText, scannedFragment);
                             break;
                     }
 
@@ -372,6 +395,8 @@ public abstract class GeneratedScanner implements Iterator<Token> {
 
     protected abstract Optional<Token> handleDot(Text text, Fragment fragment);
 
+    protected abstract Optional<Token> handleEof(Text text, Fragment fragment);
+
     protected abstract Optional<Token> handleCharClassRangeOp(Text text, Fragment fragment);
 
     protected abstract Optional<Token> handleCharClassNeg(Text text, Fragment fragment);
@@ -391,5 +416,11 @@ public abstract class GeneratedScanner implements Iterator<Token> {
     protected abstract Optional<Token> handleCommentClose(Text text, Fragment fragment);
 
     protected abstract Optional<Token> handleCommentAsterisk(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleSlcStart(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleSlcClose(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleSlcReg(Text text, Fragment fragment);
 
 }

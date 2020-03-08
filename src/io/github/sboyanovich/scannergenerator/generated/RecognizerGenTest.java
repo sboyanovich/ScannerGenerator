@@ -8,8 +8,6 @@ import io.github.sboyanovich.scannergenerator.scanner.Message;
 import io.github.sboyanovich.scannergenerator.scanner.Position;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
-import io.github.sboyanovich.scannergenerator.tests.biglexgen.LexGenScanner;
-import io.github.sboyanovich.scannergenerator.tests.biglexgen.MockCompiler;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.time.Duration;
@@ -25,7 +23,7 @@ public class RecognizerGenTest {
         int aeoi = maxCodePoint + 1;
         int alphabetSize = maxCodePoint + 1 + 1;
 
-        LexGenScanner scanner = new LexGenScanner(text);
+        MyScanner scanner = new MyScanner(text);
         MockCompiler compiler = scanner.getCompiler();
 
         Set<Domain> ignoredTokenTypes = Set.of(
@@ -194,12 +192,15 @@ public class RecognizerGenTest {
             StringBuilder scannerCode = new StringBuilder();
             scannerCode.append("package ").append(packageName).append(";\n\n")
                     .append("import io.github.sboyanovich.scannergenerator.automata.StateTag;\n" +
-                            "import io.github.sboyanovich.scannergenerator.scanner.*;\n" +
+                            "import io.github.sboyanovich.scannergenerator.scanner.Fragment;\n" +
+                            "import io.github.sboyanovich.scannergenerator.scanner.LexicalRecognizer;\n" +
+                            "import io.github.sboyanovich.scannergenerator.scanner.Position;\n" +
+                            "import io.github.sboyanovich.scannergenerator.scanner.Text;\n" +
                             "import io.github.sboyanovich.scannergenerator.scanner.token.Domain;\n" +
                             "import io.github.sboyanovich.scannergenerator.scanner.token.Token;\n" +
                             "import io.github.sboyanovich.scannergenerator.utility.Utility;\n" +
                             "\n" +
-                            "import java.util.*;\n")
+                            "import java.util.*;\n\n")
                     .append("import static ").append(packageName).append(".").append(scannerClassName)
                     .append(".Mode.*;\n")
                     .append("import static ").append(packageName).append(".").append(stateTagsEnumName)

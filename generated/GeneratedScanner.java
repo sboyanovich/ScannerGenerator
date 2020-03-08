@@ -1,12 +1,14 @@
 package io.github.sboyanovich.scannergenerator.generated;
 
 import io.github.sboyanovich.scannergenerator.automata.StateTag;
-import io.github.sboyanovich.scannergenerator.scanner.*;
+import io.github.sboyanovich.scannergenerator.scanner.Fragment;
+import io.github.sboyanovich.scannergenerator.scanner.LexicalRecognizer;
+import io.github.sboyanovich.scannergenerator.scanner.Position;
+import io.github.sboyanovich.scannergenerator.scanner.Text;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
-import java.util.*;
 import static io.github.sboyanovich.scannergenerator.generated.GeneratedScanner.Mode.*;
 import static io.github.sboyanovich.scannergenerator.generated.StateTags.*;
 
