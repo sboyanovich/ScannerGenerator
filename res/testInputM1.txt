@@ -1,4 +1,4 @@
-WHITESPACE          := ([ \t\n]|\r\n)+
+WHITESPACE          := ([ \t\n]|\r\n)+ // Comments allowed after regex also.
 
 HEX_NUMBER          := [0-9A-F]+
 DECIMAL_NUMBER      := [0-9]+
@@ -12,7 +12,7 @@ CLASS_SINGLE_CHAR   := [^\r\n\-\\\^\]\b\f]
 CLASS_ESCAPE        := {U_ESCAPE}|(\\[btnfr\-\^\]\\])
 IDENTIFIER          := [_a-zA-Z][_a-zA-Z0-9]*
 
-%MODES REGEX CHAR_CLASS COMMENT
+%MODES REGEX CHAR_CLASS COMMENT SL_COMMENT
 
 %DOMAINS
     RULE_END DEFINER COMMA DOT
@@ -41,6 +41,8 @@ IDENTIFIER          := [_a-zA-Z][_a-zA-Z0-9]*
     First comment here. Rules section marker is useful so a state name identifier is not mistaken for
     domain name.
 */
+
+// First single line comment here.
 
 %%
 
@@ -76,6 +78,9 @@ IDENTIFIER          := [_a-zA-Z][_a-zA-Z0-9]*
 <COMMENT>       NO_ASTERISK_SEQ         := [^*]*                                    handleNoAsteriskSeq;
 <COMMENT>       COMMENT_CLOSE           := \*/                                      handleCommentClose;
 <COMMENT>       ASTERISK                := \*                                       handleCommentAsterisk;
+                SLC_START               := //                                       handleSlcStart;
+<SL_COMMENT>    SLC_CLOSE               := (\r?\n)|<<EOF>>                          handleSlcClose;
+<SL_COMMENT>    SLC_REG                 := .*                                       handleSlcReg;
 
 /*
 
@@ -111,3 +116,4 @@ FIRST(DomainsSection) = [DOMAINS_GROUP_MARKER]
 FIRST(CharClassExpression) = [CHAR_CLASS_OPEN]
 
 */
+// Last comment, because we can.
