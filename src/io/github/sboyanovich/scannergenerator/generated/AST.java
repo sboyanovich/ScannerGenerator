@@ -340,6 +340,18 @@ public abstract class AST {
             }
         }
 
+        public static class Eof extends Regex {
+            @Override
+            StringBuilder dotVisit() {
+                return AST.labelNode(number, "<<EOF>>");
+            }
+
+            @Override
+            NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
+                return NFA.singleLetterLanguage(alphabetSize, alphabetSize - 1);
+            }
+        }
+
         public static class NamedExpr extends Regex {
             String name;
 
@@ -388,6 +400,8 @@ public abstract class AST {
                 }
 
                 if (exclusive) {
+                    int aeoi = alphabetSize - 1;
+                    codePoints.add(aeoi); // to disallow EOF (AEOI)
                     return NFA.acceptsAllCodePointsButThese(alphabetSize, codePoints);
                 } else {
                     return NFA.acceptsAllTheseCodePoints(alphabetSize, codePoints);

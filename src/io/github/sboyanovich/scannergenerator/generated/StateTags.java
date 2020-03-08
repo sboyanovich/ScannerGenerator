@@ -3,6 +3,9 @@ package io.github.sboyanovich.scannergenerator.generated;
 import io.github.sboyanovich.scannergenerator.automata.StateTag;
 
 public enum StateTags implements StateTag {
+    SLC_REG,
+    SLC_CLOSE,
+    SLC_START,
     ASTERISK,
     COMMENT_CLOSE,
     NO_ASTERISK_SEQ,
@@ -13,6 +16,7 @@ public enum StateTags implements StateTag {
     CHAR_CLASS_OPEN,
     CHAR_CLASS_NEG,
     CHAR_CLASS_RANGE_OP,
+    EOF,
     DOT,
     ITERATION_OP,
     POS_ITERATION_OP,
