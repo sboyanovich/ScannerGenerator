@@ -25,7 +25,8 @@ public class LexGenScanner implements Iterator<Token> {
         INITIAL,
         REGEX,
         CHAR_CLASS,
-        COMMENT
+        COMMENT,
+        SL_COMMENT
     }
 
     private static final int NEWLINE = Utility.asCodePoint("\n");
@@ -48,7 +49,9 @@ public class LexGenScanner implements Iterator<Token> {
         this.hasNext = true;
 
         // additional +1 will serve as <<EOF>>
-        int alphabetSize = Character.MAX_CODE_POINT + 1 + 1;
+        int maxCodePoint = Character.MAX_CODE_POINT;
+        int aeoi = maxCodePoint + 1;
+        int alphabetSize = maxCodePoint + 1 + 1;
 
         NFA spaceNFA = NFA.singleLetterLanguage(alphabetSize, " ");
         NFA tabNFA = NFA.singleLetterLanguage(alphabetSize, "\t");
@@ -213,8 +216,20 @@ public class LexGenScanner implements Iterator<Token> {
         NFA asteriskNFA = NFA.singleLetterLanguage(alphabetSize, "*")
                 .setAllFinalStatesTo(ASTERISK);
 
+        NFA slcStartNFA = NFA.acceptsThisWord(alphabetSize, "//")
+                .setAllFinalStatesTo(SLC_START);
+        NFA slcEndNFA = NFA.singleLetterLanguage(alphabetSize, "\r").optional()
+                .concatenation(NFA.singleLetterLanguage(alphabetSize, "\n"))
+                .union(NFA.singleLetterLanguage(alphabetSize, aeoi))
+                .setAllFinalStatesTo(SLC_CLOSE);
+        NFA slcRegNFA = NFA.acceptsAllSymbolsButThese(alphabetSize, Set.of("\n")).iteration()
+                .setAllFinalStatesTo(SLC_REG);
+
         List<StateTag> priorityList = new ArrayList<>(
                 List.of(
+                        SLC_START,
+                        SLC_REG,
+                        SLC_CLOSE,
                         ASTERISK,
                         COMMENT_CLOSE,
                         NO_ASTERISK_SEQ,
@@ -265,7 +280,8 @@ public class LexGenScanner implements Iterator<Token> {
                 .union(rAngleBracketNFA)
                 .union(commaNFA)
                 .union(ruleEndNFA)
-                .union(commentStartNFA);
+                .union(commentStartNFA)
+                .union(slcStartNFA);
 
         NFA mode1 = whitespaceInRegexNFA
                 .union(charClassOpenNFA)
@@ -289,6 +305,8 @@ public class LexGenScanner implements Iterator<Token> {
 
         NFA mode3 = noAsteriskSeqNFA.union(commentCloseNFA).union(asteriskNFA);
 
+        NFA mode4 = slcRegNFA.union(slcEndNFA);
+
         System.out.println("Mode 0");
         LexicalRecognizer m0 = buildRecognizer(mode0, priorityMap);
         System.out.println();
@@ -301,12 +319,16 @@ public class LexGenScanner implements Iterator<Token> {
         System.out.println("Mode 3");
         LexicalRecognizer m3 = buildRecognizer(mode3, priorityMap);
         System.out.println();
+        System.out.println("Mode 4");
+        LexicalRecognizer m4 = buildRecognizer(mode4, priorityMap);
+        System.out.println();
 
         this.recognizers = new HashMap<>();
         this.recognizers.put(INITIAL, m0);
         this.recognizers.put(REGEX, m1);
         this.recognizers.put(CHAR_CLASS, m2);
         this.recognizers.put(COMMENT, m3);
+        this.recognizers.put(SL_COMMENT, m4);
 
         // just in case
         resetCurrState();
@@ -393,7 +415,7 @@ public class LexGenScanner implements Iterator<Token> {
     private boolean atPotentialTokenStart() {
         int currCodePoint = getCurrentCodePoint();
         // assuming general use case that all token starts are recognized by default mode
-        LexicalRecognizer recognizer = this.recognizers.get(0);
+        LexicalRecognizer recognizer = this.recognizers.get(INITIAL);
         int nextState = recognizer.transition(recognizer.getInitialState(), currCodePoint);
         return nextState != LexicalRecognizer.DEAD_END_STATE;
     }
@@ -577,6 +599,15 @@ public class LexGenScanner implements Iterator<Token> {
                         case EOF:
                             optToken = handleEof(this.inputText, scannedFragment);
                             break;
+                        case SLC_START:
+                            optToken = handleSlcStart(this.inputText, scannedFragment);
+                            break;
+                        case SLC_REG:
+                            optToken = handleSlcReg(this.inputText, scannedFragment);
+                            break;
+                        case SLC_CLOSE:
+                            optToken = handleSlcClose(this.inputText, scannedFragment);
+                            break;
                         case WHITESPACE:
                             setStartToCurrentPosition();
                             break;
@@ -725,6 +756,21 @@ public class LexGenScanner implements Iterator<Token> {
 
     protected Optional<Token> handleEof(Text text, Fragment fragment) {
         return Optional.of(SimpleDomains.EOF.createToken(text, fragment));
+    }
+
+    protected Optional<Token> handleSlcStart(Text text, Fragment fragment) {
+        switchToMode(SL_COMMENT);
+        return Optional.empty();
+    }
+
+    protected Optional<Token> handleSlcReg(Text text, Fragment fragment) {
+        return Optional.empty();
+    }
+
+    protected Optional<Token> handleSlcClose(Text text, Fragment fragment) {
+        switchToMode(INITIAL);
+        setStartToCurrentPosition();
+        return Optional.empty();
     }
 
     public MockCompiler getCompiler() {
