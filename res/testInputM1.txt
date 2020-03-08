@@ -6,7 +6,7 @@ HEX_ESCAPE          := \\U\+{HEX_NUMBER}
 DECIMAL_ESCAPE      := \\U\+#{DECIMAL_NUMBER}
 INPUT_CHAR          := [^\r\n\\]
 U_ESCAPE            := {DECIMAL_ESCAPE}|{HEX_ESCAPE}
-ESCAPE              := {U_ESCAPE}|(\\[btnfr\\*+|?.()[{}])
+ESCAPE              := {U_ESCAPE}|(\\[btnfr\\*+|?.()[{}<>])
 
 CLASS_SINGLE_CHAR   := [^\r\n\-\\\^\]\b\f]
 CLASS_ESCAPE        := {U_ESCAPE}|(\\[btnfr\-\^\]\\])
@@ -28,6 +28,7 @@ IDENTIFIER          := [_a-zA-Z][_a-zA-Z0-9]*
     POS_ITERATION_OP
     UNION_OP
     OPTION_OP
+    EOF
 
 %DOMAINS[String]
     NAMED_EXPR DOMAINS_GROUP_MARKER IDENTIFIER
@@ -64,6 +65,7 @@ IDENTIFIER          := [_a-zA-Z][_a-zA-Z0-9]*
 <REGEX>         POS_ITERATION_OP        := \+                                       handlePosIterationOp;
 <REGEX>         ITERATION_OP            := \*                                       handleIterationOp;
 <REGEX>         DOT                     := \.                                       handleDot;
+<REGEX>         EOF                     := \<<EOF>>                                 handleEof;
 <CHAR_CLASS>    CHAR_CLASS_RANGE_OP     := -                                        handleCharClassRangeOp;
 <CHAR_CLASS>    CHAR_CLASS_NEG          := ^                                        handleCharClassNeg;
 <REGEX>         CHAR_CLASS_OPEN         := \[                                       handleCharClassOpen;
@@ -88,7 +90,7 @@ IDENTIFIER          := [_a-zA-Z][_a-zA-Z0-9]*
 (RegEx)                 = (CRegEx) [ UNION_OP (CRegEx)]* .
 (CRegEx)                = (FRegEx) (FRegEx)* .
 (FRegEx)                = (LRegEx) [ POS_ITERATION_OP | ITERATION_OP | OPTION_OP | REPETITION_OP ]? .
-(LRegEx)                = CHAR | DOT | NAMED_EXPR | (CharClassExpression) | LPAREN (RegEx) RPAREN .
+(LRegEx)                = CHAR | DOT | EOF | NAMED_EXPR | (CharClassExpression) | LPAREN (RegEx) RPAREN .
 (CharClassExpression)   = (CharClass) [CLASS_MINUS_OP (CharClass)]? .
 (CharClass)             = CHAR_CLASS_OPEN CHAR_CLASS_NEG? [CHAR [CHAR_CLASS_RANGE_OP CHAR]?]+  CHAR_CLASS_CLOSE .
 
