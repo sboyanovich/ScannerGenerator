@@ -187,4 +187,9 @@ public class MyScanner extends GeneratedScanner {
         setStartToCurrentPosition();
         return Optional.empty();
     }
+
+    @Override
+    protected Optional<Token> handleEof(Text text, Fragment fragment) {
+        return Optional.of(SimpleDomains.EOF.createToken(text, fragment));
+    }
 }

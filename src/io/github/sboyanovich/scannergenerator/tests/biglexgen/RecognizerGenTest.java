@@ -19,7 +19,8 @@ public class RecognizerGenTest {
     public static void main(String[] args) {
         String text = Utility.getText("testInputM1.txt");
 
-        int alphabetSize = Character.MAX_CODE_POINT + 1;
+        int maxCodePoint = Character.MAX_CODE_POINT;
+        int alphabetSize = maxCodePoint + 1 + 1;
 
         LexGenScanner scanner = new LexGenScanner(text);
         MockCompiler compiler = scanner.getCompiler();
@@ -189,7 +190,7 @@ public class RecognizerGenTest {
             String scannerClassName = "GeneratedScanner";
 
             StringBuilder scannerCode = new StringBuilder();
-            scannerCode.append("import ").append(packageName).append(";\n\n")
+            scannerCode.append("package ").append(packageName).append(";\n\n")
                     .append("import io.github.sboyanovich.scannergenerator.automata.StateTag;\n" +
                             "import io.github.sboyanovich.scannergenerator.scanner.*;\n" +
                             "import io.github.sboyanovich.scannergenerator.scanner.token.Domain;\n" +
@@ -339,13 +340,6 @@ public class RecognizerGenTest {
                     "\n" +
                     "        while (true) {\n" +
                     "            int currCodePoint = getCurrentCodePoint();\n" +
-                    "\n" +
-                    "            /// This guards against finding EOI while completing an earlier started token\n" +
-                    "            if (currCodePoint == Text.EOI && this.currPos.equals(this.start)) {\n" +
-                    "                this.hasNext = false;\n" +
-                    "                return Domain.END_OF_INPUT.createToken(this.inputText, new Fragment(currPos, currPos));\n" +
-                    "            }\n" +
-                    "\n" +
                     "            int nextState = getCurrentRecognizer().transition(this.currState, currCodePoint);\n" +
                     "\n" +
                     "            if (isFinal(this.currState)) {\n" +
@@ -359,8 +353,18 @@ public class RecognizerGenTest {
                     "            } else {\n" +
                     "                // it's time to stop\n" +
                     "\n" +
-                    "                // we've found an error\n" +
+                    "                // nothing matched\n" +
                     "                if (!isFinal(this.currState) && !lastFinalState.isPresent()) {\n" +
+                    "                    /// This guards against finding EOI while completing an earlier started token\n" +
+                    "                    if (\n" +
+                    "                            (currCodePoint == Text.EOI || currCodePoint == this.inputText.getAltEoi()) &&\n" +
+                    "                                    this.currPos.equals(this.start)\n" +
+                    "                    ) {\n" +
+                    "                        this.hasNext = false;\n" +
+                    "                        return Domain.END_OF_INPUT.createToken(this.inputText, new Fragment(currPos, currPos));\n" +
+                    "                    }\n" +
+                    "\n" +
+                    "                    // we've found an error\n" +
                     "\n" +
                     "                    /// ERROR HANDLING CODE GOES HERE!\n" +
                     "                    handleError(currCodePoint, this.currentMode, this.currPos);\n" +

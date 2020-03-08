@@ -1,7 +1,10 @@
 package io.github.sboyanovich.scannergenerator.tests.biglexgen;
 
 import io.github.sboyanovich.scannergenerator.automata.StateTag;
-import io.github.sboyanovich.scannergenerator.scanner.*;
+import io.github.sboyanovich.scannergenerator.scanner.Fragment;
+import io.github.sboyanovich.scannergenerator.scanner.LexicalRecognizer;
+import io.github.sboyanovich.scannergenerator.scanner.Position;
+import io.github.sboyanovich.scannergenerator.scanner.Text;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
@@ -74,10 +77,10 @@ public abstract class GeneratedScanner implements Iterator<Token> {
 
         // Restoring recognizers from files.
         this.recognizers = new HashMap<>();
-        this.recognizers.put(INITIAL, new LexicalRecognizer("INITIAL.reco", finalTags));
-        this.recognizers.put(REGEX, new LexicalRecognizer("REGEX.reco", finalTags));
-        this.recognizers.put(CHAR_CLASS, new LexicalRecognizer("CHAR_CLASS.reco", finalTags));
-        this.recognizers.put(COMMENT, new LexicalRecognizer("COMMENT.reco", finalTags));
+        this.recognizers.put(INITIAL, new LexicalRecognizer("res/INITIAL.reco", finalTags));
+        this.recognizers.put(REGEX, new LexicalRecognizer("res/REGEX.reco", finalTags));
+        this.recognizers.put(CHAR_CLASS, new LexicalRecognizer("res/CHAR_CLASS.reco", finalTags));
+        this.recognizers.put(COMMENT, new LexicalRecognizer("res/COMMENT.reco", finalTags));
 
         // just in case
         resetCurrState();
@@ -162,13 +165,6 @@ public abstract class GeneratedScanner implements Iterator<Token> {
 
         while (true) {
             int currCodePoint = getCurrentCodePoint();
-
-            /// This guards against finding EOI while completing an earlier started token
-            if (currCodePoint == Text.EOI && this.currPos.equals(this.start)) {
-                this.hasNext = false;
-                return Domain.END_OF_INPUT.createToken(this.inputText, new Fragment(currPos, currPos));
-            }
-
             int nextState = getCurrentRecognizer().transition(this.currState, currCodePoint);
 
             if (isFinal(this.currState)) {
@@ -182,8 +178,19 @@ public abstract class GeneratedScanner implements Iterator<Token> {
             } else {
                 // it's time to stop
 
-                // we've found an error
+                // nothing matched
                 if (!isFinal(this.currState) && !lastFinalState.isPresent()) {
+
+                    /// This guards against finding EOI while completing an earlier started token
+                    if (
+                            (currCodePoint == Text.EOI || currCodePoint == this.inputText.getAltEoi()) &&
+                                    this.currPos.equals(this.start)
+                    ) {
+                        this.hasNext = false;
+                        return Domain.END_OF_INPUT.createToken(this.inputText, new Fragment(currPos, currPos));
+                    }
+
+                    // we've found an error
 
                     /// ERROR HANDLING CODE GOES HERE!
                     handleError(currCodePoint, this.currentMode, this.currPos);
@@ -209,7 +216,6 @@ public abstract class GeneratedScanner implements Iterator<Token> {
                     Optional<Token> optToken = Optional.empty();
 
                     // this cast should always work, provided all final ones are in one enum
-                    // alternative: switch vs instanceof
                     StateTags tag = (StateTags) getCurrentRecognizer().getStateTag(this.currState);
 
                     /// TIP: for ignored expressions (e.g. whitespace) case should just reset start
@@ -301,6 +307,9 @@ public abstract class GeneratedScanner implements Iterator<Token> {
                         case COMMENT_CLOSE:
                             optToken = handleCommentClose(this.inputText, scannedFragment);
                             break;
+                        case EOF:
+                            optToken = handleEof(this.inputText, scannedFragment);
+                            break;
                         case WHITESPACE:
                             setStartToCurrentPosition();
                             break;
@@ -380,4 +389,6 @@ public abstract class GeneratedScanner implements Iterator<Token> {
     protected abstract Optional<Token> handleCommentAsterisk(Text text, Fragment fragment);
 
     protected abstract Optional<Token> handleCommentClose(Text text, Fragment fragment);
+
+    protected abstract Optional<Token> handleEof(Text text, Fragment fragment);
 }
