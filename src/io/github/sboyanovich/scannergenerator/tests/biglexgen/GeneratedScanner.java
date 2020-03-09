@@ -397,7 +397,7 @@ public abstract class GeneratedScanner implements Iterator<Token> {
                             switchToMode(REGEX);
                             optToken = Optional.of(
                                     SimpleDomains
-                                            .CHAR_CLASS_OPEN.createToken(this.inputText, scannedFragment)
+                                            .CHAR_CLASS_CLOSE.createToken(this.inputText, scannedFragment)
                             );
                             break;
                         case CHAR:
