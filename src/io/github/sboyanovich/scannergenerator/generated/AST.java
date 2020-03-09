@@ -131,10 +131,21 @@ public abstract class AST {
         private Regex() {
         }
 
+        abstract Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize);
+
         abstract NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize);
 
         public static class Union extends Regex {
             List<Regex> operands;
+
+            @Override
+            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
+                Set<Integer> result = new HashSet<>();
+                for (Regex regex : operands) {
+                    result.addAll(regex.getPivots(defPivots, alphabetSize));
+                }
+                return result;
+            }
 
             @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
@@ -165,6 +176,15 @@ public abstract class AST {
 
         public static class Concatenation extends Regex {
             List<Regex> operands;
+
+            @Override
+            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
+                Set<Integer> result = new HashSet<>();
+                for (Regex regex : operands) {
+                    result.addAll(regex.getPivots(defPivots, alphabetSize));
+                }
+                return result;
+            }
 
             @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
@@ -199,6 +219,11 @@ public abstract class AST {
             Regex a;
 
             @Override
+            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
+                return a.getPivots(defPivots, alphabetSize);
+            }
+
+            @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
                 return a.buildNFA(namedExpressions, alphabetSize).iteration();
             }
@@ -219,6 +244,11 @@ public abstract class AST {
 
         public static class PosIteration extends Regex {
             Regex a;
+
+            @Override
+            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
+                return a.getPivots(defPivots, alphabetSize);
+            }
 
             @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
@@ -243,6 +273,11 @@ public abstract class AST {
             Regex a;
 
             @Override
+            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
+                return a.getPivots(defPivots, alphabetSize);
+            }
+
+            @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
                 return a.buildNFA(namedExpressions, alphabetSize).optional();
             }
@@ -265,6 +300,11 @@ public abstract class AST {
             Regex a;
             int from;
             int to;
+
+            @Override
+            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
+                return a.getPivots(defPivots, alphabetSize);
+            }
 
             @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
@@ -309,6 +349,11 @@ public abstract class AST {
             int codePoint;
 
             @Override
+            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
+                return Set.of(codePoint);
+            }
+
+            @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
                 return NFA.singleLetterLanguage(alphabetSize, codePoint);
             }
@@ -324,6 +369,11 @@ public abstract class AST {
         }
 
         public static class Dot extends Regex {
+
+            @Override
+            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
+                return Set.of(asCodePoint("\n"));
+            }
 
             @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
@@ -342,6 +392,11 @@ public abstract class AST {
 
         public static class Eof extends Regex {
             @Override
+            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
+                return Set.of(alphabetSize - 1);
+            }
+
+            @Override
             StringBuilder dotVisit() {
                 return AST.labelNode(number, "<<EOF>>");
             }
@@ -354,6 +409,11 @@ public abstract class AST {
 
         public static class NamedExpr extends Regex {
             String name;
+
+            @Override
+            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
+                return defPivots.get(name);
+            }
 
             @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
@@ -373,6 +433,24 @@ public abstract class AST {
         public static class CharClass extends Regex {
             boolean exclusive;
             List<CharOrRange> charsOrRanges;
+
+            @Override
+            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
+                Set<Integer> result = new HashSet<>();
+                for (CharOrRange cor : charsOrRanges) {
+                    if (cor instanceof CharOrRange.ClassChar) {
+                        result.add(((CharOrRange.ClassChar) cor).codePoint);
+                    } else if (cor instanceof CharOrRange.Range) {
+                        CharOrRange.Range range = (CharOrRange.Range) cor;
+                        result.add(range.cpa);
+                        result.add(range.cpb);
+                    }
+                }
+                if (exclusive) {
+                    result.add(alphabetSize - 1); // exclusive class implicitly prohibits EOF/AEOI
+                }
+                return result;
+            }
 
             boolean containsCodePoint(int codePoint) {
                 if (exclusive) {
@@ -495,6 +573,14 @@ public abstract class AST {
         public static class CharClassDiff extends Regex {
             CharClass a;
             CharClass b;
+
+            @Override
+            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
+                Set<Integer> result = new HashSet<>();
+                result.addAll(a.getPivots(defPivots, alphabetSize));
+                result.addAll(b.getPivots(defPivots, alphabetSize));
+                return result;
+            }
 
             @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
