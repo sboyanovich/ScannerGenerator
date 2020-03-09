@@ -12,7 +12,7 @@ public enum DomainsWithStringPairAttribute implements DomainWithAttribute<String
         public StringPair attribute(Text text, Fragment fragment) {
             String s = Utility.getTextFragmentAsString(text, fragment);
             int index = s.indexOf("#");
-            return new StringPair(s.substring(1, index), s.substring(index));
+            return new StringPair(s.substring(1, index), s.substring(index + 1));
         }
 
         @Override
