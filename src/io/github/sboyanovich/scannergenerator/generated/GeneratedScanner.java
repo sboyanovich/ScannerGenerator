@@ -77,6 +77,9 @@ public abstract class GeneratedScanner implements Iterator<Token> {
         finalTags.add(L_ANGLE_BRACKET);
         finalTags.add(COMMA);
         finalTags.add(RULE_END);
+        finalTags.add(ACTION_SWITCH_RETURN);
+        finalTags.add(ACTION_RETURN);
+        finalTags.add(ACTION_SWITCH);
         finalTags.add(WHITESPACE);
         finalTags.add(WHITESPACE_IN_REGEX);
 
@@ -242,86 +245,185 @@ public abstract class GeneratedScanner implements Iterator<Token> {
                         case WHITESPACE:
                             setStartToCurrentPosition();
                             break;
+                        case ACTION_SWITCH:
+                            optToken = Optional.of(
+                                    DomainsWithStringAttribute
+                                            .ACTION_SWITCH.createToken(this.inputText, scannedFragment)
+                            );
+                            break;
+                        case ACTION_RETURN:
+                            optToken = Optional.of(
+                                    DomainsWithStringAttribute
+                                            .ACTION_RETURN.createToken(this.inputText, scannedFragment)
+                            );
+                            break;
+                        case ACTION_SWITCH_RETURN:
+                            optToken = Optional.of(
+                                    DomainsWithStringPairAttribute
+                                            .ACTION_SWITCH_RETURN.createToken(this.inputText, scannedFragment)
+                            );
+                            break;
                         case RULE_END:
-                            optToken = handleRuleEnd(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .RULE_END.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case COMMA:
-                            optToken = handleComma(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .COMMA.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case L_ANGLE_BRACKET:
-                            optToken = handleLAngleBracket(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .L_ANGLE_BRACKET.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case R_ANGLE_BRACKET:
-                            optToken = handleRAngleBracket(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .R_ANGLE_BRACKET.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case RULES_SECTION_MARKER:
-                            optToken = handleRulesSectionMarker(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .RULES_SECTION_MARKER.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case DOMAINS_GROUP_MARKER:
-                            optToken = handleDomainsGroupMarker(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    DomainsWithStringAttribute
+                                            .DOMAINS_GROUP_MARKER.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case MODES_SECTION_MARKER:
-                            optToken = handleModesSectionMarker(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .MODES_SECTION_MARKER.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case DEFINER:
-                            optToken = handleDefiner(this.inputText, scannedFragment);
+                            switchToMode(REGEX);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .DEFINER.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case IDENTIFIER:
-                            optToken = handleIdentifier(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    DomainsWithStringAttribute
+                                            .IDENTIFIER.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case NAMED_EXPR:
-                            optToken = handleNamedExpr(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    DomainsWithStringAttribute
+                                            .NAMED_EXPR.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case LPAREN:
-                            optToken = handleLParen(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .LPAREN.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case RPAREN:
-                            optToken = handleRParen(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .RPAREN.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case CLASS_MINUS_OP:
-                            optToken = handleClassMinusOp(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .CLASS_MINUS_OP.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case REPETITION_OP:
-                            optToken = handleRepetitionOp(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    DomainsWithIntPairAttribute
+                                            .REPETITION_OP.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case OPTION_OP:
-                            optToken = handleOptionOp(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .OPTION_OP.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case UNION_OP:
-                            optToken = handleUnionOp(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .UNION_OP.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case POS_ITERATION_OP:
-                            optToken = handlePosIterationOp(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .POS_ITERATION_OP.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case ITERATION_OP:
-                            optToken = handleIterationOp(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .ITERATION_OP.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case DOT:
-                            optToken = handleDot(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .DOT.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case EOF:
-                            optToken = handleEof(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .EOF.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case CHAR_CLASS_RANGE_OP:
-                            optToken = handleCharClassRangeOp(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .CHAR_CLASS_RANGE_OP.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case CHAR_CLASS_NEG:
-                            optToken = handleCharClassNeg(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .CHAR_CLASS_NEG.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case CHAR_CLASS_OPEN:
-                            optToken = handleCharClassOpen(this.inputText, scannedFragment);
+                            switchToMode(CHAR_CLASS);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .CHAR_CLASS_OPEN.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case CHAR_CLASS_CLOSE:
-                            optToken = handleCharClassClose(this.inputText, scannedFragment);
+                            switchToMode(REGEX);
+                            optToken = Optional.of(
+                                    SimpleDomains
+                                            .CHAR_CLASS_CLOSE.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case CHAR:
-                            optToken = handleChar(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    DomainsWithIntegerAttribute
+                                            .CHAR.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case CLASS_CHAR:
-                            optToken = handleClassChar(this.inputText, scannedFragment);
+                            optToken = Optional.of(
+                                    DomainsWithIntegerAttribute
+                                            .CHAR.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case COMMENT_START:
-                            optToken = handleCommentStart(this.inputText, scannedFragment);
+                            switchToMode(COMMENT);
                             break;
                         case NO_ASTERISK_SEQ:
                             optToken = handleNoAsteriskSeq(this.inputText, scannedFragment);
@@ -333,7 +435,7 @@ public abstract class GeneratedScanner implements Iterator<Token> {
                             optToken = handleCommentAsterisk(this.inputText, scannedFragment);
                             break;
                         case SLC_START:
-                            optToken = handleSlcStart(this.inputText, scannedFragment);
+                            switchToMode(SL_COMMENT);
                             break;
                         case SLC_CLOSE:
                             optToken = handleSlcClose(this.inputText, scannedFragment);
@@ -357,67 +459,11 @@ public abstract class GeneratedScanner implements Iterator<Token> {
 
     protected abstract Optional<Token> handleWhitespaceInRegex(Text text, Fragment fragment);
 
-    protected abstract Optional<Token> handleRuleEnd(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleComma(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleLAngleBracket(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleRAngleBracket(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleRulesSectionMarker(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleDomainsGroupMarker(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleModesSectionMarker(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleDefiner(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleIdentifier(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleNamedExpr(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleLParen(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleRParen(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleClassMinusOp(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleRepetitionOp(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleOptionOp(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleUnionOp(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handlePosIterationOp(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleIterationOp(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleDot(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleEof(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleCharClassRangeOp(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleCharClassNeg(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleCharClassOpen(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleCharClassClose(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleChar(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleClassChar(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleCommentStart(Text text, Fragment fragment);
-
     protected abstract Optional<Token> handleNoAsteriskSeq(Text text, Fragment fragment);
 
     protected abstract Optional<Token> handleCommentClose(Text text, Fragment fragment);
 
     protected abstract Optional<Token> handleCommentAsterisk(Text text, Fragment fragment);
-
-    protected abstract Optional<Token> handleSlcStart(Text text, Fragment fragment);
 
     protected abstract Optional<Token> handleSlcClose(Text text, Fragment fragment);
 
