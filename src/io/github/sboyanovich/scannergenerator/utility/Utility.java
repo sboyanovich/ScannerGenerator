@@ -114,7 +114,40 @@ public class Utility {
     }
 
     public static EquivalenceMap getCoarseSymbolClassMap(List<Integer> pivots) {
-        return getCoarseSymbolClassMap(pivots, Character.MAX_CODE_POINT + 1);
+        return getCoarseSymbolClassMap(pivots, Character.MAX_CODE_POINT + 1 + 1);
+    }
+
+    /**
+     * Assigns distinct equivalence classes to all pivots. Each interval between two closest pivots
+     * (left and right alphabet border act as implicit pivots) is assigned its own equivalence class.
+     */
+    public static EquivalenceMap getCoarseSymbolClassMapRegexBased(List<Integer> pivots, int alphabetSize) {
+        int[] resultMap = new int[alphabetSize];
+        List<Integer> sortedPivots = new ArrayList<>(pivots);
+        Collections.sort(sortedPivots);
+
+        int classCounter = 0;
+        int start = 0;
+        for (int pivot : sortedPivots) {
+            int i;
+            for (i = start; i < pivot; i++) {
+                resultMap[i] = classCounter;
+            }
+            // covers if there is nothing between prev and curr pivot
+            if (i > start) {
+                classCounter++;
+            }
+            resultMap[pivot] = classCounter;
+            classCounter++;
+            start = pivot + 1;
+        }
+        // last one
+        for (int i = start; i < resultMap.length; i++) {
+            resultMap[i] = classCounter;
+        }
+        int classNo = resultMap[alphabetSize - 1] + 1;
+
+        return new EquivalenceMap(alphabetSize, classNo, resultMap);
     }
 
     public static <T> Set<T> union(Set<T> s1, Set<T> s2) {
