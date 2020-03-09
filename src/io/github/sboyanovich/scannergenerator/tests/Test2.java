@@ -1,30 +1,45 @@
 package io.github.sboyanovich.scannergenerator.tests;
 
-import java.io.*;
-import java.util.List;
+import io.github.sboyanovich.scannergenerator.utility.Utility;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class Test2 {
     public static void main(String[] args) {
-/*        int cntLetter = 0;
+
+        Set<Integer> jis = new HashSet<>();
+        Set<Integer> jip = new HashSet<>();
+
+        int cntLetter = 0;
         int cntLetterOrDigit = 0;
         for (int i = 0; i < Character.MAX_CODE_POINT + 1; i++) {
             if (Character.isJavaIdentifierStart(i)) {
-                cntLetter++;
+                jis.add(i);
             }
             if (Character.isJavaIdentifierPart(i)) {
-                cntLetterOrDigit++;
+                jip.add(i);
             }
-            if (Character.isJavaIdentifierStart(i)) {
-                System.out.println(i + ": " + asString(i));
-            }
-            int a = 0;
         }
 
-        System.out.println("JavaLetters: " + cntLetter);
-        System.out.println("JavaLetterOrDigits: " + cntLetterOrDigit);
+        var jiss = Utility.compressIntoSegments(jis);
+        var jips = Utility.compressIntoSegments(jip);
 
-*/
-        String filename = "someInts.reco";
+        StringBuilder s = new StringBuilder();
+        s.append("[");
+        for(var segment : jips) {
+            int a = segment.getFirst();
+            int b = segment.getSecond();
+            s.append("\\U+#").append(a);
+            if(a != b) {
+                s.append("-").append("\\U+#").append(b);
+            }
+        }
+        s.append("]");
+
+        System.out.println(s.toString());
+
+/*        String filename = "someInts.reco";
         List<Integer> ints = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         try(DataOutputStream dos = new DataOutputStream(new FileOutputStream(filename))) {
             for (int x : ints) {
@@ -40,6 +55,6 @@ public class Test2 {
             }
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        }*/
     }
 }
