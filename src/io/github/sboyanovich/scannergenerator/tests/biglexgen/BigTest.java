@@ -10,7 +10,7 @@ import java.util.*;
 
 public class BigTest {
     public static void main(String[] args) {
-        String text = Utility.getText("testInputM1.txt");
+        String text = Utility.getText("res/testInputM1.txt");
 
         LexGenScanner scanner = new LexGenScanner(text);
         MockCompiler compiler = scanner.getCompiler();
