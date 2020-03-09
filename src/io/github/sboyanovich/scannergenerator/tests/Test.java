@@ -18,7 +18,8 @@ public class Test {
         System.out.println(map.getEqClassDomain());*/
         String text = Utility.generateSimpleDomainsEnum(
                 List.of("PLUS_OP", "MINUS_OP", "MUL_OP", "DIV_OP", "INC_OP"),
-                "io.github.sboyanovich.scannergenerator.generated"
+                "io.github.sboyanovich.scannergenerator.generated",
+                "SimpleDomains"
         );
 
         String packageName = "io.github.sboyanovich.scannergenerator.generated";
@@ -26,7 +27,8 @@ public class Test {
         text = Utility.generateDomainWithAttributeEnum(
                 "String",
                 List.of("NAMED_EXPR", "DOMAINS_GROUP_MARKER", "STATE_NAME", "IDENTIFIER"),
-                packageName
+                packageName,
+                "DomainsWithStringAttribute"
         );
 
         String path = "generated/testFiles/Test.java";

@@ -359,7 +359,7 @@ public class Utility {
                 domainName + ");\n" + "        }\n" + "    }";
     }
 
-    public static String generateSimpleDomainsEnum(List<String> domainNames, String packageName) {
+    public static String generateSimpleDomainsEnum(List<String> domainNames, String packageName, String enumName) {
         StringBuilder result = new StringBuilder();
 
         result.append("package ")
@@ -370,7 +370,7 @@ public class Utility {
                 "import io.github.sboyanovich.scannergenerator.scanner.token.BasicToken;\n" +
                 "import io.github.sboyanovich.scannergenerator.scanner.token.Domain;\n" +
                 "import io.github.sboyanovich.scannergenerator.scanner.token.Token;\n\n");
-        result.append("public enum SimpleDomains implements Domain {\n");
+        result.append("public enum ").append(enumName).append(" implements Domain {\n");
 
         if (domainNames.size() > 0) {
             result.append(generateSimpleDomain(domainNames.get(0)));
@@ -401,7 +401,7 @@ public class Utility {
     }
 
     public static String generateDomainWithAttributeEnum(
-            String attributeType, List<String> domainNames, String packageName
+            String attributeType, List<String> domainNames, String packageName, String enumName
     ) {
         StringBuilder result = new StringBuilder();
 
@@ -412,9 +412,9 @@ public class Utility {
                 "import io.github.sboyanovich.scannergenerator.scanner.Text;\n" +
                 "import io.github.sboyanovich.scannergenerator.scanner.token.DomainWithAttribute;\n" +
                 "import io.github.sboyanovich.scannergenerator.scanner.token.TokenWithAttribute;\n\n");
-        result.append("public enum DomainsWith")
-                .append(attributeType)
-                .append("Attribute implements DomainWithAttribute<").append(attributeType).append("> {\n");
+        result.append("public enum ")
+                .append(enumName)
+                .append(" implements DomainWithAttribute<").append(attributeType).append("> {\n");
 
         if (domainNames.size() > 0) {
             result.append(generateDomainWithAttribute(domainNames.get(0), attributeType));
