@@ -3,6 +3,9 @@ package io.github.sboyanovich.scannergenerator.tests.biglexgen;
 import io.github.sboyanovich.scannergenerator.automata.StateTag;
 
 public enum StateTags implements StateTag {
+    ACTION_SWITCH,
+    ACTION_RETURN,
+    ACTION_SWITCH_RETURN,
     WHITESPACE_IN_REGEX,
     WHITESPACE,
     IDENTIFIER,

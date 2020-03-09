@@ -12,7 +12,7 @@ import java.util.SortedMap;
 
 public class Test {
     public static void main(String[] args) {
-        String text = Utility.getText("testInput.txt");
+        String text = Utility.getText("res/testInput.txt");
 
         LexGenScanner scanner = new LexGenScanner(text);
         MockCompiler compiler = scanner.getCompiler();

@@ -225,8 +225,20 @@ public class LexGenScanner implements Iterator<Token> {
         NFA slcRegNFA = NFA.acceptsAllSymbolsButThese(alphabetSize, Set.of("\n")).positiveIteration()
                 .setAllFinalStatesTo(SLC_REG);
 
+        NFA actionSwitchNFA = NFA.singleLetterLanguage(alphabetSize, "@").concatenation(identifierNFA)
+                .setAllFinalStatesTo(ACTION_SWITCH);
+
+        NFA actionReturnNFA = NFA.singleLetterLanguage(alphabetSize, "#").concatenation(identifierNFA)
+                .setAllFinalStatesTo(ACTION_RETURN);
+
+        NFA actionSwitchReturnNFA = actionSwitchNFA.concatenation(actionReturnNFA)
+                .setAllFinalStatesTo(ACTION_SWITCH_RETURN);
+
         List<StateTag> priorityList = new ArrayList<>(
                 List.of(
+                        ACTION_SWITCH,
+                        ACTION_RETURN,
+                        ACTION_SWITCH_RETURN,
                         SLC_START,
                         SLC_REG,
                         SLC_CLOSE,
@@ -281,7 +293,10 @@ public class LexGenScanner implements Iterator<Token> {
                 .union(commaNFA)
                 .union(ruleEndNFA)
                 .union(commentStartNFA)
-                .union(slcStartNFA);
+                .union(slcStartNFA)
+                .union(actionSwitchNFA)
+                .union(actionReturnNFA)
+                .union(actionSwitchReturnNFA);
 
         NFA mode1 = whitespaceInRegexNFA
                 .union(charClassOpenNFA)
@@ -607,6 +622,24 @@ public class LexGenScanner implements Iterator<Token> {
                             break;
                         case SLC_CLOSE:
                             optToken = handleSlcClose(this.inputText, scannedFragment);
+                            break;
+                        case ACTION_SWITCH:
+                            optToken = Optional.of(
+                                    DomainsWithStringAttribute
+                                            .ACTION_SWITCH.createToken(this.inputText, scannedFragment)
+                            );
+                            break;
+                        case ACTION_RETURN:
+                            optToken = Optional.of(
+                                    DomainsWithStringAttribute
+                                            .ACTION_RETURN.createToken(this.inputText, scannedFragment)
+                            );
+                            break;
+                        case ACTION_SWITCH_RETURN:
+                            optToken = Optional.of(
+                                    DomainsWithStringPairAttribute
+                                            .ACTION_SWITCH_RETURN.createToken(this.inputText, scannedFragment)
+                            );
                             break;
                         case WHITESPACE:
                             setStartToCurrentPosition();
