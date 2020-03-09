@@ -36,6 +36,9 @@ public enum StateTags implements StateTag {
     L_ANGLE_BRACKET,
     COMMA,
     RULE_END,
+    ACTION_SWITCH_RETURN,
+    ACTION_RETURN,
+    ACTION_SWITCH,
     WHITESPACE,
     WHITESPACE_IN_REGEX
 }

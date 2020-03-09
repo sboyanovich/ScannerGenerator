@@ -38,5 +38,27 @@ public enum DomainsWithStringAttribute implements DomainWithAttribute<String> {
         public TokenWithAttribute<String> createToken(Text text, Fragment fragment) {
             return new TokenWithAttribute<>(fragment, IDENTIFIER, attribute(text, fragment));
         }
+    },
+    ACTION_SWITCH {
+        @Override
+        public String attribute(Text text, Fragment fragment) {
+
+        }
+
+        @Override
+        public TokenWithAttribute<String> createToken(Text text, Fragment fragment) {
+            return new TokenWithAttribute<>(fragment, ACTION_SWITCH, attribute(text, fragment));
+        }
+    },
+    ACTION_RETURN {
+        @Override
+        public String attribute(Text text, Fragment fragment) {
+
+        }
+
+        @Override
+        public TokenWithAttribute<String> createToken(Text text, Fragment fragment) {
+            return new TokenWithAttribute<>(fragment, ACTION_RETURN, attribute(text, fragment));
+        }
     }
 }
