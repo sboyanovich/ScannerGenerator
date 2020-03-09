@@ -19,7 +19,7 @@ public class RecognizerGenTest {
             System.exit(1);
         }
 
-        String inputFile = args[0];
+        String inputFile = "res/testInputM1.txt";
 
         String text = Utility.getText(inputFile);
 
@@ -191,24 +191,32 @@ public class RecognizerGenTest {
 
             List<AST.DomainGroup> domainGroupList = spec.domainGroups.domainGroups;
 
+            Map<String, String> domainEnums = new HashMap<>();
 
             for (AST.DomainGroup domainGroup : domainGroupList) {
                 List<String> domainNames = domainGroup.getDomainNames();
+                String enumName = "";
                 if (domainGroup instanceof AST.DomainGroup.SimpleDomainGroup) {
+                    enumName = simpleDomainsEnumName;
                     String simpleDomainsEnum = Utility.generateSimpleDomainsEnum(
                             domainNames,
-                            packageName
+                            packageName,
+                            enumName
                     );
-                    Utility.writeTextToFile(simpleDomainsEnum, prefix + simpleDomainsEnumName + ".java");
+                    Utility.writeTextToFile(simpleDomainsEnum, prefix + enumName + ".java");
                 } else if (domainGroup instanceof AST.DomainGroup.DomainWithAttributeGroup) {
                     String type = ((AST.DomainGroup.DomainWithAttributeGroup) domainGroup).attributeType;
+                    enumName = "DomainsWith" + type + "Attribute";
                     String domainEnum = Utility.generateDomainWithAttributeEnum(
                             type,
                             domainNames,
-                            packageName
+                            packageName,
+                            enumName
                     );
-                    String enumName = "DomainsWith" + type + "Attribute";
                     Utility.writeTextToFile(domainEnum, prefix + enumName + ".java");
+                }
+                for (String domainName : domainNames) {
+                    domainEnums.put(domainName, enumName);
                 }
             }
 
@@ -443,24 +451,33 @@ public class RecognizerGenTest {
                 } else if (action instanceof AST.Rules.Rule.Action.Switch) {
                     String modeName = ((AST.Rules.Rule.Action.Switch) action).modeName;
                     scannerCode.append("                            ")
-                            .append("switchModeTo(").append(modeName).append(";\n");
+                            .append("switchToMode(").append(modeName).append(");\n");
                 } else if (action instanceof AST.Rules.Rule.Action.Return) {
                     String domainName = ((AST.Rules.Rule.Action.Return) action).domainName;
+                    String enumName = domainEnums.get(domainName);
                     scannerCode.append("                            ")
-                            .append("optToken = Optional.of(")
+                            .append("optToken = Optional.of(\n")
+                            .append("                                    ")
+                            .append(enumName)
+                            .append("\n                                            .")
                             .append(domainName)
-                            .append(".createToken(this.inputText, scannedFragment)")
-                            .append(");\n");
+                            .append(".createToken(this.inputText, scannedFragment)\n")
+                            .append("                            );\n");
                 } else if (action instanceof AST.Rules.Rule.Action.SwitchReturn) {
                     String modeName = ((AST.Rules.Rule.Action.SwitchReturn) action).modeName;
                     String domainName = ((AST.Rules.Rule.Action.SwitchReturn) action).domainName;
+                    String enumName = domainEnums.get(domainName);
+
                     scannerCode.append("                            ")
-                            .append("switchModeTo(").append(modeName).append(";\n");
+                            .append("switchToMode(").append(modeName).append(");\n");
                     scannerCode.append("                            ")
-                            .append("optToken = Optional.of(")
+                            .append("optToken = Optional.of(\n")
+                            .append("                                    ")
+                            .append(enumName)
+                            .append("\n                                            .")
                             .append(domainName)
-                            .append(".createToken(this.inputText, scannedFragment)")
-                            .append(");\n");
+                            .append(".createToken(this.inputText, scannedFragment)\n")
+                            .append("                            );\n");
                 }
                 scannerCode.append("                            break;\n");
             }
@@ -493,8 +510,7 @@ public class RecognizerGenTest {
 
     static String generateActionFuncCall(String actionName) {
         return "                            optToken = " +
-                actionName + "(this.inputText, scannedFragment);\n" +
-                "                            break;\n";
+                actionName + "(this.inputText, scannedFragment);\n";
     }
 
     static String generateActionSignature(String actionName) {
