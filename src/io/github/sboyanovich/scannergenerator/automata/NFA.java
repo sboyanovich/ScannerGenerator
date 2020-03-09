@@ -739,15 +739,28 @@ public class NFA {
     }
 
     public DFA determinize(Map<StateTag, Integer> priorities) {
+        return determinize(priorities, List.of());
+    }
+
+    // Pivots are not checked for any kind of logical consistency with the NFA.
+    // Supply them only if you know what you're doing.
+    public DFA determinize(Map<StateTag, Integer> priorities, List<Integer> pivots) {
         // priorities map must contain mapping for every present StateTag (bigger number -> higher priority)
         // (except NOT_FINAL and FINAL_DUMMY) (these are most likely going to be overwritten anyway)
         // client-defined priority ranks must be non-negative
 
         // Maybe remove lambdas here.
 
-        List<Integer> mentioned = mentioned(this);
-        System.out.println("Mentioned :" + mentioned.size());
-        EquivalenceMap emap = getCoarseSymbolClassMap(mentioned, this.alphabetSize);
+        EquivalenceMap emap;
+        if (pivots.isEmpty()) {
+            List<Integer> mentioned = mentioned(this);
+            System.out.println("Mentioned :" + mentioned.size());
+            emap = getCoarseSymbolClassMap(mentioned, this.alphabetSize);
+        } else {
+            System.out.println("Pivots :" + pivots.size());
+            emap = getCoarseSymbolClassMapRegexBased(pivots, this.alphabetSize);
+        }
+        System.out.println("Classes: " + emap.getEqClassDomain());
 
         priorities = new HashMap<>(priorities);
         // TODO: Validate priorities Map
