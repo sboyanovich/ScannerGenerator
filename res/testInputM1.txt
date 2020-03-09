@@ -31,11 +31,13 @@ IDENTIFIER          := [_a-zA-Z][_a-zA-Z0-9]*
     EOF
 
 %DOMAINS[String]
-    NAMED_EXPR DOMAINS_GROUP_MARKER IDENTIFIER
+    NAMED_EXPR DOMAINS_GROUP_MARKER IDENTIFIER ACTION_SWITCH ACTION_RETURN
 
 %DOMAINS[Integer] CHAR
 
 %DOMAINS[IntPair] REPETITION_OP
+
+%DOMAINS[StringPair] ACTION_SWITCH_RETURN
 
 /*
     First comment here. Rules section marker is useful so a state name identifier is not mistaken for
@@ -46,41 +48,44 @@ IDENTIFIER          := [_a-zA-Z][_a-zA-Z0-9]*
 
 %%
 
-<REGEX>         WHITESPACE_IN_REGEX     := {WHITESPACE}                             handleWhitespaceInRegex;
-                WHITESPACE              := {WHITESPACE}                             ;
-                RULE_END                := ;                                        handleRuleEnd;
-                COMMA                   := ,                                        handleComma;
-                L_ANGLE_BRACKET         := <                                        handleLAngleBracket;
-                R_ANGLE_BRACKET         := >                                        handleRAngleBracket;
-                RULES_SECTION_MARKER    := %%                                       handleRulesSectionMarker;
-                DOMAINS_GROUP_MARKER    := %DOMAINS(\[{IDENTIFIER}])?               handleDomainsGroupMarker;
-                MODES_SECTION_MARKER    := %MODES                                   handleModesSectionMarker;
-                DEFINER                 := :=[ \t]+                                 handleDefiner;
-                IDENTIFIER              := {IDENTIFIER}                             handleIdentifier;
-<REGEX>         NAMED_EXPR              := {{IDENTIFIER}}                           handleNamedExpr;
-<REGEX>         LPAREN                  := \(                                       handleLParen;
-<REGEX>         RPAREN                  := \)                                       handleRParen;
-<REGEX>         CLASS_MINUS_OP          := \{-}                                     handleClassMinusOp;
-<REGEX>         REPETITION_OP           := {{DECIMAL_NUMBER}(,{DECIMAL_NUMBER}?)?}  handleRepetitionOp;
-<REGEX>         OPTION_OP               := \?                                       handleOptionOp;
-<REGEX>         UNION_OP                := \|                                       handleUnionOp;
-<REGEX>         POS_ITERATION_OP        := \+                                       handlePosIterationOp;
-<REGEX>         ITERATION_OP            := \*                                       handleIterationOp;
-<REGEX>         DOT                     := \.                                       handleDot;
-<REGEX>         EOF                     := \<<EOF>>                                 handleEof;
-<CHAR_CLASS>    CHAR_CLASS_RANGE_OP     := -                                        handleCharClassRangeOp;
-<CHAR_CLASS>    CHAR_CLASS_NEG          := ^                                        handleCharClassNeg;
-<REGEX>         CHAR_CLASS_OPEN         := \[                                       handleCharClassOpen;
-<CHAR_CLASS>    CHAR_CLASS_CLOSE        := ]                                        handleCharClassClose;
-<REGEX>         CHAR                    := {INPUT_CHAR}|{ESCAPE}                    handleChar;
-<CHAR_CLASS>    CLASS_CHAR              := {CLASS_SINGLE_CHAR}|{CLASS_ESCAPE}       handleClassChar;
-                COMMENT_START           := /\*                                      handleCommentStart;
-<COMMENT>       NO_ASTERISK_SEQ         := [^*]+                                    handleNoAsteriskSeq;
-<COMMENT>       COMMENT_CLOSE           := \*/                                      handleCommentClose;
-<COMMENT>       ASTERISK                := \*                                       handleCommentAsterisk;
-                SLC_START               := //                                       handleSlcStart;
-<SL_COMMENT>    SLC_CLOSE               := (\r?\n)|<<EOF>>                          handleSlcClose;
-<SL_COMMENT>    SLC_REG                 := .+                                       handleSlcReg;
+<REGEX>         WHITESPACE_IN_REGEX     := {WHITESPACE}                                 handleWhitespaceInRegex;
+                WHITESPACE              := {WHITESPACE}                                 ;
+                ACTION_SWITCH           := @{IDENTIFIER}                                handleActionSwitch; // for now
+                ACTION_RETURN           := #{IDENTIFIER}                                handleActionReturn;
+                ACTION_SWITCH_RETURN    := @{IDENTIFIER}#{IDENTIFIER}                   handleActionSwitchReturn;
+                RULE_END                := ;                                            handleRuleEnd;
+                COMMA                   := ,                                            handleComma;
+                L_ANGLE_BRACKET         := <                                            handleLAngleBracket;
+                R_ANGLE_BRACKET         := >                                            handleRAngleBracket;
+                RULES_SECTION_MARKER    := %%                                           handleRulesSectionMarker;
+                DOMAINS_GROUP_MARKER    := %DOMAINS(\[{IDENTIFIER}])?                   handleDomainsGroupMarker;
+                MODES_SECTION_MARKER    := %MODES                                       handleModesSectionMarker;
+                DEFINER                 := :=[ \t]+                                     handleDefiner;
+                IDENTIFIER              := {IDENTIFIER}                                 handleIdentifier;
+<REGEX>         NAMED_EXPR              := {{IDENTIFIER}}                               handleNamedExpr;
+<REGEX>         LPAREN                  := \(                                           handleLParen;
+<REGEX>         RPAREN                  := \)                                           handleRParen;
+<REGEX>         CLASS_MINUS_OP          := \{-}                                         handleClassMinusOp;
+<REGEX>         REPETITION_OP           := {{DECIMAL_NUMBER}(,{DECIMAL_NUMBER}?)?}      handleRepetitionOp;
+<REGEX>         OPTION_OP               := \?                                           handleOptionOp;
+<REGEX>         UNION_OP                := \|                                           handleUnionOp;
+<REGEX>         POS_ITERATION_OP        := \+                                           handlePosIterationOp;
+<REGEX>         ITERATION_OP            := \*                                           handleIterationOp;
+<REGEX>         DOT                     := \.                                           handleDot;
+<REGEX>         EOF                     := \<<EOF>>                                     handleEof;
+<CHAR_CLASS>    CHAR_CLASS_RANGE_OP     := -                                            handleCharClassRangeOp;
+<CHAR_CLASS>    CHAR_CLASS_NEG          := ^                                            handleCharClassNeg;
+<REGEX>         CHAR_CLASS_OPEN         := \[                                           handleCharClassOpen;
+<CHAR_CLASS>    CHAR_CLASS_CLOSE        := ]                                            handleCharClassClose;
+<REGEX>         CHAR                    := {INPUT_CHAR}|{ESCAPE}                        handleChar;
+<CHAR_CLASS>    CLASS_CHAR              := {CLASS_SINGLE_CHAR}|{CLASS_ESCAPE}           handleClassChar;
+                COMMENT_START           := /\*                                          handleCommentStart;
+<COMMENT>       NO_ASTERISK_SEQ         := [^*]+                                        handleNoAsteriskSeq;
+<COMMENT>       COMMENT_CLOSE           := \*/                                          handleCommentClose;
+<COMMENT>       ASTERISK                := \*                                           handleCommentAsterisk;
+                SLC_START               := //                                           handleSlcStart;
+<SL_COMMENT>    SLC_CLOSE               := (\r?\n)|<<EOF>>                              handleSlcClose;
+<SL_COMMENT>    SLC_REG                 := .+                                           handleSlcReg;
 
 // PROTIP: Matching empty strings may lead to infinite loops.
 
@@ -92,7 +97,8 @@ IDENTIFIER          := [_a-zA-Z][_a-zA-Z0-9]*
 (Definition)            = IDENTIFIER DEFINER (RegEx) .
 (ModesSection)          = MODES_SECTION_MARKER IDENTIFIER* .
 (DomainsSection)        = [DOMAINS_GROUP_MARKER IDENTIFIER*]+ .
-(Rule)                  = (ModeList)? IDENTIFIER? DEFINER (RegEx) IDENTIFIER? RULE_END .
+(Rule)                  = (ModeList)? IDENTIFIER? DEFINER (RegEx)
+                                [ACTION_SWITCH | ACTION_RETURN | ACTION_SWITCH_RETURN | IDENTIFIER]? RULE_END .
 (ModeList)              = L_ANGLE_BRACKET IDENTIFIER [COMMA IDENTIFIER]* R_ANGLE_BRACKET .
 (RegEx)                 = (CRegEx) [ UNION_OP (CRegEx)]* .
 (CRegEx)                = (FRegEx) (FRegEx)* .
@@ -105,12 +111,12 @@ IDENTIFIER          := [_a-zA-Z][_a-zA-Z0-9]*
 ### FIRST sets (programmatically computed)
 
 FIRST(ModesSection) = [MODES_SECTION_MARKER]
-FIRST(CRegEx) = [NAMED_EXPR, LPAREN, DOT, CHAR, EOF, CHAR_CLASS_OPEN]
-FIRST(RegEx) = [NAMED_EXPR, LPAREN, DOT, CHAR, EOF, CHAR_CLASS_OPEN]
+FIRST(CRegEx) = [NAMED_EXPR, DOT, LPAREN, CHAR, EOF, CHAR_CLASS_OPEN]
+FIRST(RegEx) = [NAMED_EXPR, DOT, LPAREN, CHAR, EOF, CHAR_CLASS_OPEN]
 FIRST(ModeList) = [L_ANGLE_BRACKET]
-FIRST(FRegEx) = [NAMED_EXPR, LPAREN, DOT, CHAR, EOF, CHAR_CLASS_OPEN]
+FIRST(FRegEx) = [NAMED_EXPR, DOT, LPAREN, CHAR, EOF, CHAR_CLASS_OPEN]
 FIRST(Definition) = [IDENTIFIER]
-FIRST(LRegEx) = [NAMED_EXPR, LPAREN, DOT, CHAR, EOF, CHAR_CLASS_OPEN]
+FIRST(LRegEx) = [NAMED_EXPR, DOT, LPAREN, CHAR, EOF, CHAR_CLASS_OPEN]
 FIRST(CharClass) = [CHAR_CLASS_OPEN]
 FIRST(Rule) = [DEFINER, L_ANGLE_BRACKET, IDENTIFIER]
 FIRST(Spec) = [RULES_SECTION_MARKER, IDENTIFIER, MODES_SECTION_MARKER, DOMAINS_GROUP_MARKER]
