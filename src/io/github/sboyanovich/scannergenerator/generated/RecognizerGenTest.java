@@ -4,10 +4,6 @@ import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.automata.StateTag;
 import io.github.sboyanovich.scannergenerator.scanner.LexicalRecognizer;
-import io.github.sboyanovich.scannergenerator.scanner.Message;
-import io.github.sboyanovich.scannergenerator.scanner.Position;
-import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
-import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.time.Duration;
@@ -18,8 +14,8 @@ import java.util.stream.Collectors;
 public class RecognizerGenTest {
     public static void main(String[] args) {
         String appName = "xgen";
-        if(args.length < 1) {
-            System.err.println("USAGE: "+appName + " <input_file>");
+        if (args.length < 1) {
+            System.err.println("USAGE: " + appName + " <input_file>");
             System.exit(1);
         }
 
@@ -34,6 +30,7 @@ public class RecognizerGenTest {
         MyScanner scanner = new MyScanner(text);
         MockCompiler compiler = scanner.getCompiler();
 
+/*
         Set<Domain> ignoredTokenTypes = Set.of(
                 Domain.END_OF_INPUT,
                 Domain.ERROR
@@ -64,20 +61,29 @@ public class RecognizerGenTest {
         for (Map.Entry<Position, Message> entry : messages.entrySet()) {
             System.out.println(entry.getValue() + " at " + entry.getKey());
         }
+*/
 
-        if (errCount == 0) {
-            AST ast = Parser.parse(allTokens.iterator());
+        if (true) {
+            AST ast = Parser.parse(scanner);
             /*String dotAST = ast.toGraphVizDotString();
             System.out.println();
             System.out.println(dotAST);*/
             AST.Spec spec = (AST.Spec) ast;
 
             Map<String, NFA> definitions = new HashMap<>();
+            Map<String, Set<Integer>> defPivots = new HashMap<>();
+
+            Instant start, end;
+            long timeElapsed = 0;
 
             for (AST.Definitions.Def def : spec.definitions.definitions) {
                 String name = def.identifier.identifier;
+                start = Instant.now();
                 NFA auto = buildNFAFromRegex(def.regex, definitions, alphabetSize);
+                end = Instant.now();
+                timeElapsed += Duration.between(start, end).toMillis();
                 definitions.put(name, auto);
+                defPivots.put(name, def.regex.getPivots(defPivots, alphabetSize));
             }
 
 /*            System.out.println();
@@ -91,11 +97,18 @@ public class RecognizerGenTest {
 
             Map<String, NFA> modeNFAs = new HashMap<>();
             List<StateTag> priorityList = new ArrayList<>();
+            Map<String, Set<Integer>> rulePivots = new HashMap<>();
+            Map<String, Set<Integer>> modePivots = new HashMap<>();
 
             List<AST.Rules.Rule> rules = spec.rules.rules;
             for (AST.Rules.Rule rule : rules) {
                 String stateName = rule.stateName;
+                start = Instant.now();
                 NFA nfa = buildNFAFromRegex(rule.regex, definitions, alphabetSize);
+                end = Instant.now();
+                timeElapsed += Duration.between(start, end).toMillis();
+
+                rulePivots.put(stateName, rule.regex.getPivots(defPivots, alphabetSize));
 
                 StateTag stateTag = new StateTag() {
                     String name = stateName;
@@ -116,8 +129,10 @@ public class RecognizerGenTest {
                     if (modeNFAs.containsKey(modeName)) {
                         NFA val = modeNFAs.get(modeName);
                         modeNFAs.put(modeName, val.union(nfa));
+                        modePivots.get(modeName).addAll(rulePivots.get(stateName));
                     } else {
                         modeNFAs.put(modeName, nfa);
+                        modePivots.put(modeName, new HashSet<>(rulePivots.get(stateName)));
                     }
                 }
             }
@@ -132,7 +147,7 @@ public class RecognizerGenTest {
 
             for (String modeName : modeNFAs.keySet()) {
                 NFA nfa = modeNFAs.get(modeName);
-                modes.put(modeName, buildRecognizer(nfa, priorityMap));
+                modes.put(modeName, buildRecognizer(nfa, priorityMap, modePivots.get(modeName)));
             }
 
             /// PARAMS
@@ -145,13 +160,13 @@ public class RecognizerGenTest {
 
             for (String modeName : modes.keySet()) {
                 LexicalRecognizer recognizer = modes.get(modeName);
-                String dot = recognizer.toGraphvizDotString(
+                /*String dot = recognizer.toGraphvizDotString(
                         Objects::toString, true
                 );
                 System.out.println();
                 System.out.println(modeName + ": ");
                 System.out.println(dot);
-                System.out.println();
+                System.out.println();*/
                 recognizer.writeToFile(
                         prefix + recognizersDirName + "/" + modeName + ".reco", priorityMap
                 );
@@ -449,6 +464,8 @@ public class RecognizerGenTest {
             scannerCode.append("}");
 
             Utility.writeTextToFile(scannerCode.toString(), prefix + scannerClassName + ".java");
+
+            System.out.println("Time taken building NFAs: " + timeElapsed + "ms");
         }
     }
 
@@ -468,16 +485,18 @@ public class RecognizerGenTest {
         return regex.buildNFA(namedExpressions, alphabetSize);
     }
 
-    static LexicalRecognizer buildRecognizer(NFA lang, Map<StateTag, Integer> priorityMap) {
-        System.out.println(lang.getNumberOfStates());
+    static LexicalRecognizer buildRecognizer(NFA lang, Map<StateTag, Integer> priorityMap, Set<Integer> pivots) {
+        //System.out.println(lang.getNumberOfStates());
 
         // This appears to be necessary for determinization to work properly. It shouldn't be.
         lang = lang.removeLambdaSteps();
-        System.out.println("Lambda steps removed.");
+        //System.out.println("Lambda steps removed.");
 
-        Instant start = Instant.now();
-        DFA dfa = lang.determinize(priorityMap);
-        Instant stop = Instant.now();
+        List<Integer> pivotList = new ArrayList<>(pivots);
+
+        /*       Instant start = Instant.now(); */
+        DFA dfa = lang.determinize(priorityMap, pivotList);
+/*        Instant stop = Instant.now();
         long timeElapsed = Duration.between(start, stop).toMillis();
 
         System.out.println("Determinized!");
@@ -485,8 +504,9 @@ public class RecognizerGenTest {
         System.out.println("States: " + dfa.getNumberOfStates());
         System.out.println("Classes: " + dfa.getTransitionTable().getEquivalenceMap().getEqClassDomain());
 
-        start = Instant.now();
+        start = Instant.now();*/
         LexicalRecognizer recognizer = new LexicalRecognizer(dfa);
+/*
         stop = Instant.now();
         timeElapsed = Duration.between(start, stop).toMillis();
         System.out.println("Recognizer built!");
@@ -498,6 +518,7 @@ public class RecognizerGenTest {
         System.out.println(dot);
         String factorization = recognizer.displayEquivalenceMap(Utility::defaultUnicodeInterpretation);
         System.out.println("\n" + factorization + "\n");
+*/
 
         return recognizer;
     }
