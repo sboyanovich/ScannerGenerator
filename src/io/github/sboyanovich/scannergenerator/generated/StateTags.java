@@ -3,6 +3,9 @@ package io.github.sboyanovich.scannergenerator.generated;
 import io.github.sboyanovich.scannergenerator.automata.StateTag;
 
 public enum StateTags implements StateTag {
+    ACTION_SWITCH,
+    ACTION_RETURN,
+    ACTION_SWITCH_RETURN,
     SLC_REG,
     SLC_CLOSE,
     SLC_START,

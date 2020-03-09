@@ -12,6 +12,7 @@ import java.util.Set;
 import static io.github.sboyanovich.scannergenerator.generated.DomainsWithIntPairAttribute.REPETITION_OP;
 import static io.github.sboyanovich.scannergenerator.generated.DomainsWithIntegerAttribute.CHAR;
 import static io.github.sboyanovich.scannergenerator.generated.DomainsWithStringAttribute.*;
+import static io.github.sboyanovich.scannergenerator.generated.DomainsWithStringPairAttribute.ACTION_SWITCH_RETURN;
 import static io.github.sboyanovich.scannergenerator.generated.SimpleDomains.*;
 
 public class Parser {
@@ -220,14 +221,29 @@ public class Parser {
 
         AST.Regex regex = regex();
 
-        String actionName = "#ignoreToken";
-        if (sym.getTag().equals(IDENTIFIER)) {
-            actionName = ((TokenWithAttribute<String>) sym).getAttribute();
+        AST.Rules.Rule.Action action;
+
+        if (sym.getTag().equals(ACTION_SWITCH)) {
+            String modeName = ((TokenWithAttribute<String>) sym).getAttribute();
+            action = new AST.Rules.Rule.Action.Switch(getNodeName(), modeName);
             nextToken();
+        } else if (sym.getTag().equals(ACTION_RETURN)) {
+            String domainName = ((TokenWithAttribute<String>) sym).getAttribute();
+            action = new AST.Rules.Rule.Action.Return(getNodeName(), domainName);
+            nextToken();
+        } else if (sym.getTag().equals(ACTION_SWITCH_RETURN)) {
+            StringPair modeDomain = ((TokenWithAttribute<StringPair>) sym).getAttribute();
+            String modeName = modeDomain.getFirst();
+            String domainName = modeDomain.getSecond();
+            action = new AST.Rules.Rule.Action.SwitchReturn(getNodeName(), modeName, domainName);
+            nextToken();
+        } else if (sym.getTag().equals(IDENTIFIER)) {
+            String actionFuncName = ((TokenWithAttribute<String>) sym).getAttribute();
+            action = new AST.Rules.Rule.Action.Call(getNodeName(), actionFuncName);
+            nextToken();
+        } else {
+            action = new AST.Rules.Rule.Action.Ignore(getNodeName());
         }
-        AST.Identifier action = new AST.Identifier();
-        action.number = getNodeName();
-        action.identifier = actionName;
 
         expect(RULE_END);
 

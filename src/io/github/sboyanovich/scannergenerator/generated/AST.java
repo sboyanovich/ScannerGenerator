@@ -490,9 +490,9 @@ public abstract class AST {
             StringBuilder dotVisit() {
                 StringBuilder result = new StringBuilder();
 
-                String label = "TheseChars";
+                String label = "[]";
                 if (exclusive) {
-                    label = "NotTheseChars";
+                    label = "[^]";
                 }
 
                 result.append(AST.labelNode(number, label));
@@ -762,7 +762,81 @@ public abstract class AST {
             ModeList modeList;
             String stateName;
             Regex regex;
-            Identifier action;
+            Action action;
+
+            public static abstract class Action extends AST {
+                private Action() {
+                }
+
+                public static class Ignore extends Action {
+                    public Ignore(int number) {
+                        this.number = number;
+                    }
+
+                    @Override
+                    StringBuilder dotVisit() {
+                        return new StringBuilder(AST.labelNode(number, "@@Ignore"));
+                    }
+                }
+
+                public static class Switch extends Action {
+                    String modeName;
+
+                    public Switch(int number, String modeName) {
+                        this.number = number;
+                        this.modeName = modeName;
+                    }
+
+                    @Override
+                    StringBuilder dotVisit() {
+                        return new StringBuilder(AST.labelNode(number, "@" + modeName));
+                    }
+                }
+
+                public static class Return extends Action {
+                    String domainName;
+
+                    public Return(int number, String domainName) {
+                        this.number = number;
+                        this.domainName = domainName;
+                    }
+
+                    @Override
+                    StringBuilder dotVisit() {
+                        return new StringBuilder(AST.labelNode(number, "#" + domainName));
+                    }
+                }
+
+                public static class SwitchReturn extends Action {
+                    String modeName;
+                    String domainName;
+
+                    public SwitchReturn(int number, String modeName, String domainName) {
+                        this.number = number;
+                        this.modeName = modeName;
+                        this.domainName = domainName;
+                    }
+
+                    @Override
+                    StringBuilder dotVisit() {
+                        return new StringBuilder(AST.labelNode(number, "@" + modeName + "#" + domainName));
+                    }
+                }
+
+                public static class Call extends Action {
+                    String funcName;
+
+                    public Call(int number, String funcName) {
+                        this.number = number;
+                        this.funcName = funcName;
+                    }
+
+                    @Override
+                    StringBuilder dotVisit() {
+                        return new StringBuilder(AST.labelNode(number, "call " + funcName));
+                    }
+                }
+            }
 
             @Override
             StringBuilder dotVisit() {

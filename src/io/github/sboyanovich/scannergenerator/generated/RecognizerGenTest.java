@@ -431,16 +431,38 @@ public class RecognizerGenTest {
 
             for (AST.Rules.Rule rule : rules) {
                 String stateName = rule.stateName;
-                String actionName = rule.action.identifier;
+                AST.Rules.Rule.Action action = rule.action;
                 scannerCode.append("                        case ")
                         .append(stateName).append(":\n");
-                if (!actionName.equals("#ignoreToken")) {
-                    scannerCode.append(generateActionCall(actionName));
-                    actionNames.add(actionName);
-                } else {
-                    scannerCode.append("                            setStartToCurrentPosition();\n" +
-                            "                            break;\n");
+                if (action instanceof AST.Rules.Rule.Action.Call) {
+                    String funcName = ((AST.Rules.Rule.Action.Call) action).funcName;
+                    scannerCode.append(generateActionFuncCall(funcName));
+                    actionNames.add(funcName);
+                } else if (action instanceof AST.Rules.Rule.Action.Ignore) {
+                    scannerCode.append("                            setStartToCurrentPosition();\n");
+                } else if (action instanceof AST.Rules.Rule.Action.Switch) {
+                    String modeName = ((AST.Rules.Rule.Action.Switch) action).modeName;
+                    scannerCode.append("                            ")
+                            .append("switchModeTo(").append(modeName).append(";\n");
+                } else if (action instanceof AST.Rules.Rule.Action.Return) {
+                    String domainName = ((AST.Rules.Rule.Action.Return) action).domainName;
+                    scannerCode.append("                            ")
+                            .append("optToken = Optional.of(")
+                            .append(domainName)
+                            .append(".createToken(this.inputText, scannedFragment)")
+                            .append(");\n");
+                } else if (action instanceof AST.Rules.Rule.Action.SwitchReturn) {
+                    String modeName = ((AST.Rules.Rule.Action.SwitchReturn) action).modeName;
+                    String domainName = ((AST.Rules.Rule.Action.SwitchReturn) action).domainName;
+                    scannerCode.append("                            ")
+                            .append("switchModeTo(").append(modeName).append(";\n");
+                    scannerCode.append("                            ")
+                            .append("optToken = Optional.of(")
+                            .append(domainName)
+                            .append(".createToken(this.inputText, scannedFragment)")
+                            .append(");\n");
                 }
+                scannerCode.append("                            break;\n");
             }
             scannerCode.append("                    }\n" +
                     "\n" +
@@ -469,7 +491,7 @@ public class RecognizerGenTest {
         }
     }
 
-    static String generateActionCall(String actionName) {
+    static String generateActionFuncCall(String actionName) {
         return "                            optToken = " +
                 actionName + "(this.inputText, scannedFragment);\n" +
                 "                            break;\n";
