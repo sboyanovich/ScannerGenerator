@@ -19,7 +19,7 @@ public class RecognizerGenTest {
             System.exit(1);
         }
 
-        String inputFile = "res/testInputM1.txt";
+        String inputFile = args[0];
 
         String text = Utility.getText(inputFile);
 
