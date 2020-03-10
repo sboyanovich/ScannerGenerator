@@ -12,6 +12,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class RecognizerGenTest {
+
+    static Instant startTotal, endTotal;
+    static long totalTimeElapsed, timeNFA, timeGeneratingCode,
+            timeBuildingRecognizers, timeWritingRecognizers, timeRemovingLambdas,
+            timeComputingPivots, timeDeterminizing, timeCompressingAndMinimizing;
+
     public static void main(String[] args) {
         String appName = "xgen";
         if (args.length < 1) {
@@ -20,6 +26,8 @@ public class RecognizerGenTest {
         }
 
         String inputFile = args[0];
+
+        startTotal = Instant.now();
 
         String text = Utility.getText(inputFile);
 
@@ -74,16 +82,20 @@ public class RecognizerGenTest {
             Map<String, Set<Integer>> defPivots = new HashMap<>();
 
             Instant start, end;
-            long timeElapsed = 0;
 
             for (AST.Definitions.Def def : spec.definitions.definitions) {
                 String name = def.identifier.identifier;
                 start = Instant.now();
                 NFA auto = buildNFAFromRegex(def.regex, definitions, alphabetSize);
                 end = Instant.now();
-                timeElapsed += Duration.between(start, end).toMillis();
+                timeNFA += Duration.between(start, end).toMillis();
+
                 definitions.put(name, auto);
+
+                start = Instant.now();
                 defPivots.put(name, def.regex.getPivots(defPivots, alphabetSize));
+                end = Instant.now();
+                timeComputingPivots += Duration.between(start, end).toNanos();
             }
 
 /*            System.out.println();
@@ -106,9 +118,12 @@ public class RecognizerGenTest {
                 start = Instant.now();
                 NFA nfa = buildNFAFromRegex(rule.regex, definitions, alphabetSize);
                 end = Instant.now();
-                timeElapsed += Duration.between(start, end).toMillis();
+                timeNFA += Duration.between(start, end).toMillis();
 
+                start = Instant.now();
                 rulePivots.put(stateName, rule.regex.getPivots(defPivots, alphabetSize));
+                end = Instant.now();
+                timeComputingPivots += Duration.between(start, end).toNanos();
 
                 StateTag stateTag = new StateTag() {
                     String name = stateName;
@@ -128,11 +143,22 @@ public class RecognizerGenTest {
                     String modeName = mode.identifier;
                     if (modeNFAs.containsKey(modeName)) {
                         NFA val = modeNFAs.get(modeName);
-                        modeNFAs.put(modeName, val.union(nfa));
+                        start = Instant.now();
+                        NFA union = val.union(nfa);
+                        end = Instant.now();
+                        timeNFA += Duration.between(start, end).toMillis();
+                        modeNFAs.put(modeName, union);
+
+                        start = Instant.now();
                         modePivots.get(modeName).addAll(rulePivots.get(stateName));
+                        end = Instant.now();
+                        timeComputingPivots += Duration.between(start, end).toNanos();
                     } else {
                         modeNFAs.put(modeName, nfa);
+                        start = Instant.now();
                         modePivots.put(modeName, new HashSet<>(rulePivots.get(stateName)));
+                        end = Instant.now();
+                        timeComputingPivots += Duration.between(start, end).toNanos();
                     }
                 }
             }
@@ -145,10 +171,13 @@ public class RecognizerGenTest {
 
             Map<String, LexicalRecognizer> modes = new HashMap<>();
 
+            start = Instant.now();
             for (String modeName : modeNFAs.keySet()) {
                 NFA nfa = modeNFAs.get(modeName);
                 modes.put(modeName, buildRecognizer(nfa, priorityMap, modePivots.get(modeName)));
             }
+            end = Instant.now();
+            timeBuildingRecognizers += Duration.between(start, end).toMillis();
 
             /// PARAMS
             String recognizersDirName = "recognizers";
@@ -158,6 +187,7 @@ public class RecognizerGenTest {
             String simpleDomainsEnumName = "SimpleDomains";
             String scannerClassName = "GeneratedScanner";
 
+            start = Instant.now();
             for (String modeName : modes.keySet()) {
                 LexicalRecognizer recognizer = modes.get(modeName);
                 /*String dot = recognizer.toGraphvizDotString(
@@ -171,6 +201,8 @@ public class RecognizerGenTest {
                         prefix + recognizersDirName + "/" + modeName + ".reco", priorityMap
                 );
             }
+            end = Instant.now();
+            timeWritingRecognizers += Duration.between(start, end).toMillis();
 
             System.out.println();
             Collections.reverse(priorityList);
@@ -185,6 +217,7 @@ public class RecognizerGenTest {
 */
             List<String> stateNames = priorityList.stream().map(Objects::toString).collect(Collectors.toList());
 
+            start = Instant.now();
             String stateTagsEnum = Utility.generateStateTagsEnum(stateNames, packageName);
 
             Utility.writeTextToFile(stateTagsEnum, prefix + stateTagsEnumName + ".java");
@@ -503,8 +536,21 @@ public class RecognizerGenTest {
             scannerCode.append("}");
 
             Utility.writeTextToFile(scannerCode.toString(), prefix + scannerClassName + ".java");
+            end = Instant.now();
+            timeGeneratingCode += Duration.between(start, end).toMillis();
 
-            System.out.println("Time taken building NFAs: " + timeElapsed + "ms");
+            endTotal = Instant.now();
+            totalTimeElapsed = Duration.between(startTotal, endTotal).toMillis();
+
+            System.out.println("Time building NFAs: " + timeNFA + "ms");
+            System.out.println("Time computing pivots: " + timeComputingPivots + "ns");
+            System.out.println("Time building recognizers: " + timeBuildingRecognizers + "ms");
+            System.out.println("Time removing lambdas: " + timeRemovingLambdas + "ms");
+            System.out.println("Time determinizing: " + timeDeterminizing + "ms");
+            System.out.println("Time compressing and minimizing: " + timeCompressingAndMinimizing + "ms");
+            System.out.println("Time writing recognizers: " + timeWritingRecognizers + "ms");
+            System.out.println("Time generating code: " + timeGeneratingCode + "ms");
+            System.out.println("Total time: " + totalTimeElapsed + "ms");
         }
     }
 
@@ -527,13 +573,20 @@ public class RecognizerGenTest {
         //System.out.println(lang.getNumberOfStates());
 
         // This appears to be necessary for determinization to work properly. It shouldn't be.
+        Instant start = Instant.now();
         lang = lang.removeLambdaSteps();
+        Instant end = Instant.now();
+        timeRemovingLambdas += Duration.between(start, end).toMillis();
+
         //System.out.println("Lambda steps removed.");
 
         List<Integer> pivotList = new ArrayList<>(pivots);
 
         /*       Instant start = Instant.now(); */
+        start = Instant.now();
         DFA dfa = lang.determinize(priorityMap, pivotList);
+        end = Instant.now();
+        timeDeterminizing += Duration.between(start, end).toMillis();
 /*        Instant stop = Instant.now();
         long timeElapsed = Duration.between(start, stop).toMillis();
 
@@ -543,7 +596,11 @@ public class RecognizerGenTest {
         System.out.println("Classes: " + dfa.getTransitionTable().getEquivalenceMap().getEqClassDomain());
 
         start = Instant.now();*/
+
+        start = Instant.now();
         LexicalRecognizer recognizer = new LexicalRecognizer(dfa);
+        end = Instant.now();
+        timeCompressingAndMinimizing += Duration.between(start, end).toMillis();
 /*
         stop = Instant.now();
         timeElapsed = Duration.between(start, stop).toMillis();
