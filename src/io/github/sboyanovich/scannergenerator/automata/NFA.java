@@ -695,46 +695,27 @@ public class NFA {
         return result;
     }
 
-    enum Color {
-        WHITE,
-        GREY,
-        BLACK
-    }
-
     private Set<Integer> lambdaClosure(Set<Integer> states) {
-        Set<Integer> result = new HashSet<>();
+        Set<Integer> result = new HashSet<>(states);
 
         /// DFS
         Deque<Integer> stack = new ArrayDeque<>();
-        Map<Integer, Color> stateColors = new HashMap<>();
-        for (int state : states) {
-            stateColors.put(state, Color.WHITE);
+        for (int i : states) {
+            stack.push(i);
         }
 
-        for (int i : states) {
-            if (stateColors.get(i) == Color.WHITE) {
-                stack.push(i);
-            }
-            while (!stack.isEmpty()) {
-                int s = stack.pop();
-                Color mark = stateColors.get(s);
-                if (mark == Color.WHITE) {
-                    stateColors.put(s, Color.GREY);
-
-                    // entry actions
-                    result.add(s);
-
-                    stack.push(s);
-                    for (int j = 0; j < this.numberOfStates; j++) {
-                        if (stateColors.get(j) == Color.WHITE && this.edges.isLambdaEdge(s, j)) {
-                            stack.push(j);
-                        }
+        while (!stack.isEmpty()) {
+            int q = stack.pop();
+            for (int u = 0; u < this.numberOfStates; u++) {
+                if (this.edges.isLambdaEdge(q, u)) {
+                    if (!result.contains(u)) {
+                        result.add(u);
+                        stack.push(u);
                     }
-                } else if (mark == Color.GREY) {
-                    stateColors.put(s, Color.BLACK);
                 }
             }
         }
+
         return result;
     }
 
@@ -748,8 +729,6 @@ public class NFA {
         // priorities map must contain mapping for every present StateTag (bigger number -> higher priority)
         // (except NOT_FINAL and FINAL_DUMMY) (these are most likely going to be overwritten anyway)
         // client-defined priority ranks must be non-negative
-
-        // Maybe remove lambdas here.
 
         EquivalenceMap emap;
         if (pivots.isEmpty()) {
