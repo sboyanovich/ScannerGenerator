@@ -574,7 +574,7 @@ public class RecognizerGenTest {
 
         // This appears to be necessary for determinization to work properly. It shouldn't be.
         Instant start = Instant.now();
-        lang = lang.removeLambdaSteps();
+        // lang = lang.removeLambdaSteps();
         Instant end = Instant.now();
         timeRemovingLambdas += Duration.between(start, end).toMillis();
 
@@ -608,12 +608,11 @@ public class RecognizerGenTest {
         System.out.println("\tin " + timeElapsed + "ms");
         System.out.println("States: " + recognizer.getNumberOfStates());
         System.out.println("Classes: " + recognizer.getNumberOfColumns());
-
+*/
         String dot = recognizer.toGraphvizDotString(Object::toString, true);
         System.out.println(dot);
         String factorization = recognizer.displayEquivalenceMap(Utility::defaultUnicodeInterpretation);
         System.out.println("\n" + factorization + "\n");
-*/
 
         return recognizer;
     }
