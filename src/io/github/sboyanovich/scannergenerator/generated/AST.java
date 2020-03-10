@@ -372,7 +372,9 @@ public abstract class AST {
 
             @Override
             Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
-                return Set.of(asCodePoint("\n"));
+                // we need to include EOF here as well, as DOT is essentially a symbol class
+                // prohibiting \n and EOF
+                return Set.of(asCodePoint("\n"), alphabetSize - 1);
             }
 
             @Override
@@ -833,7 +835,7 @@ public abstract class AST {
 
                     @Override
                     StringBuilder dotVisit() {
-                        return new StringBuilder(AST.labelNode(number, "call " + funcName));
+                        return new StringBuilder(AST.labelNode(number, "@@Call " + funcName));
                     }
                 }
             }
