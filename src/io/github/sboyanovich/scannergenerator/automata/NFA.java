@@ -2,6 +2,8 @@ package io.github.sboyanovich.scannergenerator.automata;
 
 import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -672,8 +674,28 @@ public class NFA {
         return new NFA(numberOfStates, alphabetSize, initialState, labels, edges.build());
     }
 
+    static int hitCounter = 0;
+    static int queryCounter = 0;
+    static int superstateHitCounter = 0;
+    static int superstateQueryCounter = 0;
+
+    // this is expensive to eagerly compute
     @SuppressWarnings("OptionalGetWithoutIsPresent")
-    private Set<Integer> superState(int state, int letter) {
+    private Set<Integer> superState(
+            int state, int letter, Map<Integer, Map<Integer, Set<Integer>>> stateSymbolMemo
+    ) {
+        queryCounter++;
+        Map<Integer, Set<Integer>> stateMemo;
+        if (stateSymbolMemo.containsKey(state)) {
+            stateMemo = stateSymbolMemo.get(state);
+            if (stateMemo.containsKey(letter)) {
+                hitCounter++;
+                return stateMemo.get(letter);
+            }
+        } else {
+            stateMemo = new HashMap<>();
+            stateSymbolMemo.put(state, stateMemo);
+        }
         Set<Integer> result = new HashSet<>();
         for (int i = 0; i < this.numberOfStates; i++) {
             if (this.edges.isNonTrivialEdge(state, i)) {
@@ -682,14 +704,35 @@ public class NFA {
                 }
             }
         }
+        stateMemo.put(letter, result);
         return result;
     }
 
-    private Set<Integer> closure(Set<Integer> superstate, int letter) {
+    private Set<Integer> closure(
+            Set<Integer> superstate, int letter, Map<Integer, Map<Integer, Set<Integer>>> stateSymbolMemo
+    ) {
         Set<Integer> result = new HashSet<>();
 
         for (Integer state : superstate) {
-            result.addAll(superState(state, letter));
+            result.addAll(superState(state, letter, stateSymbolMemo));
+        }
+
+        return result;
+    }
+
+    // Weird that this is less performant
+    private Set<Integer> closureV2(Set<Integer> superstate, int letter) {
+        Set<Integer> result = new HashSet<>();
+
+        for (int i = 0; i < this.numberOfStates; i++) {
+            for (Integer state : superstate) {
+                if (this.edges.isNonTrivialEdge(state, i)) {
+                    if (this.edges.getEdgeMarker(state, i).get().contains(letter)) {
+                        result.add(i);
+                        break;
+                    }
+                }
+            }
         }
 
         return result;
@@ -730,6 +773,16 @@ public class NFA {
         // (except NOT_FINAL and FINAL_DUMMY) (these are most likely going to be overwritten anyway)
         // client-defined priority ranks must be non-negative
 
+        hitCounter = 0;
+        queryCounter = 0;
+        superstateHitCounter = 0;
+        superstateQueryCounter = 0;
+
+        long totalTime = 0, closureTime = 0, lambdaClosureTime = 0;
+        Instant start, end, startTotal, endTotal;
+
+        startTotal = Instant.now();
+
         EquivalenceMap emap;
         if (pivots.isEmpty()) {
             List<Integer> mentioned = mentioned(this);
@@ -748,6 +801,7 @@ public class NFA {
 
         // initial superstate
         Set<Set<Integer>> superstates = new HashSet<>();
+
         Set<Integer> initialSuperstate = this.lambdaClosure(
                 Set.of(this.initialState)
         );
@@ -762,6 +816,10 @@ public class NFA {
         int eqcd = emap.getEqClassDomain();
         List<List<Integer>> eqc = emap.getClasses();
 
+        /// OPTIMIZING STRUCTURES
+        Map<Integer, Map<Integer, Set<Integer>>> stateSymbolMemo = new HashMap<>();
+        Map<Set<Integer>, Set<Integer>> memo = new HashMap<>();
+
         {
             int i = 0;
             int k = 1; // current free name to be assigned to a new superstate
@@ -771,9 +829,30 @@ public class NFA {
                 transitionFunction.add(new ArrayList<>());
 
                 for (int j = 0; j < eqcd; j++) {
-                    Set<Integer> image = this.lambdaClosure(
-                            this.closure(currentSuperstate, eqc.get(j).get(0))
-                    );
+                    int repLetter = eqc.get(j).get(0);
+
+                    start = Instant.now();
+                    Set<Integer> closure =
+                            this.closure(currentSuperstate, repLetter, stateSymbolMemo);
+                    end = Instant.now();
+                    closureTime += Duration.between(start, end).toNanos();
+
+                    Set<Integer> image;
+
+                    superstateQueryCounter++;
+                    if (memo.containsKey(closure)) {
+                        image = memo.get(closure);
+                        superstateHitCounter++;
+                    } else {
+                        start = Instant.now();
+                        image = this.lambdaClosure(
+                                closure
+                        );
+                        memo.put(closure, image);
+                        end = Instant.now();
+                        lambdaClosureTime += Duration.between(start, end).toNanos();
+                    }
+
                     boolean newState = superstates.add(image);
                     if (newState) {
                         statesList.add(image);
@@ -782,6 +861,7 @@ public class NFA {
                     }
                     transitionFunction.get(i).add(names.get(image));
                 }
+
                 i++;
             } while (i < superstates.size());
         }
@@ -820,6 +900,22 @@ public class NFA {
 
         DFATransitionTable newTransitionTable =
                 new DFATransitionTable(numberOfStates, alphabetSize, transitionTable, emap);
+
+        closureTime /= 1_000_000;
+        lambdaClosureTime /= 1_000_000;
+
+        endTotal = Instant.now();
+        totalTime = Duration.between(startTotal, endTotal).toMillis();
+        System.out.println();
+        System.out.println("States: " + this.numberOfStates);
+        System.out.println("DET: Total time taken: " + totalTime + "ms");
+        System.out.println("DET: Closure time: " + closureTime + "ms");
+        System.out.println("DET: Lambda closure time: " + lambdaClosureTime + "ms");
+        System.out.println(hitCounter + " superstate memo hits.");
+        System.out.println(queryCounter + " superstate memo queries.");
+        System.out.println(superstateHitCounter + " closure memo hits.");
+        System.out.println(superstateQueryCounter + " closure memo queries.");
+        System.out.println();
 
         return new DFA(numberOfStates, alphabetSize, initialState, labelsMap, newTransitionTable);
     }
