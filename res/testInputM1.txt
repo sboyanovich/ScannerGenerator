@@ -1,0 +1,127 @@
+WHITESPACE          := ([ \t\n]|\r\n)+ // Comments allowed after regex also.
+
+HEX_NUMBER          := [0-9A-F]+
+DECIMAL_NUMBER      := [0-9]+
+HEX_ESCAPE          := \\U\+{HEX_NUMBER}
+DECIMAL_ESCAPE      := \\U\+#{DECIMAL_NUMBER}
+INPUT_CHAR          := [^\r\n\\]
+U_ESCAPE            := {DECIMAL_ESCAPE}|{HEX_ESCAPE}
+ESCAPE              := {U_ESCAPE}|(\\[btnfr\\*+|?.()[{}<>])
+
+CLASS_SINGLE_CHAR   := [^\r\n\-\\\^\]\b\f]
+CLASS_ESCAPE        := {U_ESCAPE}|(\\[btnfr\-\^\]\\])
+IDENTIFIER          := [_a-zA-Z][_a-zA-Z0-9]*
+
+%MODES REGEX CHAR_CLASS COMMENT SL_COMMENT
+
+%DOMAINS
+    RULE_END DEFINER COMMA DOT
+    MODES_SECTION_MARKER
+    RULES_SECTION_MARKER
+    LPAREN RPAREN
+    L_ANGLE_BRACKET R_ANGLE_BRACKET
+    CHAR_CLASS_OPEN CHAR_CLASS_CLOSE
+    CHAR_CLASS_RANGE_OP
+    CHAR_CLASS_NEG
+    CLASS_MINUS_OP
+    ITERATION_OP
+    POS_ITERATION_OP
+    UNION_OP
+    OPTION_OP
+    EOF
+
+%DOMAINS[String]
+    NAMED_EXPR DOMAINS_GROUP_MARKER IDENTIFIER ACTION_SWITCH ACTION_RETURN
+
+%DOMAINS[Integer] CHAR
+
+%DOMAINS[IntPair] REPETITION_OP
+
+%DOMAINS[StringPair] ACTION_SWITCH_RETURN
+
+/*
+    First comment here. Rules section marker is useful so a state name identifier is not mistaken for
+    domain name.
+*/
+
+// First single line comment here.
+
+%%
+
+<REGEX>         WHITESPACE_IN_REGEX     := {WHITESPACE}                                 handleWhitespaceInRegex;
+                WHITESPACE              := {WHITESPACE}                                 ;
+                ACTION_SWITCH           := @{IDENTIFIER}                                #ACTION_SWITCH;
+                ACTION_RETURN           := #{IDENTIFIER}                                #ACTION_RETURN;
+                ACTION_SWITCH_RETURN    := @{IDENTIFIER}#{IDENTIFIER}                   #ACTION_SWITCH_RETURN;
+                RULE_END                := ;                                            #RULE_END;
+                COMMA                   := ,                                            #COMMA;
+                L_ANGLE_BRACKET         := <                                            #L_ANGLE_BRACKET;
+                R_ANGLE_BRACKET         := >                                            #R_ANGLE_BRACKET;
+                RULES_SECTION_MARKER    := %%                                           #RULES_SECTION_MARKER;
+                DOMAINS_GROUP_MARKER    := %DOMAINS(\[{IDENTIFIER}])?                   #DOMAINS_GROUP_MARKER;
+                MODES_SECTION_MARKER    := %MODES                                       #MODES_SECTION_MARKER;
+                DEFINER                 := :=[ \t]+                                     @REGEX#DEFINER;
+                IDENTIFIER              := {IDENTIFIER}                                 #IDENTIFIER;
+<REGEX>         NAMED_EXPR              := {{IDENTIFIER}}                               #NAMED_EXPR;
+<REGEX>         LPAREN                  := \(                                           #LPAREN;
+<REGEX>         RPAREN                  := \)                                           #RPAREN;
+<REGEX>         CLASS_MINUS_OP          := \{-}                                         #CLASS_MINUS_OP;
+<REGEX>         REPETITION_OP           := {{DECIMAL_NUMBER}(,{DECIMAL_NUMBER}?)?}      #REPETITION_OP;
+<REGEX>         OPTION_OP               := \?                                           #OPTION_OP;
+<REGEX>         UNION_OP                := \|                                           #UNION_OP;
+<REGEX>         POS_ITERATION_OP        := \+                                           #POS_ITERATION_OP;
+<REGEX>         ITERATION_OP            := \*                                           #ITERATION_OP;
+<REGEX>         DOT                     := \.                                           #DOT;
+<REGEX>         EOF                     := \<<EOF>>                                     #EOF;
+<CHAR_CLASS>    CHAR_CLASS_RANGE_OP     := -                                            #CHAR_CLASS_RANGE_OP;
+<CHAR_CLASS>    CHAR_CLASS_NEG          := ^                                            #CHAR_CLASS_NEG;
+<REGEX>         CHAR_CLASS_OPEN         := \[                                           @CHAR_CLASS#CHAR_CLASS_OPEN;
+<CHAR_CLASS>    CHAR_CLASS_CLOSE        := ]                                            @REGEX#CHAR_CLASS_CLOSE;
+<REGEX>         CHAR                    := {INPUT_CHAR}|{ESCAPE}                        #CHAR;
+<CHAR_CLASS>    CLASS_CHAR              := {CLASS_SINGLE_CHAR}|{CLASS_ESCAPE}           #CHAR;
+                COMMENT_START           := /\*                                          @COMMENT;
+<COMMENT>       NO_ASTERISK_SEQ         := [^*]+                                        handleNoAsteriskSeq;
+<COMMENT>       COMMENT_CLOSE           := \*/                                          handleCommentClose;
+<COMMENT>       ASTERISK                := \*                                           handleCommentAsterisk;
+                SLC_START               := //                                           @SL_COMMENT;
+<SL_COMMENT>    SLC_CLOSE               := (\r?\n)|<<EOF>>                              handleSlcClose;
+<SL_COMMENT>    SLC_REG                 := .+                                           handleSlcReg;
+
+// PROTIP: Matching empty strings may lead to infinite loops.
+
+/*
+
+### SYNTAX
+
+(axiom Spec)            = (Definition)* (ModesSection)? (DomainsSection)? RULES_SECTION_MARKER (Rule)* .
+(Definition)            = IDENTIFIER DEFINER (RegEx) .
+(ModesSection)          = MODES_SECTION_MARKER IDENTIFIER* .
+(DomainsSection)        = [DOMAINS_GROUP_MARKER IDENTIFIER*]+ .
+(Rule)                  = (ModeList)? IDENTIFIER? DEFINER (RegEx)
+                                [ACTION_SWITCH | ACTION_RETURN | ACTION_SWITCH_RETURN | IDENTIFIER]? RULE_END .
+(ModeList)              = L_ANGLE_BRACKET IDENTIFIER [COMMA IDENTIFIER]* R_ANGLE_BRACKET .
+(RegEx)                 = (CRegEx) [ UNION_OP (CRegEx)]* .
+(CRegEx)                = (FRegEx) (FRegEx)* .
+(FRegEx)                = (LRegEx) [ POS_ITERATION_OP | ITERATION_OP | OPTION_OP | REPETITION_OP ]? .
+(LRegEx)                = CHAR | DOT | EOF | NAMED_EXPR | (CharClassExpression) | LPAREN (RegEx) RPAREN .
+(CharClassExpression)   = (CharClass) [CLASS_MINUS_OP (CharClass)]? .
+(CharClass)             = CHAR_CLASS_OPEN CHAR_CLASS_NEG? [CHAR [CHAR_CLASS_RANGE_OP CHAR]?]+  CHAR_CLASS_CLOSE .
+
+
+### FIRST sets (programmatically computed)
+
+FIRST(ModesSection) = [MODES_SECTION_MARKER]
+FIRST(CRegEx) = [NAMED_EXPR, DOT, LPAREN, CHAR, EOF, CHAR_CLASS_OPEN]
+FIRST(RegEx) = [NAMED_EXPR, DOT, LPAREN, CHAR, EOF, CHAR_CLASS_OPEN]
+FIRST(ModeList) = [L_ANGLE_BRACKET]
+FIRST(FRegEx) = [NAMED_EXPR, DOT, LPAREN, CHAR, EOF, CHAR_CLASS_OPEN]
+FIRST(Definition) = [IDENTIFIER]
+FIRST(LRegEx) = [NAMED_EXPR, DOT, LPAREN, CHAR, EOF, CHAR_CLASS_OPEN]
+FIRST(CharClass) = [CHAR_CLASS_OPEN]
+FIRST(Rule) = [DEFINER, L_ANGLE_BRACKET, IDENTIFIER]
+FIRST(Spec) = [RULES_SECTION_MARKER, IDENTIFIER, MODES_SECTION_MARKER, DOMAINS_GROUP_MARKER]
+FIRST(DomainsSection) = [DOMAINS_GROUP_MARKER]
+FIRST(CharClassExpression) = [CHAR_CLASS_OPEN]
+
+*/
+// Last comment, because we can.

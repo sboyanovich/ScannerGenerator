@@ -1,12 +1,14 @@
 package io.github.sboyanovich.scannergenerator.automata;
 
-import io.github.sboyanovich.scannergenerator.scanner.StateTag;
 import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static io.github.sboyanovich.scannergenerator.automata.StateTag.FINAL_DUMMY;
 import static io.github.sboyanovich.scannergenerator.automata.Utility.FINAL_DUMMY_PRIORITY_RANK;
 import static io.github.sboyanovich.scannergenerator.automata.Utility.NOT_FINAL_PRIORITY_RANK;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
@@ -70,6 +72,83 @@ public class NFA {
         }
     }
 
+    public static NFA acceptsAllTheseSymbols(int alphabetSize, Set<String> symbols) {
+        Set<Integer> codePoints = symbols.stream()
+                .map(io.github.sboyanovich.scannergenerator.utility.Utility::asCodePoint).collect(Collectors.toSet());
+        return acceptsAllTheseCodePoints(alphabetSize, codePoints);
+    }
+
+    public static NFA acceptsAllTheseCodePoints(int alphabetSize, Set<Integer> codePoints) {
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(2, alphabetSize);
+        edges.setEdge(0, 1, codePoints);
+        return new NFA(2, alphabetSize, 0, Map.of(1, FINAL_DUMMY), edges.build());
+    }
+
+    // TODO: Will be suitable for a better implementation once improved sets are introduced.
+    public static NFA acceptsThisRange(int alphabetSize, int a, int b) {
+        Set<Integer> codePoints = new HashSet<>();
+        for (int i = a; i <= b; i++) {
+            codePoints.add(i);
+        }
+        return acceptsAllTheseCodePoints(alphabetSize, codePoints);
+    }
+
+    public static NFA acceptsThisRange(int alphabetSize, String a, String b) {
+        return acceptsThisRange(alphabetSize, asCodePoint(a), asCodePoint(b));
+    }
+
+    // TODO: Will be suitable for a better implementation once improved sets are introduced.
+    public static NFA acceptsAllCodePointsButThese(int alphabetSize, Set<Integer> codePoints) {
+        Set<Integer> acceptedCodePoints = new HashSet<>();
+        for (int i = 0; i < alphabetSize; i++) {
+            if (!codePoints.contains(i)) {
+                acceptedCodePoints.add(i);
+            }
+        }
+        return acceptsAllTheseCodePoints(alphabetSize, acceptedCodePoints);
+    }
+
+    // won't accept EOF(AEOI). Client likely wants only ordinary symbols
+    public static NFA acceptsAllSymbolsButThese(int alphabetSize, Set<String> symbols) {
+        int aeoi = alphabetSize - 1;
+        Set<Integer> codePoints = new HashSet<>();
+        codePoints.add(aeoi);
+        symbols.stream()
+                .map(io.github.sboyanovich.scannergenerator.utility.Utility::asCodePoint)
+                .forEach(codePoints::add);
+        return acceptsAllCodePointsButThese(alphabetSize, codePoints);
+    }
+
+    public static NFA acceptsThisWord(int alphabetSize, String word) {
+        List<Integer> codePoints = word.codePoints().boxed().collect(Collectors.toList());
+        int n = codePoints.size();
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(n + 1, alphabetSize);
+        for (int i = 0; i < n; i++) {
+            int codePoint = codePoints.get(i);
+            edges.addSymbolToEdge(i, i + 1, codePoint);
+        }
+        return new NFA(n + 1, alphabetSize, 0, Map.of(n, StateTag.FINAL_DUMMY), edges.build());
+    }
+
+    public static NFA acceptsAllTheseWords(int alphabetSize, Set<String> words) {
+        NFA result = NFA.emptyLanguage(alphabetSize);
+        for (String word : words) {
+            result = result.union(acceptsThisWord(alphabetSize, word));
+        }
+        return result;
+    }
+
+    // now this exists mostly for test compatibility reasons
+    public static NFA acceptsThisWord(int alphabetSize, List<String> symbols) {
+        int n = symbols.size();
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(n + 1, alphabetSize);
+        for (int i = 0; i < n; i++) {
+            int codePoint = asCodePoint(symbols.get(i));
+            edges.addSymbolToEdge(i, i + 1, codePoint);
+        }
+        return new NFA(n + 1, alphabetSize, 0, Map.of(n, StateTag.FINAL_DUMMY), edges.build());
+    }
+
     public int getNumberOfStates() {
         return numberOfStates;
     }
@@ -113,6 +192,10 @@ public class NFA {
                         1, StateTag.FINAL_DUMMY
                 ), edges.build()
         );
+    }
+
+    public static NFA singleLetterLanguage(int alphabetSize, String letter) {
+        return singleLetterLanguage(alphabetSize, asCodePoint(letter));
     }
 
     public NFA relabelStates(Map<Integer, StateTag> relabel) {
@@ -272,6 +355,10 @@ public class NFA {
     }
 
     // EXPERIMENTAL
+    public NFA optional() {
+        return this.union(emptyStringLanguage(this.alphabetSize));
+    }
+
     public NFA power(int n) {
         if (n == 0) {
             return NFA.emptyStringLanguage(this.alphabetSize);
@@ -587,8 +674,28 @@ public class NFA {
         return new NFA(numberOfStates, alphabetSize, initialState, labels, edges.build());
     }
 
+    static int hitCounter = 0;
+    static int queryCounter = 0;
+    static int superstateHitCounter = 0;
+    static int superstateQueryCounter = 0;
+
+    // this is expensive to eagerly compute
     @SuppressWarnings("OptionalGetWithoutIsPresent")
-    private Set<Integer> superState(int state, int letter) {
+    private Set<Integer> superState(
+            int state, int letter, Map<Integer, Map<Integer, Set<Integer>>> stateSymbolMemo
+    ) {
+        queryCounter++;
+        Map<Integer, Set<Integer>> stateMemo;
+        if (stateSymbolMemo.containsKey(state)) {
+            stateMemo = stateSymbolMemo.get(state);
+            if (stateMemo.containsKey(letter)) {
+                hitCounter++;
+                return stateMemo.get(letter);
+            }
+        } else {
+            stateMemo = new HashMap<>();
+            stateSymbolMemo.put(state, stateMemo);
+        }
         Set<Integer> result = new HashSet<>();
         for (int i = 0; i < this.numberOfStates; i++) {
             if (this.edges.isNonTrivialEdge(state, i)) {
@@ -597,66 +704,95 @@ public class NFA {
                 }
             }
         }
+        stateMemo.put(letter, result);
         return result;
     }
 
-    private Set<Integer> closure(Set<Integer> superstate, int letter) {
+    private Set<Integer> closure(
+            Set<Integer> superstate, int letter, Map<Integer, Map<Integer, Set<Integer>>> stateSymbolMemo
+    ) {
         Set<Integer> result = new HashSet<>();
 
         for (Integer state : superstate) {
-            result.addAll(superState(state, letter));
+            result.addAll(superState(state, letter, stateSymbolMemo));
         }
 
         return result;
     }
 
-    enum Color {
-        WHITE,
-        GREY,
-        BLACK
-    }
-
-    private Set<Integer> lambdaClosure(Set<Integer> states) {
+    // Weird that this is less performant
+    private Set<Integer> closureV2(Set<Integer> superstate, int letter) {
         Set<Integer> result = new HashSet<>();
 
-        /// DFS
-        Deque<Integer> stack = new ArrayDeque<>();
-        Map<Integer, Color> stateColors = new HashMap<>();
-        for (int state : states) {
-            stateColors.put(state, Color.WHITE);
-        }
-
-        for (int i : states) {
-            if (stateColors.get(i) == Color.WHITE) {
-                stack.push(i);
-            }
-            while (!stack.isEmpty()) {
-                int s = stack.pop();
-                Color mark = stateColors.get(s);
-                if (mark == Color.WHITE) {
-                    stateColors.put(s, Color.GREY);
-
-                    // entry actions
-                    result.add(s);
-
-                    stack.push(s);
-                    for (int j = 0; j < this.numberOfStates; j++) {
-                        if (stateColors.get(j) == Color.WHITE && this.edges.isLambdaEdge(s, j)) {
-                            stack.push(j);
-                        }
+        for (int i = 0; i < this.numberOfStates; i++) {
+            for (Integer state : superstate) {
+                if (this.edges.isNonTrivialEdge(state, i)) {
+                    if (this.edges.getEdgeMarker(state, i).get().contains(letter)) {
+                        result.add(i);
+                        break;
                     }
-                } else if (mark == Color.GREY) {
-                    stateColors.put(s, Color.BLACK);
                 }
             }
         }
+
         return result;
     }
 
-    public DFA determinizeExp(Map<StateTag, Integer> priorities, EquivalenceMap emap) {
+    private Set<Integer> lambdaClosure(Set<Integer> states) {
+        Set<Integer> result = new HashSet<>(states);
+
+        /// DFS
+        Deque<Integer> stack = new ArrayDeque<>();
+        for (int i : states) {
+            stack.push(i);
+        }
+
+        while (!stack.isEmpty()) {
+            int q = stack.pop();
+            for (int u = 0; u < this.numberOfStates; u++) {
+                if (this.edges.isLambdaEdge(q, u)) {
+                    if (!result.contains(u)) {
+                        result.add(u);
+                        stack.push(u);
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public DFA determinize(Map<StateTag, Integer> priorities) {
+        return determinize(priorities, List.of());
+    }
+
+    // Pivots are not checked for any kind of logical consistency with the NFA.
+    // Supply them only if you know what you're doing.
+    public DFA determinize(Map<StateTag, Integer> priorities, List<Integer> pivots) {
         // priorities map must contain mapping for every present StateTag (bigger number -> higher priority)
         // (except NOT_FINAL and FINAL_DUMMY) (these are most likely going to be overwritten anyway)
         // client-defined priority ranks must be non-negative
+
+        hitCounter = 0;
+        queryCounter = 0;
+        superstateHitCounter = 0;
+        superstateQueryCounter = 0;
+
+        long totalTime = 0, closureTime = 0, lambdaClosureTime = 0;
+        Instant start, end, startTotal, endTotal;
+
+        startTotal = Instant.now();
+
+        EquivalenceMap emap;
+        if (pivots.isEmpty()) {
+            List<Integer> mentioned = mentioned(this);
+            System.out.println("Mentioned :" + mentioned.size());
+            emap = getCoarseSymbolClassMap(mentioned, this.alphabetSize);
+        } else {
+            System.out.println("Pivots :" + pivots.size());
+            emap = getCoarseSymbolClassMapRegexBased(pivots, this.alphabetSize);
+        }
+        System.out.println("Classes: " + emap.getEqClassDomain());
 
         priorities = new HashMap<>(priorities);
         // TODO: Validate priorities Map
@@ -665,6 +801,7 @@ public class NFA {
 
         // initial superstate
         Set<Set<Integer>> superstates = new HashSet<>();
+
         Set<Integer> initialSuperstate = this.lambdaClosure(
                 Set.of(this.initialState)
         );
@@ -679,6 +816,10 @@ public class NFA {
         int eqcd = emap.getEqClassDomain();
         List<List<Integer>> eqc = emap.getClasses();
 
+        /// OPTIMIZING STRUCTURES
+        Map<Integer, Map<Integer, Set<Integer>>> stateSymbolMemo = new HashMap<>();
+        Map<Set<Integer>, Set<Integer>> memo = new HashMap<>();
+
         {
             int i = 0;
             int k = 1; // current free name to be assigned to a new superstate
@@ -688,9 +829,30 @@ public class NFA {
                 transitionFunction.add(new ArrayList<>());
 
                 for (int j = 0; j < eqcd; j++) {
-                    Set<Integer> image = this.lambdaClosure(
-                            this.closure(currentSuperstate, eqc.get(j).get(0))
-                    );
+                    int repLetter = eqc.get(j).get(0);
+
+                    start = Instant.now();
+                    Set<Integer> closure =
+                            this.closure(currentSuperstate, repLetter, stateSymbolMemo);
+                    end = Instant.now();
+                    closureTime += Duration.between(start, end).toNanos();
+
+                    Set<Integer> image;
+
+                    superstateQueryCounter++;
+                    if (memo.containsKey(closure)) {
+                        image = memo.get(closure);
+                        superstateHitCounter++;
+                    } else {
+                        start = Instant.now();
+                        image = this.lambdaClosure(
+                                closure
+                        );
+                        memo.put(closure, image);
+                        end = Instant.now();
+                        lambdaClosureTime += Duration.between(start, end).toNanos();
+                    }
+
                     boolean newState = superstates.add(image);
                     if (newState) {
                         statesList.add(image);
@@ -699,6 +861,7 @@ public class NFA {
                     }
                     transitionFunction.get(i).add(names.get(image));
                 }
+
                 i++;
             } while (i < superstates.size());
         }
@@ -728,176 +891,32 @@ public class NFA {
         }
 
         // writing transition table
-        int[][] transitionTable = new int[numberOfStates][alphabetSize];
+        int[][] transitionTable = new int[numberOfStates][eqcd];
         for (int i = 0; i < numberOfStates; i++) {
-            for (int j = 0; j < alphabetSize; j++) {
-                transitionTable[i][j] = transitionFunction.get(i).get(emap.getEqClass(j));
-            }
-        }
-
-        return new DFA(numberOfStates, alphabetSize, initialState, labelsMap, transitionTable);
-    }
-
-    public DFA determinize(Map<StateTag, Integer> priorities) {
-        // priorities map must contain mapping for every present StateTag (bigger number -> higher priority)
-        // (except NOT_FINAL and FINAL_DUMMY) (these are most likely going to be overwritten anyway)
-        // client-defined priority ranks must be non-negative
-
-        priorities = new HashMap<>(priorities);
-        // TODO: Validate priorities Map
-        priorities.put(StateTag.NOT_FINAL, NOT_FINAL_PRIORITY_RANK);
-        priorities.put(StateTag.FINAL_DUMMY, FINAL_DUMMY_PRIORITY_RANK);
-
-        // initial superstate
-        Set<Set<Integer>> superstates = new HashSet<>();
-        Set<Integer> initialSuperstate = this.lambdaClosure(
-                Set.of(this.initialState)
-        );
-        superstates.add(initialSuperstate);
-
-        Map<Set<Integer>, Integer> names = new HashMap<>();
-        names.put(initialSuperstate, 0);
-
-        List<Set<Integer>> statesList = new ArrayList<>(superstates);
-        List<List<Integer>> transitionFunction = new ArrayList<>();
-
-        {
-            int i = 0;
-            int k = 1; // current free name to be assigned to a new superstate
-            do {
-                Set<Integer> currentSuperstate = statesList.get(i);
-
-                transitionFunction.add(new ArrayList<>());
-
-                for (int j = 0; j < alphabetSize; j++) {
-                    Set<Integer> image = this.lambdaClosure(
-                            this.closure(currentSuperstate, j)
-                    );
-                    boolean newState = superstates.add(image);
-                    if (newState) {
-                        statesList.add(image);
-                        names.put(image, k);
-                        k++;
-                    }
-                    transitionFunction.get(i).add(names.get(image));
-                }
-                i++;
-            } while (i < superstates.size());
-        }
-
-        int alphabetSize = this.alphabetSize;
-        int numberOfStates = superstates.size();
-        int initialState = 0;
-
-        // time to handle accepting states (state tags)
-        // maybe use copy of priorities, to prevent race conditions
-        Map<Integer, StateTag> labelsMap = new HashMap<>();
-        for (int j = 0; j < numberOfStates; j++) {
-            Set<Integer> currentSuperstate = statesList.get(j);
-            List<StateTag> candidateTags = List.of(StateTag.NOT_FINAL);
-            if (!currentSuperstate.isEmpty()) {
-                candidateTags =
-                        currentSuperstate.stream()
-                                .map(s -> this.labels.get(s))
-                                .collect(Collectors.toList());
-            }
-            StateTag label =
-                    Collections.max(
-                            candidateTags,
-                            Comparator.comparingInt(priorities::get)
-                    );
-            labelsMap.put(j, label);
-        }
-
-        // writing transition table
-        int[][] transitionTable = new int[numberOfStates][alphabetSize];
-        for (int i = 0; i < numberOfStates; i++) {
-            for (int j = 0; j < alphabetSize; j++) {
+            for (int j = 0; j < eqcd; j++) {
                 transitionTable[i][j] = transitionFunction.get(i).get(j);
             }
         }
 
-        return new DFA(numberOfStates, alphabetSize, initialState, labelsMap, transitionTable);
-    }
+        DFATransitionTable newTransitionTable =
+                new DFATransitionTable(numberOfStates, alphabetSize, transitionTable, emap);
 
-    public DFA determinizeOld(Map<StateTag, Integer> priorities) {
-        // priorities map must contain mapping for every present StateTag (bigger number -> higher priority)
-        // (except NOT_FINAL and FINAL_DUMMY) (these are most likely going to be overwritten anyway)
-        // client-defined priority ranks must be non-negative
+        closureTime /= 1_000_000;
+        lambdaClosureTime /= 1_000_000;
 
-        priorities = new HashMap<>(priorities);
-        // TODO: Validate priorities Map
-        priorities.put(StateTag.NOT_FINAL, NOT_FINAL_PRIORITY_RANK);
-        priorities.put(StateTag.FINAL_DUMMY, FINAL_DUMMY_PRIORITY_RANK);
+        endTotal = Instant.now();
+        totalTime = Duration.between(startTotal, endTotal).toMillis();
+        System.out.println();
+        System.out.println("States: " + this.numberOfStates);
+        System.out.println("DET: Total time taken: " + totalTime + "ms");
+        System.out.println("DET: Closure time: " + closureTime + "ms");
+        System.out.println("DET: Lambda closure time: " + lambdaClosureTime + "ms");
+        System.out.println(hitCounter + " superstate memo hits.");
+        System.out.println(queryCounter + " superstate memo queries.");
+        System.out.println(superstateHitCounter + " closure memo hits.");
+        System.out.println(superstateQueryCounter + " closure memo queries.");
+        System.out.println();
 
-        // first we make sure there are no lambda steps
-        NFA lambdaless = this.removeLambdaSteps();
-
-        // initial superstate
-        Set<Set<Integer>> superstates = new HashSet<>();
-        Set<Integer> initialSuperstate = Set.of(lambdaless.initialState);
-        superstates.add(initialSuperstate);
-
-        Map<Set<Integer>, Integer> names = new HashMap<>();
-        names.put(initialSuperstate, 0);
-
-        List<Set<Integer>> statesList = new ArrayList<>(superstates);
-        List<List<Integer>> transitionFunction = new ArrayList<>();
-
-        {
-            int i = 0;
-            int k = 1; // current free name to be assigned to a new superstate
-            do {
-                Set<Integer> currentSuperstate = statesList.get(i);
-
-                transitionFunction.add(new ArrayList<>());
-
-                for (int j = 0; j < alphabetSize; j++) {
-                    Set<Integer> image = lambdaless.closure(currentSuperstate, j);
-                    boolean newState = superstates.add(image);
-                    if (newState) {
-                        statesList.add(image);
-                        names.put(image, k);
-                        k++;
-                    }
-                    transitionFunction.get(i).add(names.get(image));
-                }
-                i++;
-            } while (i < superstates.size());
-        }
-
-        int alphabetSize = this.alphabetSize;
-        int numberOfStates = superstates.size();
-        int initialState = 0;
-
-        // time to handle accepting states (state tags)
-        // maybe use copy of priorities, to prevent race conditions
-        Map<Integer, StateTag> labelsMap = new HashMap<>();
-        for (int j = 0; j < numberOfStates; j++) {
-            Set<Integer> currentSuperstate = statesList.get(j);
-            List<StateTag> candidateTags = List.of(StateTag.NOT_FINAL);
-            if (!currentSuperstate.isEmpty()) {
-                candidateTags =
-                        currentSuperstate.stream()
-                                .map(s -> lambdaless.labels.get(s))
-                                .collect(Collectors.toList());
-            }
-            StateTag label =
-                    Collections.max(
-                            candidateTags,
-                            Comparator.comparingInt(priorities::get)
-                    );
-            labelsMap.put(j, label);
-        }
-
-        // writing transition table
-        int[][] transitionTable = new int[numberOfStates][alphabetSize];
-        for (int i = 0; i < numberOfStates; i++) {
-            for (int j = 0; j < alphabetSize; j++) {
-                transitionTable[i][j] = transitionFunction.get(i).get(j);
-            }
-        }
-
-        return new DFA(numberOfStates, alphabetSize, initialState, labelsMap, transitionTable);
+        return new DFA(numberOfStates, alphabetSize, initialState, labelsMap, newTransitionTable);
     }
 }

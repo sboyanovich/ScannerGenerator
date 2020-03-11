@@ -1,0 +1,27 @@
+NZ_DIGIT    := [1-9]
+DIGIT       := [0-9]
+LETTER      := [a-zA-Z]
+IDENT       := {LETTER}({LETTER}|{DIGIT})*
+
+PLUS        := \+
+
+%MODES COMMENT
+
+%DOMAINS PLUS_OP
+
+%DOMAINS[Integer] INT_LITERAL
+
+%DOMAINS[String] IDENTIFIER
+
+%%
+
+WHITESPACE                  :=    ([ \t\n]|\r\n)+                                     ;
+INT_LITERAL                 :=    0|({NZ_DIGIT}{DIGIT}*)        handleIntLiteral      ;
+PLUS_OP                     :=    {PLUS}                        handlePlusOp          ;
+IDENTIFIER                  :=    {IDENT}                       handleIdentifier      ;
+COMMENT_START               :=    /\*                           handleCommentStart    ;
+<COMMENT>                   :=    [^*]*                         handleNoAsteriskSeq   ;
+<COMMENT> COMMENT_CLOSE     :=    \*/                           handleCommentClose    ;
+<COMMENT>                   :=    \*                            handleCommentAsterisk ;
+
+

@@ -3,14 +3,15 @@ package io.github.sboyanovich.scannergenerator.scanner;
 import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.automata.NFAStateGraphBuilder;
+import io.github.sboyanovich.scannergenerator.automata.StateTag;
 import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
-import io.github.sboyanovich.scannergenerator.utility.Pair;
-import io.github.sboyanovich.scannergenerator.utility.Utility;
 
+import java.io.*;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
+import static io.github.sboyanovich.scannergenerator.utility.Utility.ensurePathExists;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.isInRange;
 
 /**
@@ -51,40 +52,30 @@ public final class LexicalRecognizer {
     private int initialState;
 
     // as of now, hint maps precisely automaton domain to something smaller
-    public LexicalRecognizer(EquivalenceMap hint, DFA automaton) {
-        Objects.requireNonNull(hint);
+    public LexicalRecognizer(DFA automaton) {
         Objects.requireNonNull(automaton);
-        if (hint.getDomain() != automaton.getAlphabetSize()) {
-            throw new IllegalArgumentException(
-                    "Hint domain should coincide with automaton's alphabet!"
-            );
-        }
 
         // this logic should be here
-        Pair<EquivalenceMap, DFA> compressed = Utility.compressAutomaton(hint, automaton);
-        EquivalenceMap hintEmap = compressed.getFirst(); // original alphabet => aux
-        automaton = compressed.getSecond();
+        automaton = automaton.compress();
 
         // minimization should go faster now (on average much smaller alphabet)
         automaton = automaton.minimize();
 
-        compressed = Utility.compressAutomaton(automaton);
-        EquivalenceMap midMap = compressed.getFirst(); // aux => final
-        automaton = compressed.getSecond();
-
+        // aux => final
+        automaton = automaton.compress(); // Is this compression really necessary? It appears to be so.
         // original alphabet => final
-        EquivalenceMap emap = Utility.composeEquivalenceMaps(hintEmap, midMap);
 
-        this.generalizedSymbolsMap = emap;
+        this.generalizedSymbolsMap = automaton.getTransitionTable().getEquivalenceMap();
         //System.out.println(emap.getDomain());
         //System.out.println(emap.getEqClassDomain());
 
         int numberOfStates = automaton.getNumberOfStates();
-        int alphabetSize = automaton.getAlphabetSize();
+        int alphabetSize = this.generalizedSymbolsMap.getEqClassDomain();
 
+        // Minimal automaton has one drain at most.
         OptionalInt maybeDrain = getDrainState(automaton);
 
-        int[][] transitionTable = automaton.getTransitionTable();
+        int[][] transitionTable = automaton.getTransitionTable().getTable();
 
         if (maybeDrain.isPresent()) {
             int drain = maybeDrain.getAsInt();
@@ -124,29 +115,12 @@ public final class LexicalRecognizer {
         }
     }
 
-    private static boolean isStateADrain(DFA dfa, int state) {
-        if (StateTag.isFinal(dfa.getStateTag(state))) {
-            return false;
-        }
-
-        int[][] transitionTable = dfa.getTransitionTable();
-        int alphabetSize = dfa.getAlphabetSize();
-        for (int i = 0; i < alphabetSize; i++) {
-            int to = transitionTable[state][i];
-            if (to != state) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     // is called only on dfa known to be minimal
     private static OptionalInt getDrainState(DFA dfa) {
-        int numberOfStates = dfa.getNumberOfStates();
-        for (int i = 0; i < numberOfStates; i++) {
-            if (isStateADrain(dfa, i)) {
-                return OptionalInt.of(i);
-            }
+        List<Integer> drainStates = dfa.getDrainStates();
+        if (!drainStates.isEmpty()) {
+            // should have exactly one
+            return OptionalInt.of(drainStates.get(0));
         }
         return OptionalInt.empty();
     }
@@ -256,5 +230,122 @@ public final class LexicalRecognizer {
 
     public String displayEquivalenceMap(Function<Integer, String> alphabetInterpretation) {
         return generalizedSymbolsMap.displayClasses(alphabetInterpretation);
+    }
+
+    /// EXPERIMENTAL
+    public void writeToFile(String filename, Map<StateTag, Integer> indices) {
+        int domain = this.generalizedSymbolsMap.getDomain();
+        int eqcDomain = this.generalizedSymbolsMap.getEqClassDomain();
+        int numberOfStates = this.transitionTable.length;
+
+        try (DataOutputStream dos = new DataOutputStream(
+                new BufferedOutputStream(new FileOutputStream(ensurePathExists(filename))))
+        ) {
+            dos.writeInt(domain);
+            dos.writeInt(eqcDomain);
+            for (int i = 0; i < domain; i++) {
+                dos.writeInt(this.generalizedSymbolsMap.getEqClass(i));
+            }
+            dos.writeInt(this.initialState);
+            dos.writeInt(numberOfStates);
+            for (int[] row : this.transitionTable) {
+                for (int j = 0; j < eqcDomain; j++) {
+                    dos.writeInt(row[j]);
+                }
+            }
+            for (int i = 0; i < numberOfStates; i++) {
+                StateTag tag = getStateTag(i);
+                if (!tag.equals(StateTag.NOT_FINAL)) {
+                    dos.writeInt(i);
+                    dos.writeInt(indices.get(tag));
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // CALL ONLY ON GENERATED FILES
+    public LexicalRecognizer(InputStream is, List<StateTag> finalTags) {
+        try (DataInputStream dis = new DataInputStream(
+                new BufferedInputStream(is))
+        ) {
+            int domain = dis.readInt();
+            int eqcDomain = dis.readInt();
+            int[] map = new int[domain];
+
+            for (int i = 0; i < domain; i++) {
+                map[i] = dis.readInt();
+            }
+
+            this.generalizedSymbolsMap = new EquivalenceMap(domain, eqcDomain, map);
+
+            this.initialState = dis.readInt();
+            int numberOfStates = dis.readInt();
+
+            this.transitionTable = new int[numberOfStates][eqcDomain];
+
+            for (int i = 0; i < numberOfStates; i++) {
+                for (int j = 0; j < eqcDomain; j++) {
+                    this.transitionTable[i][j] = dis.readInt();
+                }
+            }
+
+            this.labels = new ArrayList<>();
+            for (int i = 0; i < numberOfStates; i++) {
+                this.labels.add(StateTag.NOT_FINAL);
+            }
+
+            while (dis.available() > 0) {
+                int state = dis.readInt();
+                int index = dis.readInt();
+                this.labels.set(state, finalTags.get(index));
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public LexicalRecognizer(String filename, List<StateTag> finalTags) {
+        try (DataInputStream dis = new DataInputStream(
+                new BufferedInputStream(new FileInputStream(filename)))
+        ) {
+            int domain = dis.readInt();
+            int eqcDomain = dis.readInt();
+            int[] map = new int[domain];
+
+            for (int i = 0; i < domain; i++) {
+                map[i] = dis.readInt();
+            }
+
+            this.generalizedSymbolsMap = new EquivalenceMap(domain, eqcDomain, map);
+
+            this.initialState = dis.readInt();
+            int numberOfStates = dis.readInt();
+
+            this.transitionTable = new int[numberOfStates][eqcDomain];
+
+            for (int i = 0; i < numberOfStates; i++) {
+                for (int j = 0; j < eqcDomain; j++) {
+                    this.transitionTable[i][j] = dis.readInt();
+                }
+            }
+
+            this.labels = new ArrayList<>();
+            for (int i = 0; i < numberOfStates; i++) {
+                this.labels.add(StateTag.NOT_FINAL);
+            }
+
+            while (dis.available() > 0) {
+                int state = dis.readInt();
+                int index = dis.readInt();
+                this.labels.set(state, finalTags.get(index));
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -8,3 +8,6 @@ abstract   continue   for          new         switch
     char       final      interface    static      void
     class      finally    long         strictfp    volatile
     const      float      native       super       while
+
+    variable a b3 abc123 timeElapsed строковаяПеременная123
+    over 9000 123_456_789 100_000_000L

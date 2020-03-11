@@ -1,7 +1,7 @@
 package io.github.sboyanovich.scannergenerator.scanner;
 
-import io.github.sboyanovich.scannergenerator.scanner.token.TEndOfProgram;
-import io.github.sboyanovich.scannergenerator.scanner.token.TError;
+import io.github.sboyanovich.scannergenerator.automata.StateTag;
+import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
@@ -70,7 +70,7 @@ public class Scanner {
 
     public Token nextToken() {
         if (getCurrentCodePoint() == Text.EOI) {
-            return new TEndOfProgram(new Fragment(currPos, currPos));
+            return Domain.END_OF_INPUT.createToken(this.program, new Fragment(currPos, currPos));
         }
 
         int currState = this.recognizer.getInitialState();
@@ -106,7 +106,7 @@ public class Scanner {
                         advanceCurrentPosition();
                     }
                     Fragment invalidFragment = new Fragment(start, this.currPos);
-                    return new TError(invalidFragment, getTextFragment(invalidFragment));
+                    return Domain.ERROR.createToken(this.program, invalidFragment);
                 } else {
                     if (lastFinalState.isPresent()) {
                         this.currPos = lastInFinal;
@@ -118,7 +118,13 @@ public class Scanner {
 
                     StateTag tag = this.recognizer.getStateTag(currState);
 
-                    return tag.getDomain().createToken(this.program, scannedFragment);
+                    if (tag instanceof DomainTag) {
+                        DomainTag domainTag = (DomainTag) tag;
+                        return domainTag.getDomain().createToken(this.program, scannedFragment);
+                    } else {
+                        // FOR NOW, THIS CHECK SHOULD PROBABLY BE PERFORMED WHEN BUILDING A RECOGNIZER/SCANNER
+                        throw new RuntimeException("Only DomainTag StateTags allowed as final states in a scanner!");
+                    }
                 }
             }
         }

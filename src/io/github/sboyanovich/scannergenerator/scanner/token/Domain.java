@@ -19,14 +19,29 @@ public interface Domain {
     DomainWithAttribute<String> ERROR = new DomainWithAttribute<>() {
         @Override
         public TokenWithAttribute<String> createToken(Text text, Fragment fragment) {
-            return new TError(fragment, attribute(text, fragment));
+            return new TokenWithAttribute<>(fragment, ERROR, attribute(text, fragment));
         }
 
         @Override
         public String attribute(Text text, Fragment fragment) {
             return Utility.getTextFragmentAsString(text, fragment);
         }
+
+        @Override
+        public String toString() {
+            return "ERROR";
+        }
     };
 
-    Domain END_OF_PROGRAM = (text, fragment) -> new TEndOfProgram(fragment);
+    Domain END_OF_INPUT = new Domain() {
+        @Override
+        public Token createToken(Text text, Fragment fragment) {
+            return new BasicToken(fragment, END_OF_INPUT);
+        }
+
+        @Override
+        public String toString() {
+            return "END_OF_INPUT";
+        }
+    };
 }

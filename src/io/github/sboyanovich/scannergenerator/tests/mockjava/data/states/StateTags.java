@@ -1,14 +1,104 @@
 package io.github.sboyanovich.scannergenerator.tests.mockjava.data.states;
 
-import io.github.sboyanovich.scannergenerator.scanner.StateTag;
+import io.github.sboyanovich.scannergenerator.scanner.DomainTag;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
-import io.github.sboyanovich.scannergenerator.tests.data.domains.DomainsWithStringAttribute;
-import io.github.sboyanovich.scannergenerator.tests.mockjava.data.domains.KeywordDomains;
-import io.github.sboyanovich.scannergenerator.tests.mockjava.data.domains.SimpleDomains;
-import io.github.sboyanovich.scannergenerator.tests.mockjava.data.domains.SimpleLiterals;
+import io.github.sboyanovich.scannergenerator.tests.mockjava.data.domains.*;
 
-public enum StateTags implements StateTag {
+public enum StateTags implements DomainTag {
+    /// OPERATORS
+    // In separate enum
+    /// OPERATORS#
 
+    STRING_LITERAL {
+        @Override
+        public Domain getDomain() {
+            return DomainsWithStringAttribute.STRING_LITERAL;
+        }
+    },
+    DOUBLE_COLON {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.DOUBLE_COLON;
+        }
+    },
+    AT {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.AT;
+        }
+    },
+    ELLIPSIS {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.ELLIPSIS;
+        }
+    },
+    DOT {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.DOT;
+        }
+    },
+    COMMA {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.COMMA;
+        }
+    },
+    SEMICOLON {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.SEMICOLON;
+        }
+    },
+    RSQ_BRACKET {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.RSQ_BRACKET;
+        }
+    },
+    LSQ_BRACKET {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.LSQ_BRACKET;
+        }
+    },
+    RBRACE {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.RBRACE;
+        }
+    },
+    LBRACE {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.LBRACE;
+        }
+    },
+    RPAREN {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.RPAREN;
+        }
+    },
+    LPAREN {
+        @Override
+        public Domain getDomain() {
+            return SimpleDomains.LPAREN;
+        }
+    },
+    INTEGER_LITERAL {
+        @Override
+        public Domain getDomain() {
+            return DomainsWithIntegerAttribute.INTEGER_LITERAL;
+        }
+    },
+    IDENTIFIER {
+        @Override
+        public Domain getDomain() {
+            return DomainsWithStringAttribute.IDENTIFIER;
+        }
+    },
     TRUE {
         @Override
         public Domain getDomain() {

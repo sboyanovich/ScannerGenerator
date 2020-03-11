@@ -90,4 +90,14 @@ public class EquivalenceMap {
 
         return result.toString();
     }
+
+    public EquivalenceMap compose(EquivalenceMap map2) {
+        // not checking parameters for validity for now
+        int m = getDomain();
+        int[] resultMap = new int[m];
+        for (int i = 0; i < resultMap.length; i++) {
+            resultMap[i] = map2.getEqClass(getEqClass(i));
+        }
+        return new EquivalenceMap(m, map2.getEqClassDomain(), resultMap);
+    }
 }

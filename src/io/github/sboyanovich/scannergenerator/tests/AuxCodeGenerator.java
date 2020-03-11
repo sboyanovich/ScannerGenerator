@@ -26,7 +26,7 @@ public class AuxCodeGenerator {
         /*
         for (String kw : keywords) {
             String kwu = kw.toUpperCase();
-            String en = "NFA kw_" + kw + "NFA = Utility.acceptThisWord(alphabetSize, \"" + kw + "\")\n" +
+            String en = "NFA kw_" + kw + "NFA = Utility.acceptsThisWord(alphabetSize, \"" + kw + "\")\n" +
                     "                .setAllFinalStatesTo(KEYWORD_" + kwu + ");";
             System.out.println(en);
         }
