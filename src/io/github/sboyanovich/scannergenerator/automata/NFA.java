@@ -104,7 +104,6 @@ public class NFA {
         return rejectsThisRange(alphabetSize, asCodePoint(a), asCodePoint(b));
     }
 
-    // TODO: Will be suitable for a better implementation once improved sets are introduced.
     public static NFA acceptsAllCodePointsButThese(int alphabetSize, Set<Integer> codePoints) {
         return acceptsAllTheseCodePoints(alphabetSize, SegmentSet.fromSet(codePoints, alphabetSize).invert());
     }
@@ -139,13 +138,12 @@ public class NFA {
         return result;
     }
 
-    // now this exists mostly for test compatibility reasons
-    public static NFA acceptsThisWord(int alphabetSize, List<String> symbols) {
+    public static NFA acceptsThisWord(int alphabetSize, List<Integer> symbols) {
         int n = symbols.size();
         NFAStateGraphBuilder edges = new NFAStateGraphBuilder(n + 1, alphabetSize);
         for (int i = 0; i < n; i++) {
-            int codePoint = asCodePoint(symbols.get(i));
-            edges.addSymbolToEdge(i, i + 1, codePoint);
+            int codePoint = symbols.get(i);
+            edges.setEdge(i, i + 1, SegmentSet.thisElem(codePoint, alphabetSize));
         }
         return new NFA(n + 1, alphabetSize, 0, Map.of(n, StateTag.FINAL_DUMMY), edges.build());
     }
