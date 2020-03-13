@@ -1,6 +1,9 @@
 package io.github.sboyanovich.scannergenerator.automata;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 import static io.github.sboyanovich.scannergenerator.utility.Utility.isInRange;
 
@@ -54,14 +57,26 @@ public final class NFAStateGraphBuilder extends AbstractNFAStateGraph {
     }
 
     /// MUTATORS
-    public void setEdge(int from, int to, Set<Integer> marker) {
+    public void setEdge(int from, int to, Set<Integer> marker, boolean useImmutableSet) {
         // null marker not allowed
         Objects.requireNonNull(marker);
         // validate
         validateEdge(from, to);
         validateMarker(marker);
         // defensive copy
-        this.edges.get(from).set(to, new HashSet<>(marker));
+        if (marker instanceof SegmentSet) {
+            this.edges.get(from).set(to, marker);
+        } else {
+            if (useImmutableSet) {
+                this.edges.get(from).set(to, SegmentSet.fromSet(marker, this.alphabetSize));
+            } else {
+                this.edges.get(from).set(to, new HashSet<>(marker));
+            }
+        }
+    }
+
+    public void setEdge(int from, int to, Set<Integer> marker) {
+        setEdge(from, to, marker, false);
     }
 
     public void addSymbolToEdge(int from, int to, int symbol) {
@@ -70,6 +85,11 @@ public final class NFAStateGraphBuilder extends AbstractNFAStateGraph {
         validateSymbol(symbol);
         if (!edgeExists(from, to)) {
             this.edges.get(from).set(to, new HashSet<>());
+        } else {
+            Set<Integer> edge = this.edges.get(from).get(to);
+            if (!(edge instanceof HashSet)) {
+                this.edges.get(from).set(to, new HashSet<>(edge));
+            }
         }
         this.edges.get(from).get(to).add(symbol);
     }
