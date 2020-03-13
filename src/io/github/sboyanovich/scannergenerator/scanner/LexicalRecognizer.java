@@ -11,6 +11,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
+import static io.github.sboyanovich.scannergenerator.automata.StateTag.isFinal;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.ensurePathExists;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.isInRange;
 
@@ -48,7 +49,9 @@ public final class LexicalRecognizer {
 
     private EquivalenceMap generalizedSymbolsMap;
     private int[][] transitionTable;
-    private List<StateTag> labels;
+
+    // stores only accepting states
+    private Map<Integer, StateTag> labels;
     private int initialState;
 
     // as of now, hint maps precisely automaton domain to something smaller
@@ -100,17 +103,20 @@ public final class LexicalRecognizer {
                     this.transitionTable[i - 1][j] = renaming.applyAsInt(transitionTable[i][j]);
                 }
             }
-            this.labels = new ArrayList<>();
+            this.labels = new HashMap<>();
             for (int i = 0; i < numberOfStates; i++) {
                 int state = (i < drain) ? i : i + 1; // reverse renaming (we know i != -1)
-                this.labels.add(automaton.getStateTag(state));
+                StateTag tag = automaton.getStateTag(state);
+                if (isFinal(tag)) {
+                    this.labels.put(i, tag);
+                }
             }
         } else {
             this.initialState = automaton.getInitialState();
             this.transitionTable = transitionTable;
-            this.labels = new ArrayList<>();
-            for (int i = 0; i < numberOfStates; i++) {
-                this.labels.add(automaton.getStateTag(i));
+            this.labels = new HashMap<>();
+            for (int state : automaton.getLabels().keySet()) {
+                this.labels.put(state, automaton.getStateTag(state));
             }
         }
     }
@@ -171,7 +177,10 @@ public final class LexicalRecognizer {
         if (!isInRange(state, 0, getNumberOfStates() - 1)) {
             throw new IllegalArgumentException("Invalid state number!");
         }
-        return this.labels.get(state);
+        if (this.labels.containsKey(state)) {
+            return this.labels.get(state);
+        }
+        return StateTag.NOT_FINAL;
     }
 
     public int getNumberOfColumns() {
@@ -184,7 +193,7 @@ public final class LexicalRecognizer {
         int alphabetSize = this.transitionTable[0].length;
 
         for (int i = 0; i < numberOfStates; i++) {
-            labelsMap.put(i, this.labels.get(i));
+            labelsMap.put(i, getStateTag(i));
         }
 
         // knowing that the method doesn't modify array
@@ -292,15 +301,12 @@ public final class LexicalRecognizer {
                 }
             }
 
-            this.labels = new ArrayList<>();
-            for (int i = 0; i < numberOfStates; i++) {
-                this.labels.add(StateTag.NOT_FINAL);
-            }
+            this.labels = new HashMap<>();
 
             while (dis.available() > 0) {
                 int state = dis.readInt();
                 int index = dis.readInt();
-                this.labels.set(state, finalTags.get(index));
+                this.labels.put(state, finalTags.get(index));
             }
 
         } catch (IOException e) {
@@ -333,15 +339,12 @@ public final class LexicalRecognizer {
                 }
             }
 
-            this.labels = new ArrayList<>();
-            for (int i = 0; i < numberOfStates; i++) {
-                this.labels.add(StateTag.NOT_FINAL);
-            }
+            this.labels = new HashMap<>();
 
             while (dis.available() > 0) {
                 int state = dis.readInt();
                 int index = dis.readInt();
-                this.labels.set(state, finalTags.get(index));
+                this.labels.put(state, finalTags.get(index));
             }
 
         } catch (IOException e) {
