@@ -96,7 +96,7 @@ public class RecognizerGenTest {
                 start = Instant.now();
                 NFA auto = buildNFAFromRegex(def.regex, definitions, alphabetSize);
                 end = Instant.now();
-                timeNFA += Duration.between(start, end).toMillis();
+                timeNFA += Duration.between(start, end).toNanos();
 
                 definitions.put(name, auto);
 
@@ -111,6 +111,7 @@ public class RecognizerGenTest {
                 System.out.println();
             }*/
 
+            Map<String, List<NFA>> modeNFALists = new HashMap<>();
             Map<String, NFA> modeNFAs = new HashMap<>();
             List<StateTag> priorityList = new ArrayList<>();
             Map<String, Set<Integer>> rulePivots = new HashMap<>();
@@ -129,7 +130,7 @@ public class RecognizerGenTest {
                 start = Instant.now();
                 NFA nfa = buildNFAFromRegex(rule.regex, definitions, alphabetSize);
                 end = Instant.now();
-                timeNFA += Duration.between(start, end).toMillis();
+                timeNFA += Duration.between(start, end).toNanos();
 
                 StateTag stateTag = new StateTag() {
                     String name = stateName;
@@ -147,26 +148,31 @@ public class RecognizerGenTest {
                 List<AST.Identifier> modeNames = rule.modeList.modeNames;
                 for (var mode : modeNames) {
                     String modeName = mode.identifier;
-                    if (modeNFAs.containsKey(modeName)) {
-                        NFA val = modeNFAs.get(modeName);
-                        start = Instant.now();
-                        NFA union = val.union(nfa);
-                        end = Instant.now();
-                        timeNFA += Duration.between(start, end).toMillis();
-                        modeNFAs.put(modeName, union);
+                    if (modeNFALists.containsKey(modeName)) {
+                        modeNFALists.get(modeName).add(nfa);
 
                         start = Instant.now();
                         modePivots.get(modeName).addAll(rulePivots.get(stateName));
                         end = Instant.now();
                         timeComputingPivots += Duration.between(start, end).toNanos();
                     } else {
-                        modeNFAs.put(modeName, nfa);
+                        List<NFA> modeList = new ArrayList<>();
+                        modeList.add(nfa);
+                        modeNFALists.put(modeName, modeList);
                         start = Instant.now();
                         modePivots.put(modeName, new HashSet<>(rulePivots.get(stateName)));
                         end = Instant.now();
                         timeComputingPivots += Duration.between(start, end).toNanos();
                     }
                 }
+            }
+
+            for (String modeName : modeNFALists.keySet()) {
+                start = Instant.now();
+                NFA modeNFA = NFA.unionAll(modeNFALists.get(modeName));
+                end = Instant.now();
+                timeNFA += Duration.between(start, end).toNanos();
+                modeNFAs.put(modeName, modeNFA);
             }
 
             Map<StateTag, Integer> priorityMap = new HashMap<>();
@@ -549,7 +555,10 @@ public class RecognizerGenTest {
             endTotal = Instant.now();
             totalTimeElapsed = Duration.between(startTotal, endTotal).toMillis();
 
-            timeBuildingCharClasses /= 1_000_000;
+            final int MILLION = 1_000_000;
+
+            timeBuildingCharClasses /= MILLION;
+            timeNFA /= MILLION;
 
             if (dumpDotDescriptions) {
                 System.out.println();
