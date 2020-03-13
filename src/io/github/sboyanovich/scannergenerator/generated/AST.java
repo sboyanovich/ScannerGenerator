@@ -2,6 +2,8 @@ package io.github.sboyanovich.scannergenerator.generated;
 
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
@@ -131,7 +133,13 @@ public abstract class AST {
         private Regex() {
         }
 
-        abstract Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize);
+        public Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
+            HashSet<Integer> pivots = new HashSet<>();
+            collectPivots(defPivots, alphabetSize, pivots);
+            return pivots;
+        }
+
+        abstract void collectPivots(Map<String, Set<Integer>> defPivots, int alphabetSize, HashSet<Integer> pivots);
 
         abstract NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize);
 
@@ -139,12 +147,10 @@ public abstract class AST {
             List<Regex> operands;
 
             @Override
-            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
-                Set<Integer> result = new HashSet<>();
+            void collectPivots(Map<String, Set<Integer>> defPivots, int alphabetSize, HashSet<Integer> pivots) {
                 for (Regex regex : operands) {
-                    result.addAll(regex.getPivots(defPivots, alphabetSize));
+                    regex.collectPivots(defPivots, alphabetSize, pivots);
                 }
-                return result;
             }
 
             @Override
@@ -178,12 +184,10 @@ public abstract class AST {
             List<Regex> operands;
 
             @Override
-            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
-                Set<Integer> result = new HashSet<>();
+            void collectPivots(Map<String, Set<Integer>> defPivots, int alphabetSize, HashSet<Integer> pivots) {
                 for (Regex regex : operands) {
-                    result.addAll(regex.getPivots(defPivots, alphabetSize));
+                    regex.collectPivots(defPivots, alphabetSize, pivots);
                 }
-                return result;
             }
 
             @Override
@@ -219,8 +223,8 @@ public abstract class AST {
             Regex a;
 
             @Override
-            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
-                return a.getPivots(defPivots, alphabetSize);
+            void collectPivots(Map<String, Set<Integer>> defPivots, int alphabetSize, HashSet<Integer> pivots) {
+                a.collectPivots(defPivots, alphabetSize, pivots);
             }
 
             @Override
@@ -246,8 +250,8 @@ public abstract class AST {
             Regex a;
 
             @Override
-            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
-                return a.getPivots(defPivots, alphabetSize);
+            void collectPivots(Map<String, Set<Integer>> defPivots, int alphabetSize, HashSet<Integer> pivots) {
+                a.collectPivots(defPivots, alphabetSize, pivots);
             }
 
             @Override
@@ -273,8 +277,8 @@ public abstract class AST {
             Regex a;
 
             @Override
-            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
-                return a.getPivots(defPivots, alphabetSize);
+            void collectPivots(Map<String, Set<Integer>> defPivots, int alphabetSize, HashSet<Integer> pivots) {
+                a.collectPivots(defPivots, alphabetSize, pivots);
             }
 
             @Override
@@ -302,8 +306,8 @@ public abstract class AST {
             int to;
 
             @Override
-            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
-                return a.getPivots(defPivots, alphabetSize);
+            void collectPivots(Map<String, Set<Integer>> defPivots, int alphabetSize, HashSet<Integer> pivots) {
+                a.collectPivots(defPivots, alphabetSize, pivots);
             }
 
             @Override
@@ -349,8 +353,8 @@ public abstract class AST {
             int codePoint;
 
             @Override
-            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
-                return Set.of(codePoint);
+            void collectPivots(Map<String, Set<Integer>> defPivots, int alphabetSize, HashSet<Integer> pivots) {
+                pivots.add(codePoint);
             }
 
             @Override
@@ -371,15 +375,17 @@ public abstract class AST {
         public static class Dot extends Regex {
 
             @Override
-            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
+            void collectPivots(Map<String, Set<Integer>> defPivots, int alphabetSize, HashSet<Integer> pivots) {
                 // we need to include EOF here as well, as DOT is essentially a symbol class
                 // prohibiting \n and EOF
-                return Set.of(asCodePoint("\n"), alphabetSize - 1);
+                pivots.add(asCodePoint("\n"));
+                pivots.add(alphabetSize - 1);
             }
 
             @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
-                return NFA.acceptsAllSymbolsButThese(alphabetSize, Set.of("\n"));
+                // fixed the logic here, EOF must not be matched
+                return NFA.acceptsAllCodePointsButThese(alphabetSize, Set.of(asCodePoint("\n"), alphabetSize - 1));
             }
 
             @Override
@@ -394,8 +400,8 @@ public abstract class AST {
 
         public static class Eof extends Regex {
             @Override
-            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
-                return Set.of(alphabetSize - 1);
+            void collectPivots(Map<String, Set<Integer>> defPivots, int alphabetSize, HashSet<Integer> pivots) {
+                pivots.add(alphabetSize - 1);
             }
 
             @Override
@@ -413,8 +419,8 @@ public abstract class AST {
             String name;
 
             @Override
-            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
-                return defPivots.get(name);
+            void collectPivots(Map<String, Set<Integer>> defPivots, int alphabetSize, HashSet<Integer> pivots) {
+                pivots.addAll(defPivots.get(name));
             }
 
             @Override
@@ -437,24 +443,25 @@ public abstract class AST {
             List<CharOrRange> charsOrRanges;
 
             @Override
-            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
-                Set<Integer> result = new HashSet<>();
+            void collectPivots(Map<String, Set<Integer>> defPivots, int alphabetSize, HashSet<Integer> pivots) {
                 for (CharOrRange cor : charsOrRanges) {
                     if (cor instanceof CharOrRange.ClassChar) {
-                        result.add(((CharOrRange.ClassChar) cor).codePoint);
+                        pivots.add(((CharOrRange.ClassChar) cor).codePoint);
                     } else if (cor instanceof CharOrRange.Range) {
                         CharOrRange.Range range = (CharOrRange.Range) cor;
-                        result.add(range.cpa);
-                        result.add(range.cpb);
+                        pivots.add(range.cpa);
+                        pivots.add(range.cpb);
                     }
                 }
                 if (exclusive) {
-                    result.add(alphabetSize - 1); // exclusive class implicitly prohibits EOF/AEOI
+                    pivots.add(alphabetSize - 1); // exclusive class implicitly prohibits EOF/AEOI
                 }
-                return result;
             }
 
-            boolean containsCodePoint(int codePoint) {
+            boolean containsCodePoint(int codePoint, int alphabetSize) {
+                if (codePoint == alphabetSize - 1) {
+                    return false;
+                }
                 if (exclusive) {
                     for (var cor : charsOrRanges) {
                         if (cor.containsCodePoint(codePoint)) {
@@ -474,6 +481,8 @@ public abstract class AST {
 
             @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
+                Instant start = Instant.now();
+                NFA result;
                 Set<Integer> codePoints = new HashSet<>();
                 for (var cor : charsOrRanges) {
                     codePoints.addAll(cor.getCodePoints());
@@ -482,10 +491,13 @@ public abstract class AST {
                 if (exclusive) {
                     int aeoi = alphabetSize - 1;
                     codePoints.add(aeoi); // to disallow EOF (AEOI)
-                    return NFA.acceptsAllCodePointsButThese(alphabetSize, codePoints);
+                    result = NFA.acceptsAllCodePointsButThese(alphabetSize, codePoints);
                 } else {
-                    return NFA.acceptsAllTheseCodePoints(alphabetSize, codePoints);
+                    result = NFA.acceptsAllTheseCodePoints(alphabetSize, codePoints);
                 }
+                Instant end = Instant.now();
+                RecognizerGenTest.timeBuildingCharClasses += Duration.between(start, end).toNanos();
+                return result;
             }
 
             @Override
@@ -577,18 +589,16 @@ public abstract class AST {
             CharClass b;
 
             @Override
-            Set<Integer> getPivots(Map<String, Set<Integer>> defPivots, int alphabetSize) {
-                Set<Integer> result = new HashSet<>();
-                result.addAll(a.getPivots(defPivots, alphabetSize));
-                result.addAll(b.getPivots(defPivots, alphabetSize));
-                return result;
+            void collectPivots(Map<String, Set<Integer>> defPivots, int alphabetSize, HashSet<Integer> pivots) {
+                a.collectPivots(defPivots, alphabetSize, pivots);
+                b.collectPivots(defPivots, alphabetSize, pivots);
             }
 
             @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
                 Set<Integer> codePoints = new HashSet<>();
                 for (int i = 0; i < alphabetSize; i++) {
-                    if (a.containsCodePoint(i) && !b.containsCodePoint(i)) {
+                    if (a.containsCodePoint(i, alphabetSize) && !b.containsCodePoint(i, alphabetSize)) {
                         codePoints.add(i);
                     }
                 }
