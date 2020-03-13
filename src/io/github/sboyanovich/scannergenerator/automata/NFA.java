@@ -215,6 +215,110 @@ public class NFA {
         return relabelStates(relabel);
     }
 
+    // assuming list is non empty
+    public static NFA unionAll(List<NFA> nfas) {
+        // It is assumed all automatons are over the exactly same alphabet.
+
+        int alphabetSize = nfas.get(0).alphabetSize;
+        int numberOfStates = 1;
+        for (NFA nfa : nfas) {
+            numberOfStates += nfa.numberOfStates;
+        }
+        int initialState = numberOfStates - 1;
+        int numberingPrefix = 0;
+
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates, alphabetSize);
+        SegmentSet nothing = SegmentSet.nothing(alphabetSize);
+        Map<Integer, StateTag> labels = new HashMap<>();
+
+        for (NFA nfa : nfas) {
+            // preserving edges from this automaton
+            for (int i = 0; i < nfa.numberOfStates; i++) {
+                // labels
+                if (nfa.isStateAccepting(i)) {
+                    labels.put(numberingPrefix + i, nfa.getStateTag(i));
+                }
+                for (int j = 0; j < nfa.numberOfStates; j++) {
+                    if (nfa.edges.edgeExists(i, j)) {
+                        // noinspection OptionalGetWithoutIsPresent (because edgeExists == true guarantees it)
+                        edges.setEdge(
+                                numberingPrefix + i,
+                                numberingPrefix + j,
+                                SegmentSet.fromSet(nfa.edges.getEdgeMarker(i, j).get(), nfa.alphabetSize),
+                                true
+                        );
+                    }
+                }
+            }
+            // linking old initial states with new (lambda-steps)
+            edges.setEdge(initialState, numberingPrefix + nfa.initialState, nothing, true);
+            numberingPrefix += nfa.numberOfStates;
+        }
+
+        return new NFA(numberOfStates, alphabetSize, initialState, labels, edges.build());
+    }
+
+    // assuming list is non empty
+    public static NFA concatenationAll(List<NFA> nfas) {
+        int alphabetSize = nfas.get(0).alphabetSize;
+        int numberOfStates = 0;
+        for (NFA nfa : nfas) {
+            numberOfStates += nfa.numberOfStates;
+        }
+        int initialState = nfas.get(0).initialState;
+        int numberingPrefix = 0;
+
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates, alphabetSize);
+        SegmentSet nothing = SegmentSet.nothing(alphabetSize);
+        Map<Integer, StateTag> labels = new HashMap<>();
+
+        NFA last = nfas.get(nfas.size() - 1);
+        int lastPrefix = numberOfStates - last.numberOfStates;
+        for (int i = 0; i < last.numberOfStates; i++) {
+            if (last.isStateAccepting(i)) {
+                labels.put(lastPrefix + i, last.getStateTag(i));
+            }
+        }
+
+        for (NFA nfa : nfas) {
+            // preserving edges from this automaton
+            for (int i = 0; i < nfa.numberOfStates; i++) {
+                for (int j = 0; j < nfa.numberOfStates; j++) {
+                    if (nfa.edges.edgeExists(i, j)) {
+                        // noinspection OptionalGetWithoutIsPresent (because edgeExists == true guarantees it)
+                        edges.setEdge(
+                                numberingPrefix + i,
+                                numberingPrefix + j,
+                                SegmentSet.fromSet(nfa.edges.getEdgeMarker(i, j).get(), nfa.alphabetSize),
+                                true
+                        );
+                    }
+                }
+            }
+            numberingPrefix += nfa.numberOfStates;
+        }
+
+        numberingPrefix = 0;
+        // linking every non-last automaton's accepting states with next automaton's initial state (lambda-steps)
+        for (int i = 0; i < nfas.size() - 1; i++) {
+            NFA curr = nfas.get(i);
+            NFA next = nfas.get(i + 1);
+            for (int j = 0; j < curr.numberOfStates; j++) {
+                if (curr.isStateAccepting(j)) {
+                    edges.setEdge(
+                            numberingPrefix + j,
+                            numberingPrefix + curr.numberOfStates + next.initialState,
+                            nothing,
+                            true
+                    );
+                }
+            }
+            numberingPrefix += curr.numberOfStates;
+        }
+
+        return new NFA(numberOfStates, alphabetSize, initialState, labels, edges.build());
+    }
+
     public NFA union(NFA second) {
         // It is assumed both automatons are over the exactly same alphabet.
 
