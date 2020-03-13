@@ -22,11 +22,44 @@ public class RecognizerGenTest {
     public static void main(String[] args) {
         String appName = "xgen";
         if (args.length < 1) {
-            System.err.println("USAGE: " + appName + " <input_file>");
+            System.err.println("USAGE: " + appName + " <input_file> [-d] [-p <package_name>]");
             System.exit(1);
         }
 
         String inputFile = args[0];
+
+        /// PARAMS
+        String recognizersDirName = "recognizers";
+        String prefix = "generated/";
+        String packageName = "io.github.sboyanovich.scannergenerator.generated";
+        String stateTagsEnumName = "StateTags";
+        String simpleDomainsEnumName = "SimpleDomains";
+        String scannerClassName = "GeneratedScanner";
+        boolean dumpDotDescriptions = false;
+
+        boolean expectPackageName = false;
+        for (int i = 1; i < args.length; i++) {
+            String arg = args[i];
+            if (expectPackageName) {
+                packageName = arg;
+                expectPackageName = false;
+            } else {
+                if (arg.equals("-d")) {
+                    dumpDotDescriptions = true;
+                } else if (arg.equals("-p")) {
+                    expectPackageName = true;
+                    if (i + 1 >= args.length) {
+                        System.err.println("Package name parameter must be supplied!");
+                        System.err.println("USAGE: " + appName + " <input_file> [-d] [-p <package_name>]");
+                        System.exit(1);
+                    }
+                } else {
+                    System.err.println("Unrecognized arg: " + arg);
+                    System.err.println("USAGE: " + appName + " <input_file> [-d]");
+                    System.exit(1);
+                }
+            }
+        }
 
         startTotal = Instant.now();
 
@@ -190,15 +223,6 @@ public class RecognizerGenTest {
             }
             end = Instant.now();
             timeBuildingRecognizers += Duration.between(start, end).toMillis();
-
-            /// PARAMS
-            String recognizersDirName = "recognizers";
-            String prefix = "generated/";
-            String packageName = "io.github.sboyanovich.scannergenerator.generated";
-            String stateTagsEnumName = "StateTags";
-            String simpleDomainsEnumName = "SimpleDomains";
-            String scannerClassName = "GeneratedScanner";
-            boolean dumpDotDescriptions = false;
 
             start = Instant.now();
             for (String modeName : modes.keySet()) {
@@ -583,10 +607,8 @@ public class RecognizerGenTest {
             System.out.println("Time generating code: " + timeGeneratingCode + "ms");
             System.out.println("Total time: " + totalTimeElapsed + "ms");
         }
-
-        Scanner sc = new Scanner(System.in);
-        sc.nextLine();
-
+/*        Scanner sc = new Scanner(System.in);
+        sc.nextLine();*/
     }
 
     static String generateActionFuncCall(String actionName) {
@@ -609,9 +631,9 @@ public class RecognizerGenTest {
 
         // This appears to be necessary for determinization to work properly. It shouldn't be.
         Instant start = Instant.now();
-/*        if (lang.getNumberOfStates() >= 250) {
+        if (lang.getNumberOfStates() >= 250) {
             lang = lang.removeLambdaSteps();
-        }*/
+        }
         Instant end = Instant.now();
         timeRemovingLambdas += Duration.between(start, end).toMillis();
 
