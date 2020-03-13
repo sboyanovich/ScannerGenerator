@@ -9,6 +9,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.github.sboyanovich.scannergenerator.automata.StateTag.FINAL_DUMMY;
+import static io.github.sboyanovich.scannergenerator.automata.StateTag.isFinal;
 import static io.github.sboyanovich.scannergenerator.automata.Utility.FINAL_DUMMY_PRIORITY_RANK;
 import static io.github.sboyanovich.scannergenerator.automata.Utility.NOT_FINAL_PRIORITY_RANK;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.*;
@@ -26,7 +27,8 @@ public class NFA {
 
     private NFAStateGraph edges;
 
-    private List<StateTag> labels;
+    // stores only accepting states
+    private Map<Integer, StateTag> labels;
 
     public NFA(int numberOfStates, int alphabetSize, int initialState,
                Map<Integer, StateTag> labelsMap, NFAStateGraph edges) {
@@ -64,11 +66,12 @@ public class NFA {
         this.alphabetSize = alphabetSize;
         this.initialState = initialState;
         this.edges = edges;
-        this.labels = new ArrayList<>();
-        for (int i = 0; i < this.numberOfStates; i++) {
-            StateTag tag = labelsMap.get(i);
-            tag = (tag != null) ? tag : StateTag.NOT_FINAL;
-            this.labels.add(tag);
+        this.labels = new HashMap<>();
+        for (int state : labelsMap.keySet()) {
+            StateTag tag = labelsMap.get(state);
+            if (isFinal(tag)) {
+                this.labels.put(state, tag);
+            }
         }
     }
 
@@ -166,7 +169,10 @@ public class NFA {
 
     public StateTag getStateTag(int state) {
         // validate
-        return this.labels.get(state);
+        if (this.labels.containsKey(state)) {
+            return this.labels.get(state);
+        }
+        return StateTag.NOT_FINAL;
     }
 
     public static NFA emptyLanguage(int alphabetSize) {
@@ -208,9 +214,8 @@ public class NFA {
 
     public NFA setAllFinalStatesTo(StateTag tag) {
         Map<Integer, StateTag> relabel = new HashMap<>();
-        for (int i = 0; i < this.numberOfStates; i++) {
-            StateTag stag = this.labels.get(i);
-            relabel.put(i, StateTag.isFinal(stag) ? tag : stag);
+        for (int state : this.labels.keySet()) {
+            relabel.put(state, tag);
         }
         return relabelStates(relabel);
     }
@@ -274,10 +279,8 @@ public class NFA {
 
         NFA last = nfas.get(nfas.size() - 1);
         int lastPrefix = numberOfStates - last.numberOfStates;
-        for (int i = 0; i < last.numberOfStates; i++) {
-            if (last.isStateAccepting(i)) {
-                labels.put(lastPrefix + i, last.getStateTag(i));
-            }
+        for (int state : last.labels.keySet()) {
+            labels.put(lastPrefix + state, last.getStateTag(state));
         }
 
         for (NFA nfa : nfas) {
@@ -303,15 +306,13 @@ public class NFA {
         for (int i = 0; i < nfas.size() - 1; i++) {
             NFA curr = nfas.get(i);
             NFA next = nfas.get(i + 1);
-            for (int j = 0; j < curr.numberOfStates; j++) {
-                if (curr.isStateAccepting(j)) {
-                    edges.setEdge(
-                            numberingPrefix + j,
-                            numberingPrefix + curr.numberOfStates + next.initialState,
-                            nothing,
-                            true
-                    );
-                }
+            for (int state : curr.labels.keySet()) {
+                edges.setEdge(
+                        numberingPrefix + state,
+                        numberingPrefix + curr.numberOfStates + next.initialState,
+                        nothing,
+                        true
+                );
             }
             numberingPrefix += curr.numberOfStates;
         }
@@ -327,11 +328,11 @@ public class NFA {
 
         //rename all states of Second to oldName + this.numberOfStates
         Map<Integer, StateTag> labels = new HashMap<>();
-        for (int i = 0; i < this.labels.size(); i++) {
-            labels.put(i, this.labels.get(i));
+        for (int state : this.labels.keySet()) {
+            labels.put(state, this.labels.get(state));
         }
-        for (int i = 0; i < second.labels.size(); i++) {
-            labels.put(this.numberOfStates + i, second.labels.get(i));
+        for (int state : second.labels.keySet()) {
+            labels.put(this.numberOfStates + state, second.labels.get(state));
         }
         int initialState = numberOfStates - 1;
 
@@ -378,11 +379,8 @@ public class NFA {
         int initialState = this.initialState;
 
         Map<Integer, StateTag> labels = new HashMap<>();
-        for (int i = 0; i < this.labels.size(); i++) {
-            labels.put(i, StateTag.NOT_FINAL);
-        }
-        for (int i = 0; i < second.labels.size(); i++) {
-            labels.put(this.numberOfStates + i, second.labels.get(i));
+        for (int state : this.labels.keySet()) {
+            labels.put(this.numberOfStates + state, second.labels.get(state));
         }
 
         NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates, alphabetSize);
@@ -416,10 +414,8 @@ public class NFA {
 
         SegmentSet nothing = SegmentSet.nothing(this.alphabetSize);
         // linking this automaton's accepting states with second automaton's initial state (lambda-steps)
-        for (int i = 0; i < this.labels.size(); i++) {
-            if (StateTag.isFinal(this.labels.get(i))) {
-                edges.setEdge(i, second.initialState + this.numberOfStates, nothing, true);
-            }
+        for (int state : this.labels.keySet()) {
+            edges.setEdge(state, second.initialState + this.numberOfStates, nothing, true);
         }
 
         return new NFA(numberOfStates, alphabetSize, initialState, labels, edges.build());
@@ -438,8 +434,8 @@ public class NFA {
         int initialState = numberOfStates - 1;
 
         Map<Integer, StateTag> labels = new HashMap<>();
-        for (int i = 0; i < this.labels.size(); i++) {
-            labels.put(i, this.labels.get(i));
+        for (int state : this.labels.keySet()) {
+            labels.put(state, this.labels.get(state));
         }
 
         labels.put(initialState, StateTag.NOT_FINAL); // should fix NFATest1
@@ -463,11 +459,9 @@ public class NFA {
 
         // linking this automaton's accepting states with new initial state (lambda-steps)
         // linking this automaton's new initial state with accepting states (lambda-steps)
-        for (int i = 0; i < this.labels.size(); i++) {
-            if (StateTag.isFinal(this.labels.get(i))) {
-                edges.setEdge(i, initialState, nothing, true);
-                edges.setEdge(initialState, i, nothing, true);
-            }
+        for (int state : this.labels.keySet()) {
+            edges.setEdge(state, initialState, nothing, true);
+            edges.setEdge(initialState, state, nothing, true);
         }
 
         return new NFA(numberOfStates, alphabetSize, initialState, labels, edges.build());
@@ -477,7 +471,6 @@ public class NFA {
         return this.concatenation(this.iteration());
     }
 
-    // EXPERIMENTAL
     public NFA optional() {
         return this.union(emptyStringLanguage(this.alphabetSize));
     }
@@ -501,17 +494,11 @@ public class NFA {
     }
 
     private boolean isStateAccepting(int n) {
-        return StateTag.isFinal(this.labels.get(n));
+        return StateTag.isFinal(getStateTag(n));
     }
 
     private Set<Integer> acceptingStates() {
-        Set<Integer> result = new HashSet<>();
-        for (int i = 0; i < this.labels.size(); i++) {
-            if (isStateAccepting(i)) {
-                result.add(i);
-            }
-        }
-        return result;
+        return new HashSet<>(this.labels.keySet());
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -601,7 +588,7 @@ public class NFA {
             if (prefixFinalStatesWithTagName) {
                 result.append(TAB);
                 result.append("[label=\"");
-                result.append(state).append("_").append(this.labels.get(state));
+                result.append(state).append("_").append(getStateTag(state));
                 result.append("\"]");
             }
             result.append(SEMICOLON + NEWLINE);
@@ -692,7 +679,7 @@ public class NFA {
                         // addition
                         // here is the problem: we need to find out the label of reached final state
                         if (acceptingStates[curr]) {
-                            nasLabels[i] = this.labels.get(curr);
+                            nasLabels[i] = getStateTag(curr);
                         } else {
                             nasLabels[i] = nasLabels[curr];
                         } // this should fix it
@@ -949,7 +936,7 @@ public class NFA {
         List<List<Integer>> transitionFunction = new ArrayList<>();
 
         int eqcd = emap.getEqClassDomain();
-        List<List<Integer>> eqc = emap.getClasses();
+        List<Integer> eqc = emap.getRepresents();
 
         /// OPTIMIZING STRUCTURES
         Map<Integer, Map<Integer, Set<Integer>>> stateSymbolMemo = new HashMap<>();
@@ -964,7 +951,7 @@ public class NFA {
                 transitionFunction.add(new ArrayList<>());
 
                 for (int j = 0; j < eqcd; j++) {
-                    int repLetter = eqc.get(j).get(0);
+                    int repLetter = eqc.get(j);
 
                     start = Instant.now();
                     Set<Integer> closure =
@@ -1014,7 +1001,7 @@ public class NFA {
             if (!currentSuperstate.isEmpty()) {
                 candidateTags =
                         currentSuperstate.stream()
-                                .map(s -> this.labels.get(s))
+                                .map(this::getStateTag)
                                 .collect(Collectors.toList());
             }
             StateTag label =
