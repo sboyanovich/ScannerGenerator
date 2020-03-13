@@ -155,11 +155,11 @@ public abstract class AST {
 
             @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
-                NFA result = NFA.emptyLanguage(alphabetSize);
+                List<NFA> nfas = new ArrayList<>();
                 for (Regex operand : operands) {
-                    result = result.union(operand.buildNFA(namedExpressions, alphabetSize));
+                    nfas.add(operand.buildNFA(namedExpressions, alphabetSize));
                 }
-                return result;
+                return NFA.unionAll(nfas);
             }
 
             @Override
@@ -192,13 +192,34 @@ public abstract class AST {
 
             @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
-                NFA result = NFA.emptyStringLanguage(alphabetSize);
-                for (Regex operand : operands) {
-                    result = result.concatenation(operand.buildNFA(namedExpressions, alphabetSize));
-                }
-                return result;
-            }
+                List<NFA> nfas = new ArrayList<>();
+                List<Integer> chars = new ArrayList<>();
 
+                int state = 0;
+                for (Regex operand : operands) {
+                    if (state == 0) {
+                        if (operand instanceof Char) {
+                            chars.clear();
+                            chars.add(((Char) operand).codePoint);
+                            state = 1;
+                        } else {
+                            nfas.add(operand.buildNFA(namedExpressions, alphabetSize));
+                        }
+                    } else {
+                        if (operand instanceof Char) {
+                            chars.add(((Char) operand).codePoint);
+                        } else {
+                            nfas.add(NFA.acceptsThisWord(alphabetSize, chars));
+                            nfas.add(operand.buildNFA(namedExpressions, alphabetSize));
+                            state = 0;
+                        }
+                    }
+                }
+                if (state == 1) {
+                    nfas.add(NFA.acceptsThisWord(alphabetSize, chars));
+                }
+                return NFA.concatenationAll(nfas);
+            }
 
             @Override
             StringBuilder dotVisit() {
