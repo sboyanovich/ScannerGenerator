@@ -6,13 +6,18 @@ import io.github.sboyanovich.scannergenerator.utility.unionfind.DisjointSetFores
 import java.util.*;
 import java.util.function.Function;
 
+import static io.github.sboyanovich.scannergenerator.automata.StateTag.FINAL_DUMMY;
+import static io.github.sboyanovich.scannergenerator.automata.StateTag.isFinal;
 import static io.github.sboyanovich.scannergenerator.utility.Utility.isInRange;
 
 public class DFA {
     private int numberOfStates;
     private int alphabetSize;
     private int initialState;
-    private List<StateTag> labels;
+
+    // stores only accepting states
+    private Map<Integer, StateTag> labels;
+
     private DFATransitionTable transitionTable;
 
     public DFA(int numberOfStates, int alphabetSize, int initialState,
@@ -64,11 +69,12 @@ public class DFA {
         this.numberOfStates = numberOfStates;
         this.alphabetSize = alphabetSize;
         this.initialState = initialState;
-        this.labels = new ArrayList<>();
-        for (int i = 0; i < this.numberOfStates; i++) {
-            StateTag tag = labelsMap.get(i);
-            tag = (tag != null) ? tag : StateTag.NOT_FINAL;
-            this.labels.add(tag);
+        this.labels = new HashMap<>();
+        for (int state : labelsMap.keySet()) {
+            StateTag tag = labelsMap.get(state);
+            if (isFinal(tag)) {
+                this.labels.put(state, tag);
+            }
         }
         this.transitionTable = transitionTable;
     }
@@ -112,8 +118,9 @@ public class DFA {
         return initialState;
     }
 
-    public List<StateTag> getLabels() {
-        return Collections.unmodifiableList(labels);
+    // only final ones, the rest are null
+    public Map<Integer, StateTag> getLabels() {
+        return Collections.unmodifiableMap(this.labels);
     }
 
     public DFATransitionTable getTransitionTable() {
@@ -177,7 +184,7 @@ public class DFA {
                 continue;
             }
             int stateNewName = renaming.apply(i);
-            labelsMap.put(stateNewName, this.labels.get(i));
+            labelsMap.put(stateNewName, getStateTag(i));
         }
 
         return new NFA(
@@ -203,19 +210,15 @@ public class DFA {
 
     public StateTag getStateTag(int state) {
         // validate
-        return this.labels.get(state);
+        if (this.labels.containsKey(state)) {
+            return this.labels.get(state);
+        }
+        return StateTag.NOT_FINAL;
     }
 
     public DFA compress() {
-        Map<Integer, StateTag> labelsMap = new HashMap<>();
-        for (int i = 0; i < this.labels.size(); i++) {
-            StateTag tag = labels.get(i);
-            if (!tag.equals(StateTag.NOT_FINAL)) {
-                labelsMap.put(i, labels.get(i));
-            }
-        }
         return new DFA(
-                this.numberOfStates, this.alphabetSize, this.initialState, labelsMap, this.transitionTable.compress()
+                this.numberOfStates, this.alphabetSize, this.initialState, this.labels, this.transitionTable.compress()
         );
     }
 
@@ -270,7 +273,8 @@ public class DFA {
 
         DisjointSetForest dsf = finestPartition(this.numberOfStates);
 
-        Set<StateTag> allTags = new HashSet<>(this.labels);
+        Set<StateTag> allTags = new HashSet<>(this.labels.values());
+        allTags.add(StateTag.NOT_FINAL);
 
         // find first state for all tags
         Map<StateTag, Integer> represents = new HashMap<>();
@@ -346,9 +350,8 @@ public class DFA {
         Map<Integer, StateTag> labelsMap = new HashMap<>();
 
         for (int i = 0; i < this.labels.size(); i++) {
-            StateTag original = this.labels.get(i);
-            StateTag flipped = StateTag.isFinal(original) ? StateTag.NOT_FINAL : StateTag.FINAL_DUMMY;
-            labelsMap.put(i, flipped);
+            if (!isFinal(getStateTag(i)))
+                labelsMap.put(i, FINAL_DUMMY);
         }
 
         return new DFA(
