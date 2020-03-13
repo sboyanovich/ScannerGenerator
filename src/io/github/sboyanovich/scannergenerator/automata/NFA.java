@@ -80,32 +80,33 @@ public class NFA {
 
     public static NFA acceptsAllTheseCodePoints(int alphabetSize, Set<Integer> codePoints) {
         NFAStateGraphBuilder edges = new NFAStateGraphBuilder(2, alphabetSize);
-        edges.setEdge(0, 1, codePoints);
+        edges.setEdge(0, 1, codePoints, true);
         return new NFA(2, alphabetSize, 0, Map.of(1, FINAL_DUMMY), edges.build());
     }
 
-    // TODO: Will be suitable for a better implementation once improved sets are introduced.
+    public static NFA rejectsThisCodePoint(int alphabetSize, int codePoint) {
+        return acceptsAllTheseCodePoints(alphabetSize, SegmentSet.notThisElem(codePoint, alphabetSize));
+    }
+
     public static NFA acceptsThisRange(int alphabetSize, int a, int b) {
-        Set<Integer> codePoints = new HashSet<>();
-        for (int i = a; i <= b; i++) {
-            codePoints.add(i);
-        }
-        return acceptsAllTheseCodePoints(alphabetSize, codePoints);
+        return acceptsAllTheseCodePoints(alphabetSize, SegmentSet.thisRange(a, b, alphabetSize));
     }
 
     public static NFA acceptsThisRange(int alphabetSize, String a, String b) {
         return acceptsThisRange(alphabetSize, asCodePoint(a), asCodePoint(b));
     }
 
+    public static NFA rejectsThisRange(int alphabetSize, int a, int b) {
+        return acceptsAllTheseCodePoints(alphabetSize, SegmentSet.notThisRange(a, b, alphabetSize));
+    }
+
+    public static NFA rejectsThisRange(int alphabetSize, String a, String b) {
+        return rejectsThisRange(alphabetSize, asCodePoint(a), asCodePoint(b));
+    }
+
     // TODO: Will be suitable for a better implementation once improved sets are introduced.
     public static NFA acceptsAllCodePointsButThese(int alphabetSize, Set<Integer> codePoints) {
-        Set<Integer> acceptedCodePoints = new HashSet<>();
-        for (int i = 0; i < alphabetSize; i++) {
-            if (!codePoints.contains(i)) {
-                acceptedCodePoints.add(i);
-            }
-        }
-        return acceptsAllTheseCodePoints(alphabetSize, acceptedCodePoints);
+        return acceptsAllTheseCodePoints(alphabetSize, SegmentSet.fromSet(codePoints, alphabetSize).invert());
     }
 
     // won't accept EOF(AEOI). Client likely wants only ordinary symbols
@@ -185,7 +186,7 @@ public class NFA {
 
     public static NFA singleLetterLanguage(int alphabetSize, int letter) {
         NFAStateGraphBuilder edges = new NFAStateGraphBuilder(2, alphabetSize);
-        edges.setEdge(0, 1, Set.of(letter));
+        edges.setEdge(0, 1, SegmentSet.thisElem(letter, alphabetSize));
         return new NFA(2, alphabetSize, 0,
                 Map.of(
                         0, StateTag.NOT_FINAL,
@@ -238,7 +239,11 @@ public class NFA {
             for (int j = 0; j < this.numberOfStates; j++) {
                 if (this.edges.edgeExists(i, j)) {
                     // noinspection OptionalGetWithoutIsPresent (because edgeExists == true guarantees it)
-                    edges.setEdge(i, j, new HashSet<>(this.edges.getEdgeMarker(i, j).get()));
+                    edges.setEdge(
+                            i, j,
+                            SegmentSet.fromSet(this.edges.getEdgeMarker(i, j).get(), this.alphabetSize),
+                            true
+                    );
                 }
             }
         }
@@ -250,13 +255,17 @@ public class NFA {
                     edges.setEdge(
                             i + this.numberOfStates,
                             j + this.numberOfStates,
-                            new HashSet<>(second.edges.getEdgeMarker(i, j).get()));
+                            SegmentSet.fromSet(second.edges.getEdgeMarker(i, j).get(), this.alphabetSize),
+                            true
+                    );
                 }
             }
         }
+
+        SegmentSet nothing = SegmentSet.nothing(this.alphabetSize);
         // linking old initial states with new (lambda-steps)
-        edges.setEdge(initialState, this.initialState, Set.of());
-        edges.setEdge(initialState, second.initialState + this.numberOfStates, Set.of());
+        edges.setEdge(initialState, this.initialState, nothing, true);
+        edges.setEdge(initialState, second.initialState + this.numberOfStates, nothing, true);
 
         return new NFA(numberOfStates, alphabetSize, initialState, labels, edges.build());
     }
@@ -280,7 +289,11 @@ public class NFA {
             for (int j = 0; j < this.numberOfStates; j++) {
                 if (this.edges.edgeExists(i, j)) {
                     //noinspection OptionalGetWithoutIsPresent
-                    edges.setEdge(i, j, new HashSet<>(this.edges.getEdgeMarker(i, j).get()));
+                    edges.setEdge(
+                            i, j,
+                            SegmentSet.fromSet(this.edges.getEdgeMarker(i, j).get(), this.alphabetSize),
+                            true
+                    );
                 }
             }
         }
@@ -292,15 +305,18 @@ public class NFA {
                     edges.setEdge(
                             i + this.numberOfStates,
                             j + this.numberOfStates,
-                            new HashSet<>(second.edges.getEdgeMarker(i, j).get()));
+                            SegmentSet.fromSet(second.edges.getEdgeMarker(i, j).get(), this.alphabetSize),
+                            true
+                    );
                 }
             }
         }
 
+        SegmentSet nothing = SegmentSet.nothing(this.alphabetSize);
         // linking this automaton's accepting states with second automaton's initial state (lambda-steps)
         for (int i = 0; i < this.labels.size(); i++) {
             if (StateTag.isFinal(this.labels.get(i))) {
-                edges.setEdge(i, second.initialState + this.numberOfStates, Set.of());
+                edges.setEdge(i, second.initialState + this.numberOfStates, nothing, true);
             }
         }
 
@@ -331,19 +347,24 @@ public class NFA {
         for (int i = 0; i < this.numberOfStates; i++) {
             for (int j = 0; j < this.numberOfStates; j++) {
                 if (this.edges.edgeExists(i, j)) {
-                    edges.setEdge(i, j, new HashSet<>(this.edges.getEdgeMarker(i, j).get()));
+                    edges.setEdge(
+                            i, j,
+                            SegmentSet.fromSet(this.edges.getEdgeMarker(i, j).get(), this.alphabetSize),
+                            true
+                    );
                 }
             }
         }
+        SegmentSet nothing = SegmentSet.nothing(this.alphabetSize);
         // adding lambda-step from new initial to old initial state
-        edges.setEdge(initialState, this.initialState, Set.of());
+        edges.setEdge(initialState, this.initialState, nothing);
 
         // linking this automaton's accepting states with new initial state (lambda-steps)
         // linking this automaton's new initial state with accepting states (lambda-steps)
         for (int i = 0; i < this.labels.size(); i++) {
             if (StateTag.isFinal(this.labels.get(i))) {
-                edges.setEdge(i, initialState, Set.of());
-                edges.setEdge(initialState, i, Set.of());
+                edges.setEdge(i, initialState, nothing, true);
+                edges.setEdge(initialState, i, nothing, true);
             }
         }
 
@@ -603,6 +624,8 @@ public class NFA {
 
         NFAStateGraphBuilder tempEdges = new NFAStateGraphBuilder(this.numberOfStates, alphabetSize); // has more entries!
 
+        SegmentSet nothing = SegmentSet.nothing(this.alphabetSize);
+
         // Edges
         {
             for (int i = 0; i < this.numberOfStates; i++) {
@@ -610,7 +633,11 @@ public class NFA {
                     // Adding neighbours
                     for (int j = 0; j < this.numberOfStates; j++) {
                         if (filteredStates[j] && this.edges.isNonTrivialEdge(i, j)) {
-                            tempEdges.setEdge(i, j, new HashSet<>(this.edges.getEdgeMarker(i, j).get()));
+                            tempEdges.setEdge(
+                                    i, j,
+                                    SegmentSet.fromSet(this.edges.getEdgeMarker(i, j).get(), this.alphabetSize),
+                                    true
+                            );
                         }
                     }
 
@@ -627,11 +654,11 @@ public class NFA {
                         for (int j = 0; j < this.numberOfStates; j++) {
                             if (this.edges.isNonTrivialEdge(curr, j)) {
                                 if (!tempEdges.edgeExists(i, j)) {
-                                    tempEdges.setEdge(i, j, new HashSet<>());
+                                    tempEdges.setEdge(i, j, nothing, true);
                                 }
                                 Set<Integer> newMarker = new HashSet<>(tempEdges.getEdgeMarker(i, j).get());
                                 newMarker.addAll(this.edges.getEdgeMarker(curr, j).get());
-                                tempEdges.setEdge(i, j, newMarker);
+                                tempEdges.setEdge(i, j, newMarker, true);
                             } else if (this.edges.isLambdaEdge(curr, j) && !visited[j]) {
                                 bfs.add(j);
                             }
@@ -666,7 +693,11 @@ public class NFA {
             for (int j = 0; j < numberOfStates; j++) {
                 int mappedJ = newStates.get(j);
                 if (tempEdges.edgeExists(mappedI, mappedJ)) {
-                    edges.setEdge(i, j, new HashSet<>(tempEdges.getEdgeMarker(mappedI, mappedJ).get()));
+                    edges.setEdge(
+                            i, j,
+                            SegmentSet.fromSet(tempEdges.getEdgeMarker(mappedI, mappedJ).get(), this.alphabetSize),
+                            true
+                    );
                 }
             }
         }
@@ -784,12 +815,14 @@ public class NFA {
         startTotal = Instant.now();
 
         EquivalenceMap emap;
+
+        System.out.println("States: " + this.numberOfStates);
         if (pivots.isEmpty()) {
             List<Integer> mentioned = mentioned(this);
             System.out.println("Mentioned :" + mentioned.size());
             emap = getCoarseSymbolClassMap(mentioned, this.alphabetSize);
         } else {
-            System.out.println("Pivots :" + pivots.size());
+            System.out.println("Pivots: " + pivots.size());
             emap = getCoarseSymbolClassMapRegexBased(pivots, this.alphabetSize);
         }
         System.out.println("Classes: " + emap.getEqClassDomain());
@@ -907,7 +940,6 @@ public class NFA {
         endTotal = Instant.now();
         totalTime = Duration.between(startTotal, endTotal).toMillis();
         System.out.println();
-        System.out.println("States: " + this.numberOfStates);
         System.out.println("DET: Total time taken: " + totalTime + "ms");
         System.out.println("DET: Closure time: " + closureTime + "ms");
         System.out.println("DET: Lambda closure time: " + lambdaClosureTime + "ms");
