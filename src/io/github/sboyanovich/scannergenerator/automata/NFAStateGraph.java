@@ -18,7 +18,7 @@ public final class NFAStateGraph extends AbstractNFAStateGraph {
                 Set<Integer> edge = edges.get(i).get(j);
                 if (edge != null) {
                     // defensive copy
-                    edge = new HashSet<>(edge);
+                    edge = SegmentSet.fromSet(edge, this.alphabetSize);
                 }
                 this.edges.get(i).add(
                         edge
