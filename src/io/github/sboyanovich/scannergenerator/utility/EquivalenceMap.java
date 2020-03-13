@@ -63,6 +63,22 @@ public class EquivalenceMap {
         return eqClassDomain;
     }
 
+    // useful for determinization
+    public List<Integer> getRepresents() {
+        List<Integer> result = new ArrayList<>();
+
+        for (int i = 0; i < eqClassDomain; i++) {
+            result.add(0);
+        }
+
+        for (int i = 0; i < domain; i++) {
+            int c = map[i];
+            result.set(c, i);
+        }
+
+        return result;
+    }
+
     public List<List<Integer>> getClasses() {
         List<List<Integer>> result = new ArrayList<>();
 
