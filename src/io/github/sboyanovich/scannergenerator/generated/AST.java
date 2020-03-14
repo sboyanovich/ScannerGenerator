@@ -337,9 +337,13 @@ public abstract class AST {
                 NFA result = aNFA.power(from);
 
                 if (to == -1) {
-                    result = result.concatenation(aNFA).iteration();
+                    result = result.concatenation(aNFA.iteration());
                 } else if (to > from) {
-                    result = result.concatenation(aNFA.power(to - from).optional());
+                    List<NFA> degrees = new ArrayList<>();
+                    for (int i = 0; i <= to - from; i++) {
+                        degrees.add(aNFA.power(i));
+                    }
+                    result = result.concatenation(NFA.unionAll(degrees));
                 }
                 return result;
             }
