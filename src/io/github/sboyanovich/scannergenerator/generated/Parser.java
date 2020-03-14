@@ -352,11 +352,14 @@ public class Parser {
                 result.a = lRegex;
                 return result;
             } else {
+                IntPair attribute = ((TokenWithAttribute<IntPair>) sym).getAttribute();
                 nextToken();
 
                 AST.Regex.Repetition result = new AST.Regex.Repetition();
                 result.number = getNodeName();
                 result.a = lRegex;
+                result.from = attribute.getFirst();
+                result.to = attribute.getSecond();
                 return result;
             }
         } else {
