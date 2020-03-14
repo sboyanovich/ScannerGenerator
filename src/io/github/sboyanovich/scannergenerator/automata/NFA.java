@@ -224,6 +224,10 @@ public class NFA {
     public static NFA unionAll(List<NFA> nfas) {
         // It is assumed all automatons are over the exactly same alphabet.
 
+        if (nfas.size() == 1) {
+            return nfas.get(0);
+        }
+
         int alphabetSize = nfas.get(0).alphabetSize;
         int numberOfStates = 1;
         for (NFA nfa : nfas) {
@@ -265,6 +269,11 @@ public class NFA {
 
     // assuming list is non empty
     public static NFA concatenationAll(List<NFA> nfas) {
+
+        if (nfas.size() == 1) {
+            return nfas.get(0);
+        }
+
         int alphabetSize = nfas.get(0).alphabetSize;
         int numberOfStates = 0;
         for (NFA nfa : nfas) {
@@ -379,7 +388,7 @@ public class NFA {
         int initialState = this.initialState;
 
         Map<Integer, StateTag> labels = new HashMap<>();
-        for (int state : this.labels.keySet()) {
+        for (int state : second.labels.keySet()) {
             labels.put(this.numberOfStates + state, second.labels.get(state));
         }
 
@@ -437,8 +446,6 @@ public class NFA {
         for (int state : this.labels.keySet()) {
             labels.put(state, this.labels.get(state));
         }
-
-        labels.put(initialState, StateTag.NOT_FINAL); // should fix NFATest1
 
         NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates, alphabetSize);
         // preserving edges from this automaton
