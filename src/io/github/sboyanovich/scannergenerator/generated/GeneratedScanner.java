@@ -26,22 +26,9 @@ public abstract class GeneratedScanner implements Iterator<Token> {
     private static final int NEWLINE = Utility.asCodePoint("\n");
     private static final int CARRET = Utility.asCodePoint("\r");
 
-    private Map<Mode, LexicalRecognizer> recognizers;
-    private Position currPos;
-    private Position start;
-    private Text inputText;
-    private Mode currentMode;
-    private int currState;
-    private boolean hasNext;
+    private static Map<Mode, LexicalRecognizer> recognizers;
 
-    public GeneratedScanner(String inputText) {
-        // General purpose initialization.
-        this.inputText = new Text(inputText);
-        this.currentMode = INITIAL;
-        this.currPos = new Position();
-        this.start = this.currPos;
-        this.hasNext = true;
-
+    static {
         // Building tag list for correct restoring of recognizers from files.
         List<StateTag> finalTags = new ArrayList<>();
         finalTags.add(SLC_REG);
@@ -84,22 +71,38 @@ public abstract class GeneratedScanner implements Iterator<Token> {
         finalTags.add(WHITESPACE_IN_REGEX);
 
         // Restoring recognizers from files.
-        this.recognizers = new HashMap<>();
-        this.recognizers.put(REGEX, new LexicalRecognizer(
+        recognizers = new HashMap<>();
+        recognizers.put(REGEX, new LexicalRecognizer(
                 ClassLoader.getSystemClassLoader()
                         .getResourceAsStream("generated/recognizers/REGEX.reco"), finalTags));
-        this.recognizers.put(INITIAL, new LexicalRecognizer(
+        recognizers.put(INITIAL, new LexicalRecognizer(
                 ClassLoader.getSystemClassLoader()
                         .getResourceAsStream("generated/recognizers/INITIAL.reco"), finalTags));
-        this.recognizers.put(SL_COMMENT, new LexicalRecognizer(
+        recognizers.put(SL_COMMENT, new LexicalRecognizer(
                 ClassLoader.getSystemClassLoader()
                         .getResourceAsStream("generated/recognizers/SL_COMMENT.reco"), finalTags));
-        this.recognizers.put(CHAR_CLASS, new LexicalRecognizer(
+        recognizers.put(CHAR_CLASS, new LexicalRecognizer(
                 ClassLoader.getSystemClassLoader()
                         .getResourceAsStream("generated/recognizers/CHAR_CLASS.reco"), finalTags));
-        this.recognizers.put(COMMENT, new LexicalRecognizer(
+        recognizers.put(COMMENT, new LexicalRecognizer(
                 ClassLoader.getSystemClassLoader()
                         .getResourceAsStream("generated/recognizers/COMMENT.reco"), finalTags));
+    }
+
+    private Position currPos;
+    private Position start;
+    private Text inputText;
+    private Mode currentMode;
+    private int currState;
+    private boolean hasNext;
+
+    public GeneratedScanner(String inputText) {
+        // General purpose initialization.
+        this.inputText = new Text(inputText);
+        this.currentMode = INITIAL;
+        this.currPos = new Position();
+        this.start = this.currPos;
+        this.hasNext = true;
 
         // just in case
         resetCurrState();
@@ -151,17 +154,17 @@ public abstract class GeneratedScanner implements Iterator<Token> {
     private boolean atPotentialTokenStart() {
         int currCodePoint = getCurrentCodePoint();
         // assuming general use case that all token starts are recognized by default mode
-        LexicalRecognizer recognizer = this.recognizers.get(INITIAL);
+        LexicalRecognizer recognizer = recognizers.get(INITIAL);
         int nextState = recognizer.transition(recognizer.getInitialState(), currCodePoint);
         return nextState != LexicalRecognizer.DEAD_END_STATE;
     }
 
     private LexicalRecognizer getCurrentRecognizer() {
-        return this.recognizers.get(this.currentMode);
+        return recognizers.get(this.currentMode);
     }
 
     private boolean isFinal(int currState) {
-        return StateTag.isFinal(this.recognizers.get(this.currentMode).getStateTag(currState));
+        return StateTag.isFinal(recognizers.get(this.currentMode).getStateTag(currState));
     }
 
     @Override
@@ -174,7 +177,7 @@ public abstract class GeneratedScanner implements Iterator<Token> {
         return nextToken();
     }
 
-    public Token nextToken() {
+    private Token nextToken() {
         resetCurrState();
         setStartToCurrentPosition();
 
