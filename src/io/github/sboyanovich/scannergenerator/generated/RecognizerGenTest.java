@@ -319,8 +319,35 @@ public class RecognizerGenTest {
                     .append("    private static final int NEWLINE = Utility.asCodePoint(\"\\n\");\n" +
                             "    private static final int CARRET = Utility.asCodePoint(\"\\r\");\n" +
                             "\n" +
-                            "    private Map<Mode, LexicalRecognizer> recognizers;\n" +
-                            "    private Position currPos;\n" +
+                            "    private static Map<Mode, LexicalRecognizer> recognizers;\n\n" +
+                            "    static {\n");
+            scannerCode.append(
+                    "        // Building tag list for correct restoring of recognizers from files.\n" +
+                            "        List<StateTag> finalTags = new ArrayList<>();\n"
+            );
+            for (StateTag tag : priorityList) {
+                scannerCode
+                        .append(INDENT_4)
+                        .append(INDENT_4)
+                        .append("finalTags.add(").append(tag).append(");\n");
+            }
+            scannerCode.append("\n" +
+                    "        // Restoring recognizers from files.\n" +
+                    "        recognizers = new HashMap<>();\n");
+            for (String modeName : modes.keySet()) {
+                String fileName = prefix + recognizersDirName + "/" + modeName + ".reco";
+                scannerCode
+                        .append(INDENT_4)
+                        .append(INDENT_4)
+                        .append("recognizers.put(").append(modeName).append(", ")
+                        .append("new LexicalRecognizer(\"")
+                        .append(fileName)
+                        .append("\", finalTags));\n");
+            }
+            scannerCode.append(INDENT_4).append("}\n\n");
+
+            scannerCode.append(
+                    "    private Position currPos;\n" +
                             "    private Position start;\n" +
                             "    private Text inputText;\n" +
                             "    private Mode currentMode;\n" +
@@ -335,30 +362,9 @@ public class RecognizerGenTest {
                             "        this.currentMode = INITIAL;\n" +
                             "        this.currPos = new Position();\n" +
                             "        this.start = this.currPos;\n" +
-                            "        this.hasNext = true;\n" +
-                            "\n" +
-                            "        // Building tag list for correct restoring of recognizers from files.\n" +
-                            "        List<StateTag> finalTags = new ArrayList<>();\n");
+                            "        this.hasNext = true;\n"
+                    );
 
-            for (StateTag tag : priorityList) {
-                scannerCode
-                        .append(INDENT_4)
-                        .append(INDENT_4)
-                        .append("finalTags.add(").append(tag).append(");\n");
-            }
-            scannerCode.append("\n" +
-                    "        // Restoring recognizers from files.\n" +
-                    "        this.recognizers = new HashMap<>();\n");
-            for (String modeName : modes.keySet()) {
-                String fileName = prefix + recognizersDirName + "/" + modeName + ".reco";
-                scannerCode
-                        .append(INDENT_4)
-                        .append(INDENT_4)
-                        .append("this.recognizers.put(").append(modeName).append(", ")
-                        .append("new LexicalRecognizer(\"")
-                        .append(fileName)
-                        .append("\", finalTags));\n");
-            }
             scannerCode.append("\n" +
                     "        // just in case\n" +
                     "        resetCurrState();\n" +
@@ -410,17 +416,17 @@ public class RecognizerGenTest {
                     "    private boolean atPotentialTokenStart() {\n" +
                     "        int currCodePoint = getCurrentCodePoint();\n" +
                     "        // assuming general use case that all token starts are recognized by default mode\n" +
-                    "        LexicalRecognizer recognizer = this.recognizers.get(INITIAL);\n" +
+                    "        LexicalRecognizer recognizer = recognizers.get(INITIAL);\n" +
                     "        int nextState = recognizer.transition(recognizer.getInitialState(), currCodePoint);\n" +
                     "        return nextState != LexicalRecognizer.DEAD_END_STATE;\n" +
                     "    }\n" +
                     "\n" +
                     "    private LexicalRecognizer getCurrentRecognizer() {\n" +
-                    "        return this.recognizers.get(this.currentMode);\n" +
+                    "        return recognizers.get(this.currentMode);\n" +
                     "    }\n" +
                     "\n" +
                     "    private boolean isFinal(int currState) {\n" +
-                    "        return StateTag.isFinal(this.recognizers.get(this.currentMode).getStateTag(currState));\n" +
+                    "        return StateTag.isFinal(recognizers.get(this.currentMode).getStateTag(currState));\n" +
                     "    }\n" +
                     "\n" +
                     "    @Override\n" +
@@ -434,7 +440,7 @@ public class RecognizerGenTest {
                     "    }\n"
             );
             scannerCode.append("\n" +
-                    "    public Token nextToken() {\n" +
+                    "    private Token nextToken() {\n" +
                     "        resetCurrState();\n" +
                     "        setStartToCurrentPosition();\n" +
                     "\n" +
