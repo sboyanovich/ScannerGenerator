@@ -387,7 +387,11 @@ public class RecognizerGenTest {
                     "        this.start = this.currPos;\n" +
                     "    }\n" +
                     "\n" +
-                    "    private void advanceCurrentPosition() {\n" +
+                    "    protected void setCurrentPositionToStart() {\n" +
+                    "        this.currPos = this.start;\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    protected void advanceCurrentPosition() {\n" +
                     "        int index = this.currPos.getIndex();\n" +
                     "        int codePoint = this.inputText.codePointAt(index);\n" +
                     "        int nextCodePoint = this.inputText.codePointAt(index + 1);\n" +
@@ -408,12 +412,12 @@ public class RecognizerGenTest {
                     "        return Utility.getTextFragmentAsString(this.inputText, span);\n" +
                     "    }\n" +
                     "\n" +
-                    "    private int getCurrentCodePoint() {\n" +
+                    "    protected int getCurrentCodePoint() {\n" +
                     "        int cp = this.currPos.getIndex();\n" +
                     "        return this.inputText.codePointAt(cp);\n" +
                     "    }\n" +
                     "\n" +
-                    "    private boolean atPotentialTokenStart() {\n" +
+                    "    protected boolean atPotentialPatternStart() {\n" +
                     "        int currCodePoint = getCurrentCodePoint();\n" +
                     "        // assuming general use case that all token starts are recognized by default mode\n" +
                     "        LexicalRecognizer recognizer = recognizers.get(INITIAL);\n" +
@@ -477,17 +481,14 @@ public class RecognizerGenTest {
                     "                    // we've found an error\n" +
                     "\n" +
                     "                    /// ERROR HANDLING CODE GOES HERE!\n" +
-                    "                    handleError(currCodePoint, this.currentMode, this.currPos);\n" +
+                    "                    Optional<Token> optToken = handleError(this.inputText, this.currentMode, this.start, this.currPos);\n" +
                     "\n" +
-                    "                    // recovery\n" +
-                    "                    // symbol we've stumbled upon might be the beginning of a new token\n" +
-                    "                    while ((getCurrentCodePoint() != Text.EOI) && !atPotentialTokenStart()) {\n" +
-                    "                        advanceCurrentPosition();\n" +
+                    "                    if (optToken.isPresent()) {\n" +
+                    "                        return optToken.get();\n" +
+                    "                    } else {\n" +
+                    "                        resetCurrState();\n" +
                     "                    }\n" +
-                    "                    switchToMode(INITIAL); // resetting to default mode after error recovery\n" +
-                    "                    Fragment invalidFragment = new Fragment(this.start, this.currPos);\n" +
                     "\n" +
-                    "                    return Domain.ERROR.createToken(this.inputText, invalidFragment);\n" +
                     "                } else {\n" +
                     "                    if (lastFinalState.isPresent()) {\n" +
                     "                        this.currPos = lastInFinal;\n" +
@@ -570,8 +571,24 @@ public class RecognizerGenTest {
                     "    }\n\n"
             );
 
-            scannerCode.append("    protected abstract void " +
-                    "handleError(int codePoint, Mode mode, Position errorAt);\n\n");
+            scannerCode.append(
+                    "    /// Default implementation, to ensure scanner doesn't get stuck\n" +
+                    "    protected Optional<Token> handleError(Text text, Mode mode, Position start, Position follow) {\n" +
+                    "        // recovery\n" +
+                    "        // discard symbols from input until we find a potential pattern start\n" +
+                    "        setCurrentPositionToStart();\n" +
+                    "        advanceCurrentPosition();\n" +
+                    "\n" +
+                    "        while ((getCurrentCodePoint() != Text.EOI) && !atPotentialPatternStart()) {\n" +
+                    "            advanceCurrentPosition();\n" +
+                    "        }\n" +
+                    "        switchToMode(INITIAL); // resetting to default mode after error recovery\n" +
+                    "        Fragment invalidFragment = new Fragment(this.start, this.currPos);\n" +
+                    "\n" +
+                    "        /// HINT: If you wish to do the same, but not return any token, remember to call setStartToCurrentPosition()\n" +
+                    "\n" +
+                    "        return Optional.of(Domain.ERROR.createToken(this.inputText, invalidFragment));\n" +
+                    "    }\n\n");
 
             for (String actionName : actionNames) {
                 scannerCode.append(generateActionSignature(actionName));
