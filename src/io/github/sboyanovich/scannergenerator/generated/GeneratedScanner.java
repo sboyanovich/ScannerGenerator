@@ -125,7 +125,11 @@ public abstract class GeneratedScanner implements Iterator<Token> {
         this.start = this.currPos;
     }
 
-    private void advanceCurrentPosition() {
+    protected void setCurrentPositionToStart() {
+        this.currPos = this.start;
+    }
+
+    protected void advanceCurrentPosition() {
         int index = this.currPos.getIndex();
         int codePoint = this.inputText.codePointAt(index);
         int nextCodePoint = this.inputText.codePointAt(index + 1);
@@ -146,12 +150,12 @@ public abstract class GeneratedScanner implements Iterator<Token> {
         return Utility.getTextFragmentAsString(this.inputText, span);
     }
 
-    private int getCurrentCodePoint() {
+    protected int getCurrentCodePoint() {
         int cp = this.currPos.getIndex();
         return this.inputText.codePointAt(cp);
     }
 
-    private boolean atPotentialTokenStart() {
+    protected boolean atPotentialPatternStart() {
         int currCodePoint = getCurrentCodePoint();
         // assuming general use case that all token starts are recognized by default mode
         LexicalRecognizer recognizer = recognizers.get(INITIAL);
@@ -214,17 +218,14 @@ public abstract class GeneratedScanner implements Iterator<Token> {
                     // we've found an error
 
                     /// ERROR HANDLING CODE GOES HERE!
-                    handleError(currCodePoint, this.currentMode, this.currPos);
+                    Optional<Token> optToken = handleError(this.inputText, this.currentMode, this.start, this.currPos);
 
-                    // recovery
-                    // symbol we've stumbled upon might be the beginning of a new token
-                    while ((getCurrentCodePoint() != Text.EOI) && !atPotentialTokenStart()) {
-                        advanceCurrentPosition();
+                    if (optToken.isPresent()) {
+                        return optToken.get();
+                    } else {
+                        resetCurrState();
                     }
-                    switchToMode(INITIAL); // resetting to default mode after error recovery
-                    Fragment invalidFragment = new Fragment(this.start, this.currPos);
 
-                    return Domain.ERROR.createToken(this.inputText, invalidFragment);
                 } else {
                     if (lastFinalState.isPresent()) {
                         this.currPos = lastInFinal;
@@ -458,7 +459,23 @@ public abstract class GeneratedScanner implements Iterator<Token> {
         }
     }
 
-    protected abstract void handleError(int codePoint, Mode mode, Position errorAt);
+    /// Default implementation, to ensure scanner doesn't get stuck
+    protected Optional<Token> handleError(Text text, Mode mode, Position start, Position follow) {
+        // recovery
+        // discard symbols from input until we find a potential pattern start
+        setCurrentPositionToStart();
+        advanceCurrentPosition();
+
+        while ((getCurrentCodePoint() != Text.EOI) && !atPotentialPatternStart()) {
+            advanceCurrentPosition();
+        }
+        switchToMode(INITIAL); // resetting to default mode after error recovery
+        Fragment invalidFragment = new Fragment(this.start, this.currPos);
+
+        /// HINT: If you wish to do the same, but not return any token, remember to call setStartToCurrentPosition()
+
+        return Optional.of(Domain.ERROR.createToken(this.inputText, invalidFragment));
+    }
 
     protected abstract Optional<Token> handleWhitespaceInRegex(Text text, Fragment fragment);
 
