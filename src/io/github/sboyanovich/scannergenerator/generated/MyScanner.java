@@ -22,8 +22,11 @@ public class MyScanner extends GeneratedScanner {
     }
 
     @Override
-    protected void handleError(int codePoint, Mode mode, Position errorAt) {
-        this.compiler.addError(errorAt, "Unexpected symbol encountered: " + codePoint);
+    protected Optional<Token> handleError(Text text, Mode mode, Position start, Position follow) {
+        Optional<Token> result = super.handleError(text, mode, start, follow);
+        int codePoint = text.codePointAt(follow.getIndex());
+        this.compiler.addError(follow, "Unexpected symbol encountered: " + codePoint);
+        return result;
     }
 
     @Override
@@ -61,4 +64,6 @@ public class MyScanner extends GeneratedScanner {
         setStartToCurrentPosition();
         return Optional.empty();
     }
+
+
 }
