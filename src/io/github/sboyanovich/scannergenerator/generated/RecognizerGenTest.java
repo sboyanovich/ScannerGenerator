@@ -374,6 +374,14 @@ public class RecognizerGenTest {
                     "        return inputText.toString();\n" +
                     "    }\n" +
                     "\n" +
+                    "    protected Position getStartPosition() {\n" +
+                    "        return this.start;\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    protected Position getCurrentPosition() {\n" +
+                    "        return this.currPos;\n" +
+                    "    }\n" +
+                    "\n" +
                     "    protected void resetCurrState() {\n" +
                     "        this.currState = getCurrentRecognizer().getInitialState();\n" +
                     "    }\n" +
@@ -573,22 +581,22 @@ public class RecognizerGenTest {
 
             scannerCode.append(
                     "    /// Default implementation, to ensure scanner doesn't get stuck\n" +
-                    "    protected Optional<Token> handleError(Text text, Mode mode, Position start, Position follow) {\n" +
-                    "        // recovery\n" +
-                    "        // discard symbols from input until we find a potential pattern start\n" +
-                    "        setCurrentPositionToStart();\n" +
-                    "        advanceCurrentPosition();\n" +
-                    "\n" +
-                    "        while ((getCurrentCodePoint() != Text.EOI) && !atPotentialPatternStart()) {\n" +
-                    "            advanceCurrentPosition();\n" +
-                    "        }\n" +
-                    "        switchToMode(INITIAL); // resetting to default mode after error recovery\n" +
-                    "        Fragment invalidFragment = new Fragment(this.start, this.currPos);\n" +
-                    "\n" +
-                    "        /// HINT: If you wish to do the same, but not return any token, remember to call setStartToCurrentPosition()\n" +
-                    "\n" +
-                    "        return Optional.of(Domain.ERROR.createToken(this.inputText, invalidFragment));\n" +
-                    "    }\n\n");
+                            "    protected Optional<Token> handleError(Text text, Mode mode, Position start, Position follow) {\n" +
+                            "        // recovery\n" +
+                            "        // discard symbols from input until we find a potential pattern start\n" +
+                            "        setCurrentPositionToStart();\n" +
+                            "        advanceCurrentPosition();\n" +
+                            "\n" +
+                            "        while ((getCurrentCodePoint() != Text.EOI) && !atPotentialPatternStart()) {\n" +
+                            "            advanceCurrentPosition();\n" +
+                            "        }\n" +
+                            "        switchToMode(INITIAL); // resetting to default mode after error recovery\n" +
+                            "        Fragment invalidFragment = new Fragment(this.start, this.currPos);\n" +
+                            "\n" +
+                            "        /// HINT: If you wish to do the same, but not return any token, remember to call setStartToCurrentPosition()\n" +
+                            "\n" +
+                            "        return Optional.of(Domain.ERROR.createToken(this.inputText, invalidFragment));\n" +
+                            "    }\n\n");
 
             for (String actionName : actionNames) {
                 scannerCode.append(generateActionSignature(actionName));

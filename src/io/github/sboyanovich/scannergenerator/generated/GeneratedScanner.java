@@ -112,6 +112,14 @@ public abstract class GeneratedScanner implements Iterator<Token> {
         return inputText.toString();
     }
 
+    protected Position getStartPosition() {
+        return this.start;
+    }
+
+    protected Position getCurrentPosition() {
+        return this.currPos;
+    }
+
     protected void resetCurrState() {
         this.currState = getCurrentRecognizer().getInitialState();
     }
