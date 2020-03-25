@@ -19,10 +19,13 @@ public class RecognizerGenTest {
             timeComputingPivots, timeDeterminizing, timeCompressingAndMinimizing;
     public static long timeBuildingCharClasses = 0;
 
+    static final String APP_NAME = "xscan";
+    static final String USAGE_HINT =
+            "USAGE: " + APP_NAME + " <input_file> [-r] [-d] [-p <package_name>]";
+
     public static void main(String[] args) {
-        String appName = "xscan";
         if (args.length < 1) {
-            System.err.println("USAGE: " + appName + " <input_file> [-d] [-p <package_name>]");
+            System.err.println(USAGE_HINT);
             System.exit(1);
         }
 
@@ -36,6 +39,7 @@ public class RecognizerGenTest {
         String simpleDomainsEnumName = "SimpleDomains";
         String scannerClassName = "GeneratedScanner";
         boolean dumpDotDescriptions = false;
+        boolean readRecognizersFromResources = false;
 
         boolean expectPackageName = false;
         for (int i = 1; i < args.length; i++) {
@@ -44,19 +48,25 @@ public class RecognizerGenTest {
                 packageName = arg;
                 expectPackageName = false;
             } else {
-                if (arg.equals("-d")) {
-                    dumpDotDescriptions = true;
-                } else if (arg.equals("-p")) {
-                    expectPackageName = true;
-                    if (i + 1 >= args.length) {
-                        System.err.println("Package name parameter must be supplied!");
-                        System.err.println("USAGE: " + appName + " <input_file> [-d] [-p <package_name>]");
+                switch (arg) {
+                    case "-r":
+                        readRecognizersFromResources = true;
+                        break;
+                    case "-d":
+                        dumpDotDescriptions = true;
+                        break;
+                    case "-p":
+                        expectPackageName = true;
+                        if (i + 1 >= args.length) {
+                            System.err.println("Package name parameter must be supplied!");
+                            System.err.println(USAGE_HINT);
+                            System.exit(1);
+                        }
+                        break;
+                    default:
+                        System.err.println("Unrecognized arg: " + arg);
+                        System.err.println(USAGE_HINT);
                         System.exit(1);
-                    }
-                } else {
-                    System.err.println("Unrecognized arg: " + arg);
-                    System.err.println("USAGE: " + appName + " <input_file> [-d]");
-                    System.exit(1);
                 }
             }
         }
@@ -334,15 +344,34 @@ public class RecognizerGenTest {
             scannerCode.append("\n" +
                     "        // Restoring recognizers from files.\n" +
                     "        recognizers = new HashMap<>();\n");
-            for (String modeName : modes.keySet()) {
-                String fileName = prefix + recognizersDirName + "/" + modeName + ".reco";
-                scannerCode
-                        .append(INDENT_4)
-                        .append(INDENT_4)
-                        .append("recognizers.put(").append(modeName).append(", ")
-                        .append("new LexicalRecognizer(\"")
-                        .append(fileName)
-                        .append("\", finalTags));\n");
+            if (readRecognizersFromResources) {
+                for (String modeName : modes.keySet()) {
+                    String fileName = prefix + recognizersDirName + "/" + modeName + ".reco";
+                    scannerCode
+                            .append(INDENT_4)
+                            .append(INDENT_4)
+                            .append("recognizers.put(").append(modeName).append(", ")
+                            .append("new LexicalRecognizer(\n")
+                            .append(INDENT_4).append(INDENT_4).append(INDENT_4).append(INDENT_4)
+                            .append("ClassLoader.getSystemClassLoader()\n")
+                            .append(INDENT_4).append(INDENT_4).append(INDENT_4).append(INDENT_4)
+                            .append(INDENT_4).append(INDENT_4)
+                            .append(".getResourceAsStream(")
+                            .append("\"")
+                            .append(fileName)
+                            .append("\"), finalTags));\n");
+                }
+            } else {
+                for (String modeName : modes.keySet()) {
+                    String fileName = prefix + recognizersDirName + "/" + modeName + ".reco";
+                    scannerCode
+                            .append(INDENT_4)
+                            .append(INDENT_4)
+                            .append("recognizers.put(").append(modeName).append(", ")
+                            .append("new LexicalRecognizer(\"")
+                            .append(fileName)
+                            .append("\", finalTags));\n");
+                }
             }
             scannerCode.append(INDENT_4).append("}\n\n");
 
