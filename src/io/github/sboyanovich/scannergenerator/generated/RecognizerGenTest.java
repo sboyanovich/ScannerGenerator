@@ -20,7 +20,7 @@ public class RecognizerGenTest {
     public static long timeBuildingCharClasses = 0;
 
     public static void main(String[] args) {
-        String appName = "xgen";
+        String appName = "xscan";
         if (args.length < 1) {
             System.err.println("USAGE: " + appName + " <input_file> [-d] [-p <package_name>]");
             System.exit(1);
