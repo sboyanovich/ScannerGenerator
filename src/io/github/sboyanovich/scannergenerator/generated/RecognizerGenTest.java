@@ -301,49 +301,49 @@ public class RecognizerGenTest {
             }
 
             StringBuilder scannerCode = new StringBuilder();
-            scannerCode.append("package ").append(packageName).append(";\n\n")
-                    .append("import io.github.sboyanovich.scannergenerator.automata.StateTag;\n" +
-                            "import io.github.sboyanovich.scannergenerator.scanner.Fragment;\n" +
-                            "import io.github.sboyanovich.scannergenerator.scanner.LexicalRecognizer;\n" +
-                            "import io.github.sboyanovich.scannergenerator.scanner.Position;\n" +
-                            "import io.github.sboyanovich.scannergenerator.scanner.Text;\n" +
-                            "import io.github.sboyanovich.scannergenerator.scanner.token.Domain;\n" +
-                            "import io.github.sboyanovich.scannergenerator.scanner.token.Token;\n" +
-                            "import io.github.sboyanovich.scannergenerator.utility.Utility;\n" +
-                            "\n" +
-                            "import java.util.*;\n\n")
+            scannerCode.append("package ").append(packageName).append(";\r\n\r\n")
+                    .append("import io.github.sboyanovich.scannergenerator.automata.StateTag;\r\n" +
+                            "import io.github.sboyanovich.scannergenerator.scanner.Fragment;\r\n" +
+                            "import io.github.sboyanovich.scannergenerator.scanner.LexicalRecognizer;\r\n" +
+                            "import io.github.sboyanovich.scannergenerator.scanner.Position;\r\n" +
+                            "import io.github.sboyanovich.scannergenerator.scanner.Text;\r\n" +
+                            "import io.github.sboyanovich.scannergenerator.scanner.token.Domain;\r\n" +
+                            "import io.github.sboyanovich.scannergenerator.scanner.token.Token;\r\n" +
+                            "import io.github.sboyanovich.scannergenerator.utility.Utility;\r\n" +
+                            "\r\n" +
+                            "import java.util.*;\r\n\r\n")
                     .append("import static ").append(packageName).append(".").append(scannerClassName)
-                    .append(".Mode.*;\n")
+                    .append(".Mode.*;\r\n")
                     .append("import static ").append(packageName).append(".").append(stateTagsEnumName)
-                    .append(".*;\n\n")
+                    .append(".*;\r\n\r\n")
                     .append("public abstract class ").append(scannerClassName)
-                    .append(" implements Iterator<Token> {\n    protected enum Mode {\n");
+                    .append(" implements Iterator<Token> {\r\n    protected enum Mode {\r\n");
 
             final String INDENT_4 = "    ";
 
             scannerCode.append(INDENT_4).append(INDENT_4).append("INITIAL");
             for (AST.Identifier mode : spec.modes.modeNames) {
-                scannerCode.append(",\n").append(INDENT_4).append(INDENT_4).append(mode.identifier);
+                scannerCode.append(",\r\n").append(INDENT_4).append(INDENT_4).append(mode.identifier);
             }
-            scannerCode.append("\n").append(INDENT_4).append("}\n\n")
-                    .append("    private static final int NEWLINE = Utility.asCodePoint(\"\\n\");\n" +
-                            "    private static final int CARRET = Utility.asCodePoint(\"\\r\");\n" +
-                            "\n" +
-                            "    private static Map<Mode, LexicalRecognizer> recognizers;\n\n" +
-                            "    static {\n");
+            scannerCode.append("\r\n").append(INDENT_4).append("}\r\n\r\n")
+                    .append("    private static final int NEWLINE = Utility.asCodePoint(\"\\n\");\r\n" +
+                            "    private static final int CARRET = Utility.asCodePoint(\"\\r\");\r\n" +
+                            "\r\n" +
+                            "    private static Map<Mode, LexicalRecognizer> recognizers;\r\n\r\n" +
+                            "    static {\r\n");
             scannerCode.append(
-                    "        // Building tag list for correct restoring of recognizers from files.\n" +
-                            "        List<StateTag> finalTags = new ArrayList<>();\n"
+                    "        // Building tag list for correct restoring of recognizers from files.\r\n" +
+                            "        List<StateTag> finalTags = new ArrayList<>();\r\n"
             );
             for (StateTag tag : priorityList) {
                 scannerCode
                         .append(INDENT_4)
                         .append(INDENT_4)
-                        .append("finalTags.add(").append(tag).append(");\n");
+                        .append("finalTags.add(").append(tag).append(");\r\n");
             }
-            scannerCode.append("\n" +
-                    "        // Restoring recognizers from files.\n" +
-                    "        recognizers = new HashMap<>();\n");
+            scannerCode.append("\r\n" +
+                    "        // Restoring recognizers from files.\r\n" +
+                    "        recognizers = new HashMap<>();\r\n");
             if (readRecognizersFromResources) {
                 for (String modeName : modes.keySet()) {
                     String fileName = prefix + recognizersDirName + "/" + modeName + ".reco";
@@ -351,15 +351,15 @@ public class RecognizerGenTest {
                             .append(INDENT_4)
                             .append(INDENT_4)
                             .append("recognizers.put(").append(modeName).append(", ")
-                            .append("new LexicalRecognizer(\n")
+                            .append("new LexicalRecognizer(\r\n")
                             .append(INDENT_4).append(INDENT_4).append(INDENT_4).append(INDENT_4)
-                            .append("ClassLoader.getSystemClassLoader()\n")
+                            .append("ClassLoader.getSystemClassLoader()\r\n")
                             .append(INDENT_4).append(INDENT_4).append(INDENT_4).append(INDENT_4)
                             .append(INDENT_4).append(INDENT_4)
                             .append(".getResourceAsStream(")
                             .append("\"")
                             .append(fileName)
-                            .append("\"), finalTags));\n");
+                            .append("\"), finalTags));\r\n");
                 }
             } else {
                 for (String modeName : modes.keySet()) {
@@ -370,187 +370,185 @@ public class RecognizerGenTest {
                             .append("recognizers.put(").append(modeName).append(", ")
                             .append("new LexicalRecognizer(\"")
                             .append(fileName)
-                            .append("\", finalTags));\n");
+                            .append("\", finalTags));\r\n");
                 }
             }
-            scannerCode.append(INDENT_4).append("}\n\n");
+            scannerCode.append(INDENT_4).append("}\r\n\r\n");
 
             scannerCode.append(
-                    "    private Position currPos;\n" +
-                            "    private Position start;\n" +
-                            "    private Text inputText;\n" +
-                            "    private Mode currentMode;\n" +
-                            "    private int currState;\n" +
-                            "    private boolean hasNext;\n" +
-                            "\n" +
+                    "    private Position currPos;\r\n" +
+                            "    private Position start;\r\n" +
+                            "    private Text inputText;\r\n" +
+                            "    private Mode currentMode;\r\n" +
+                            "    private int currState;\r\n" +
+                            "    private boolean hasNext;\r\n" +
+                            "\r\n" +
                             "    public ")
                     .append(scannerClassName)
-                    .append("(String inputText) {\n" +
-                            "        // General purpose initialization.\n" +
-                            "        this.inputText = new Text(inputText);\n" +
-                            "        this.currentMode = INITIAL;\n" +
-                            "        this.currPos = new Position();\n" +
-                            "        this.start = this.currPos;\n" +
-                            "        this.hasNext = true;\n"
+                    .append("(String inputText) {\r\n" +
+                            "        // General purpose initialization.\r\n" +
+                            "        this.inputText = new Text(inputText);\r\n" +
+                            "        this.currentMode = INITIAL;\r\n" +
+                            "        this.currPos = new Position();\r\n" +
+                            "        this.start = this.currPos;\r\n" +
+                            "        this.hasNext = true;\r\n"
                     );
 
-            scannerCode.append("\n" +
-                    "        // just in case\n" +
-                    "        resetCurrState();\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    public String getInputText() {\n" +
-                    "        return inputText.toString();\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    protected Position getStartPosition() {\n" +
-                    "        return this.start;\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    protected Position getCurrentPosition() {\n" +
-                    "        return this.currPos;\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    protected void resetCurrState() {\n" +
-                    "        this.currState = getCurrentRecognizer().getInitialState();\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    protected void switchToMode(Mode mode) {\n" +
-                    "        this.currentMode = mode;\n" +
-                    "        resetCurrState();\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    protected void setStartToCurrentPosition() {\n" +
-                    "        this.start = this.currPos;\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    protected void setCurrentPositionToStart() {\n" +
-                    "        this.currPos = this.start;\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    protected void advanceCurrentPosition() {\n" +
-                    "        int index = this.currPos.getIndex();\n" +
-                    "        int codePoint = this.inputText.codePointAt(index);\n" +
-                    "        int nextCodePoint = this.inputText.codePointAt(index + 1);\n" +
-                    "\n" +
-                    "        if (codePoint != Text.EOI) {\n" +
-                    "            int line = this.currPos.getLine();\n" +
-                    "            // CARRET not followed by NEWLINE will also count as line break\n" +
-                    "            if ((codePoint == NEWLINE) || ((codePoint == CARRET) && (nextCodePoint != NEWLINE))) {\n" +
-                    "                this.currPos = new Position(line + 1, 1, index + 1);\n" +
-                    "            } else {\n" +
-                    "                int pos = this.currPos.getPos();\n" +
-                    "                this.currPos = new Position(line, pos + 1, index + 1);\n" +
-                    "            }\n" +
-                    "        }\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    private String getTextFragment(Fragment span) {\n" +
-                    "        return Utility.getTextFragmentAsString(this.inputText, span);\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    protected int getCurrentCodePoint() {\n" +
-                    "        int cp = this.currPos.getIndex();\n" +
-                    "        return this.inputText.codePointAt(cp);\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    protected boolean atPotentialPatternStart() {\n" +
-                    "        int currCodePoint = getCurrentCodePoint();\n" +
-                    "        // assuming general use case that all token starts are recognized by default mode\n" +
-                    "        LexicalRecognizer recognizer = recognizers.get(INITIAL);\n" +
-                    "        int nextState = recognizer.transition(recognizer.getInitialState(), currCodePoint);\n" +
-                    "        return nextState != LexicalRecognizer.DEAD_END_STATE;\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    private LexicalRecognizer getCurrentRecognizer() {\n" +
-                    "        return recognizers.get(this.currentMode);\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    private boolean isFinal(int currState) {\n" +
-                    "        return StateTag.isFinal(recognizers.get(this.currentMode).getStateTag(currState));\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    @Override\n" +
-                    "    final public boolean hasNext() {\n" +
-                    "        return this.hasNext;\n" +
-                    "    }\n" +
-                    "\n" +
-                    "    @Override\n" +
-                    "    final public Token next() {\n" +
-                    "        return nextToken();\n" +
-                    "    }\n"
+            scannerCode.append("\r\n" +
+                    "        // just in case\r\n" +
+                    "        resetCurrState();\r\n" +
+                    "    }\r\n" +
+                    "\r\n" +
+                    "    public String getInputText() {\r\n" +
+                    "        return inputText.toString();\r\n" +
+                    "    }\r\n" +
+                    "\r\n" +
+                    "    protected Position getStartPosition() {\r\n" +
+                    "        return this.start;\r\n" +
+                    "    }\r\n" +
+                    "\r\n" +
+                    "    protected Position getCurrentPosition() {\r\n" +
+                    "        return this.currPos;\r\n" +
+                    "    }\r\n" +
+                    "\r\n" +
+                    "    protected void resetCurrState() {\r\n" +
+                    "        this.currState = getCurrentRecognizer().getInitialState();\r\n" +
+                    "    }\r\n" +
+                    "\r\n" +
+                    "    protected void switchToMode(Mode mode) {\r\n" +
+                    "        this.currentMode = mode;\r\n" +
+                    "        resetCurrState();\r\n" +
+                    "    }\r\n" +
+                    "\r\n" +
+                    "    protected void setStartToCurrentPosition() {\r\n" +
+                    "        this.start = this.currPos;\r\n" +
+                    "    }\r\n" +
+                    "\r\n" +
+                    "    protected void setCurrentPositionToStart() {\r\n" +
+                    "        this.currPos = this.start;\r\n" +
+                    "    }\r\n" +
+                    "\r\n" +
+                    "    protected void advanceCurrentPosition() {\r\n" +
+                    "        int index = this.currPos.getIndex();\r\n" +
+                    "        int codePoint = this.inputText.codePointAt(index);\r\n" +
+                    "        int nextCodePoint = this.inputText.codePointAt(index + 1);\r\n" +
+                    "\r\n" +
+                    "        if (codePoint != Text.EOI) {\r\n" +
+                    "            int line = this.currPos.getLine();\r\n" +
+                    "            // CARRET not followed by NEWLINE will also count as line break\r\n" +
+                    "            if ((codePoint == NEWLINE) || ((codePoint == CARRET) && (nextCodePoint != NEWLINE))) {\r\n" +
+                    "                this.currPos = new Position(line + 1, 1, index + 1);\r\n" +
+                    "            } else {\r\n" +
+                    "                int pos = this.currPos.getPos();\r\n" +
+                    "                this.currPos = new Position(line, pos + 1, index + 1);\r\n" +
+                    "            }\r\n" +
+                    "        }\r\n" +
+                    "    }\r\n" +
+                    "\r\n" +
+                    "    private String getTextFragment(Fragment span) {\r\n" +
+                    "        return Utility.getTextFragmentAsString(this.inputText, span);\r\n" +
+                    "    }\r\n" +
+                    "\r\n" +
+                    "    protected int getCurrentCodePoint() {\r\n" +
+                    "        int cp = this.currPos.getIndex();\r\n" +
+                    "        return this.inputText.codePointAt(cp);\r\n" +
+                    "    }\r\n" +
+                    "\r\n" +
+                    "    protected boolean atPotentialPatternStart() {\r\n" +
+                    "        int currCodePoint = getCurrentCodePoint();\r\n" +
+                    "        // assuming general use case that all token starts are recognized by default mode\r\n" +
+                    "        LexicalRecognizer recognizer = recognizers.get(INITIAL);\r\n" +
+                    "        int nextState = recognizer.transition(recognizer.getInitialState(), currCodePoint);\r\n" +
+                    "        return nextState != LexicalRecognizer.DEAD_END_STATE;\r\n" +
+                    "    }\r\n" +
+                    "\r\n" +
+                    "    private LexicalRecognizer getCurrentRecognizer() {\r\n" +
+                    "        return recognizers.get(this.currentMode);\r\n" +
+                    "    }\r\n" +
+                    "\r\n" +
+                    "    private boolean isFinal(int currState) {\r\n" +
+                    "        return StateTag.isFinal(recognizers.get(this.currentMode).getStateTag(currState));\r\n" +
+                    "    }\r\n" +
+                    "\r\n" +
+                    "    @Override\r\n" +
+                    "    final public boolean hasNext() {\r\n" +
+                    "        return this.hasNext;\r\n" +
+                    "    }\r\n" +
+                    "\r\n" +
+                    "    @Override\r\n" +
+                    "    final public Token next() {\r\n" +
+                    "        return nextToken();\r\n" +
+                    "    }\r\n"
             );
-            scannerCode.append("\n" +
-                    "    private Token nextToken() {\n" +
-                    "        resetCurrState();\n" +
-                    "        setStartToCurrentPosition();\n" +
-                    "\n" +
-                    "        // Save last final state encountered\n" +
-                    "        OptionalInt lastFinalState = OptionalInt.empty();\n" +
-                    "        Position lastInFinal = new Position(); // will be used only if lastFinalState is present\n" +
-                    "\n" +
-                    "        while (true) {\n" +
-                    "            int currCodePoint = getCurrentCodePoint();\n" +
-                    "            int nextState = getCurrentRecognizer().transition(this.currState, currCodePoint);\n" +
-                    "\n" +
-                    "            if (isFinal(this.currState)) {\n" +
-                    "                lastFinalState = OptionalInt.of(this.currState);\n" +
-                    "                lastInFinal = this.currPos;\n" +
-                    "            }\n" +
-                    "\n" +
-                    "            if (nextState != LexicalRecognizer.DEAD_END_STATE) {\n" +
-                    "                this.currState = nextState;\n" +
-                    "                advanceCurrentPosition();\n" +
-                    "            } else {\n" +
-                    "                // it's time to stop\n" +
-                    "\n" +
-                    "                // nothing matched\n" +
-                    "                if (!isFinal(this.currState) && !lastFinalState.isPresent()) {\n" +
-                    "                    /// This guards against finding EOI while completing an earlier started token\n" +
-                    "                    if (\n" +
-                    "                            (currCodePoint == Text.EOI || currCodePoint == this.inputText.getAltEoi()) &&\n" +
-                    "                                    this.currPos.equals(this.start)\n" +
-                    "                    ) {\n" +
-                    "                        this.hasNext = false;\n" +
-                    "                        return Domain.END_OF_INPUT.createToken(this.inputText, new Fragment(currPos, currPos));\n" +
-                    "                    }\n" +
-                    "\n" +
-                    "                    // we've found an error\n" +
-                    "\n" +
-                    "                    /// ERROR HANDLING CODE GOES HERE!\n" +
-                    "                    Optional<Token> optToken = handleError(this.inputText, this.currentMode, this.start, this.currPos);\n" +
-                    "\n" +
-                    "                    if (optToken.isPresent()) {\n" +
-                    "                        return optToken.get();\n" +
-                    "                    } else {\n" +
-                    "                        resetCurrState();\n" +
-                    "                    }\n" +
-                    "\n" +
-                    "                } else {\n" +
-                    "                    if (lastFinalState.isPresent()) {\n" +
-                    "                        this.currPos = lastInFinal;\n" +
-                    "                        this.currState = lastFinalState.getAsInt();\n" +
-                    "                    }\n" +
-                    "                    // now currState is certainly final\n" +
-                    "\n" +
-                    "                    lastFinalState = OptionalInt.empty(); // something matched, no reusing this!\n" +
-                    "                    Fragment scannedFragment = new Fragment(this.start, this.currPos);\n" +
-                    "\n" +
-                    "                    // this addition ensures scannedFragment references exactly the recognized pattern\n" +
-                    "                    setStartToCurrentPosition();\n" +
-                    "\n" +
-                    "                    Optional<Token> optToken = Optional.empty();\n" +
-                    "\n" +
-                    "                    // this cast should always work, provided all final ones are in one enum\n" +
-                    "                    // alternative: switch vs instanceof\n" +
+            scannerCode.append("\r\n" +
+                    "    private Token nextToken() {\r\n" +
+                    "        resetCurrState();\r\n" +
+                    "        setStartToCurrentPosition();\r\n" +
+                    "\r\n" +
+                    "        // Save last final state encountered\r\n" +
+                    "        OptionalInt lastFinalState = OptionalInt.empty();\r\n" +
+                    "        Position lastInFinal = new Position(); // will be used only if lastFinalState is present\r\n" +
+                    "\r\n" +
+                    "        while (true) {\r\n" +
+                    "            int currCodePoint = getCurrentCodePoint();\r\n" +
+                    "            int nextState = getCurrentRecognizer().transition(this.currState, currCodePoint);\r\n" +
+                    "\r\n" +
+                    "            if (isFinal(this.currState)) {\r\n" +
+                    "                lastFinalState = OptionalInt.of(this.currState);\r\n" +
+                    "                lastInFinal = this.currPos;\r\n" +
+                    "            }\r\n" +
+                    "\r\n" +
+                    "            if (nextState != LexicalRecognizer.DEAD_END_STATE) {\r\n" +
+                    "                this.currState = nextState;\r\n" +
+                    "                advanceCurrentPosition();\r\n" +
+                    "            } else {\r\n" +
+                    "                // it's time to stop\r\n" +
+                    "\r\n" +
+                    "                // nothing matched\r\n" +
+                    "                if (!isFinal(this.currState) && !lastFinalState.isPresent()) {\r\n" +
+                    "                    /// This guards against finding EOI while completing an earlier started token\r\n" +
+                    "                    if (\r\n" +
+                    "                            (currCodePoint == Text.EOI || currCodePoint == this.inputText.getAltEoi()) &&\r\n" +
+                    "                                    this.currPos.equals(this.start)\r\n" +
+                    "                    ) {\r\n" +
+                    "                        this.hasNext = false;\r\n" +
+                    "                        return Domain.END_OF_INPUT.createToken(this.inputText, new Fragment(currPos, currPos));\r\n" +
+                    "                    }\r\n" +
+                    "\r\n" +
+                    "                    // we've found an error\r\n" +
+                    "\r\n" +
+                    "                    /// ERROR HANDLING CODE GOES HERE!\r\n" +
+                    "                    Optional<Token> optToken = handleError(this.inputText, this.currentMode, this.start, this.currPos);\r\n" +
+                    "\r\n" +
+                    "                    if (optToken.isPresent()) {\r\n" +
+                    "                        return optToken.get();\r\n" +
+                    "                    } else {\r\n" +
+                    "                        resetCurrState();\r\n" +
+                    "                    }\r\n" +
+                    "\r\n" +
+                    "                } else {\r\n" +
+                    "                    if (lastFinalState.isPresent()) {\r\n" +
+                    "                        this.currPos = lastInFinal;\r\n" +
+                    "                        this.currState = lastFinalState.getAsInt();\r\n" +
+                    "                    }\r\n" +
+                    "                    // now currState is certainly final\r\n" +
+                    "\r\n" +
+                    "                    lastFinalState = OptionalInt.empty(); // something matched, no reusing this!\r\n" +
+                    "                    Fragment scannedFragment = new Fragment(this.start, this.currPos);\r\n" +
+                    "\r\n" +
+                    "                    // this addition ensures scannedFragment references exactly the recognized pattern\r\n" +
+                    "                    setStartToCurrentPosition();\r\n" +
+                    "\r\n" +
+                    "                    Optional<Token> optToken = Optional.empty();\r\n" +
+                    "\r\n" +
+                    "                    // this cast should always work, provided all final ones are in one enum\r\n" +
+                    "                    // alternative: switch vs instanceof\r\n" +
                     "                    "
             )
                     .append(stateTagsEnumName).append(" tag = (").append(stateTagsEnumName)
-                    .append(") getCurrentRecognizer().getStateTag(this.currState);\n" +
-                            "\n" +
-                            "                    /// TIP: for ignored expressions (e.g. whitespace) case should just" +
-                            " reset start\n" +
-                            "                    switch (tag) {\n"
+                    .append(") getCurrentRecognizer().getStateTag(this.currState);\r\n" +
+                            "\r\n" +
+                            "                    switch (tag) {\r\n"
                     );
 
             List<String> actionNames = new ArrayList<>();
@@ -559,77 +557,77 @@ public class RecognizerGenTest {
                 String stateName = rule.stateName;
                 AST.Rules.Rule.Action action = rule.action;
                 scannerCode.append("                        case ")
-                        .append(stateName).append(":\n");
+                        .append(stateName).append(":\r\n");
                 if (action instanceof AST.Rules.Rule.Action.Call) {
                     String funcName = ((AST.Rules.Rule.Action.Call) action).funcName;
                     scannerCode.append(generateActionFuncCall(funcName));
                     actionNames.add(funcName);
                 } else if (action instanceof AST.Rules.Rule.Action.Ignore) {
-                    // scannerCode.append("                            setStartToCurrentPosition();\n");
+                    // scannerCode.append("                            setStartToCurrentPosition();\r\n");
                 } else if (action instanceof AST.Rules.Rule.Action.Switch) {
                     String modeName = ((AST.Rules.Rule.Action.Switch) action).modeName;
                     scannerCode.append("                            ")
-                            .append("switchToMode(").append(modeName).append(");\n");
+                            .append("switchToMode(").append(modeName).append(");\r\n");
                 } else if (action instanceof AST.Rules.Rule.Action.Return) {
                     String domainName = ((AST.Rules.Rule.Action.Return) action).domainName;
                     String enumName = domainEnums.get(domainName);
                     scannerCode.append("                            ")
-                            .append("optToken = Optional.of(\n")
+                            .append("optToken = Optional.of(\r\n")
                             .append("                                    ")
                             .append(enumName)
-                            .append("\n                                            .")
+                            .append("\r\n                                            .")
                             .append(domainName)
-                            .append(".createToken(this.inputText, scannedFragment)\n")
-                            .append("                            );\n");
+                            .append(".createToken(this.inputText, scannedFragment)\r\n")
+                            .append("                            );\r\n");
                 } else if (action instanceof AST.Rules.Rule.Action.SwitchReturn) {
                     String modeName = ((AST.Rules.Rule.Action.SwitchReturn) action).modeName;
                     String domainName = ((AST.Rules.Rule.Action.SwitchReturn) action).domainName;
                     String enumName = domainEnums.get(domainName);
 
                     scannerCode.append("                            ")
-                            .append("switchToMode(").append(modeName).append(");\n");
+                            .append("switchToMode(").append(modeName).append(");\r\n");
                     scannerCode.append("                            ")
-                            .append("optToken = Optional.of(\n")
+                            .append("optToken = Optional.of(\r\n")
                             .append("                                    ")
                             .append(enumName)
-                            .append("\n                                            .")
+                            .append("\r\n                                            .")
                             .append(domainName)
-                            .append(".createToken(this.inputText, scannedFragment)\n")
-                            .append("                            );\n");
+                            .append(".createToken(this.inputText, scannedFragment)\r\n")
+                            .append("                            );\r\n");
                 }
-                scannerCode.append("                            break;\n");
+                scannerCode.append("                            break;\r\n");
             }
-            scannerCode.append("                    }\n" +
-                    "\n" +
-                    "                    if (optToken.isPresent()) {\n" +
-                    "                        return optToken.get();\n" +
-                    "                    } else {\n" +
-                    "                        resetCurrState();\n" +
-                    "                    }\n" +
-                    "                }\n" +
-                    "            }\n" +
-                    "        }\n" +
-                    "    }\n\n"
+            scannerCode.append("                    }\r\n" +
+                    "\r\n" +
+                    "                    if (optToken.isPresent()) {\r\n" +
+                    "                        return optToken.get();\r\n" +
+                    "                    } else {\r\n" +
+                    "                        resetCurrState();\r\n" +
+                    "                    }\r\n" +
+                    "                }\r\n" +
+                    "            }\r\n" +
+                    "        }\r\n" +
+                    "    }\r\n\r\n"
             );
 
             scannerCode.append(
-                    "    /// Default implementation, to ensure scanner doesn't get stuck\n" +
-                            "    protected Optional<Token> handleError(Text text, Mode mode, Position start, Position follow) {\n" +
-                            "        // recovery\n" +
-                            "        // discard symbols from input until we find a potential pattern start\n" +
-                            "        setCurrentPositionToStart();\n" +
-                            "        advanceCurrentPosition();\n" +
-                            "\n" +
-                            "        while ((getCurrentCodePoint() != Text.EOI) && !atPotentialPatternStart()) {\n" +
-                            "            advanceCurrentPosition();\n" +
-                            "        }\n" +
-                            "        switchToMode(INITIAL); // resetting to default mode after error recovery\n" +
-                            "        Fragment invalidFragment = new Fragment(this.start, this.currPos);\n" +
-                            "\n" +
-                            "        /// HINT: If you wish to do the same, but not return any token, remember to call setStartToCurrentPosition()\n" +
-                            "\n" +
-                            "        return Optional.of(Domain.ERROR.createToken(this.inputText, invalidFragment));\n" +
-                            "    }\n\n");
+                    "    /// Default implementation, to ensure scanner doesn't get stuck\r\n" +
+                            "    protected Optional<Token> handleError(Text text, Mode mode, Position start, Position follow) {\r\n" +
+                            "        // recovery\r\n" +
+                            "        // discard symbols from input until we find a potential pattern start\r\n" +
+                            "        setCurrentPositionToStart();\r\n" +
+                            "        advanceCurrentPosition();\r\n" +
+                            "\r\n" +
+                            "        while ((getCurrentCodePoint() != Text.EOI) && !atPotentialPatternStart()) {\r\n" +
+                            "            advanceCurrentPosition();\r\n" +
+                            "        }\r\n" +
+                            "        switchToMode(INITIAL); // resetting to default mode after error recovery\r\n" +
+                            "        Fragment invalidFragment = new Fragment(this.start, this.currPos);\r\n" +
+                            "\r\n" +
+                            "        /// HINT: If you wish to do the same, but not return any token, remember to call setStartToCurrentPosition()\r\n" +
+                            "\r\n" +
+                            "        return Optional.of(Domain.ERROR.createToken(this.inputText, invalidFragment));\r\n" +
+                            "    }\r\n\r\n");
 
             for (String actionName : actionNames) {
                 scannerCode.append(generateActionSignature(actionName));
@@ -677,13 +675,13 @@ public class RecognizerGenTest {
 
     static String generateActionFuncCall(String actionName) {
         return "                            optToken = " +
-                actionName + "(this.inputText, scannedFragment);\n";
+                actionName + "(this.inputText, scannedFragment);\r\n";
     }
 
     static String generateActionSignature(String actionName) {
         return "    protected abstract Optional<Token> " +
                 actionName +
-                "(Text text, Fragment fragment);\n\n";
+                "(Text text, Fragment fragment);\r\n\r\n";
     }
 
     static NFA buildNFAFromRegex(AST.Regex regex, Map<String, NFA> namedExpressions, int alphabetSize) {
