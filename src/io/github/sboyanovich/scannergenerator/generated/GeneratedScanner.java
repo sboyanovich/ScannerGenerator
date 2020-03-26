@@ -243,6 +243,10 @@ public abstract class GeneratedScanner implements Iterator<Token> {
 
                     lastFinalState = OptionalInt.empty(); // something matched, no reusing this!
                     Fragment scannedFragment = new Fragment(this.start, this.currPos);
+
+                    // this addition ensures scannedFragment references exactly the recognized pattern
+                    setStartToCurrentPosition();
+
                     Optional<Token> optToken = Optional.empty();
 
                     // this cast should always work, provided all final ones are in one enum
@@ -255,7 +259,6 @@ public abstract class GeneratedScanner implements Iterator<Token> {
                             optToken = handleWhitespaceInRegex(this.inputText, scannedFragment);
                             break;
                         case WHITESPACE:
-                            setStartToCurrentPosition();
                             break;
                         case ACTION_SWITCH:
                             optToken = Optional.of(
