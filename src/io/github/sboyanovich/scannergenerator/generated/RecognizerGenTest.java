@@ -535,6 +535,10 @@ public class RecognizerGenTest {
                     "\n" +
                     "                    lastFinalState = OptionalInt.empty(); // something matched, no reusing this!\n" +
                     "                    Fragment scannedFragment = new Fragment(this.start, this.currPos);\n" +
+                    "\n" +
+                    "                    // this addition ensures scannedFragment references exactly the recognized pattern\n" +
+                    "                    setStartToCurrentPosition();\n" +
+                    "\n" +
                     "                    Optional<Token> optToken = Optional.empty();\n" +
                     "\n" +
                     "                    // this cast should always work, provided all final ones are in one enum\n" +
@@ -561,7 +565,7 @@ public class RecognizerGenTest {
                     scannerCode.append(generateActionFuncCall(funcName));
                     actionNames.add(funcName);
                 } else if (action instanceof AST.Rules.Rule.Action.Ignore) {
-                    scannerCode.append("                            setStartToCurrentPosition();\n");
+                    // scannerCode.append("                            setStartToCurrentPosition();\n");
                 } else if (action instanceof AST.Rules.Rule.Action.Switch) {
                     String modeName = ((AST.Rules.Rule.Action.Switch) action).modeName;
                     scannerCode.append("                            ")
