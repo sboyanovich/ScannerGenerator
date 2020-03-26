@@ -253,7 +253,6 @@ public abstract class GeneratedScanner implements Iterator<Token> {
                     // alternative: switch vs instanceof
                     StateTags tag = (StateTags) getCurrentRecognizer().getStateTag(this.currState);
 
-                    /// TIP: for ignored expressions (e.g. whitespace) case should just reset start
                     switch (tag) {
                         case WHITESPACE_IN_REGEX:
                             optToken = handleWhitespaceInRegex(this.inputText, scannedFragment);
