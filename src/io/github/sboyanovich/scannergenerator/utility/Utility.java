@@ -353,10 +353,10 @@ public class Utility {
     private static String generateSimpleDomain(String domainName) {
         return "    " +
                 domainName +
-                " {\n" + "        @Override\n" +
-                "        public Token createToken(Text text, Fragment fragment) {\n" +
+                " {\r\n" + "        @Override\r\n" +
+                "        public Token createToken(Text text, Fragment fragment) {\r\n" +
                 "            return new BasicToken(fragment, " +
-                domainName + ");\n" + "        }\n" + "    }";
+                domainName + ");\r\n" + "        }\r\n" + "    }";
     }
 
     public static String generateSimpleDomainsEnum(List<String> domainNames, String packageName, String enumName) {
@@ -364,39 +364,39 @@ public class Utility {
 
         result.append("package ")
                 .append(packageName)
-                .append(";\n\n");
-        result.append("import io.github.sboyanovich.scannergenerator.scanner.Fragment;\n" +
-                "import io.github.sboyanovich.scannergenerator.scanner.Text;\n" +
-                "import io.github.sboyanovich.scannergenerator.scanner.token.BasicToken;\n" +
-                "import io.github.sboyanovich.scannergenerator.scanner.token.Domain;\n" +
-                "import io.github.sboyanovich.scannergenerator.scanner.token.Token;\n\n");
-        result.append("public enum ").append(enumName).append(" implements Domain {\n");
+                .append(";\r\n\r\n");
+        result.append("import io.github.sboyanovich.scannergenerator.scanner.Fragment;\r\n" +
+                "import io.github.sboyanovich.scannergenerator.scanner.Text;\r\n" +
+                "import io.github.sboyanovich.scannergenerator.scanner.token.BasicToken;\r\n" +
+                "import io.github.sboyanovich.scannergenerator.scanner.token.Domain;\r\n" +
+                "import io.github.sboyanovich.scannergenerator.scanner.token.Token;\r\n\r\n");
+        result.append("public enum ").append(enumName).append(" implements Domain {\r\n");
 
         if (domainNames.size() > 0) {
             result.append(generateSimpleDomain(domainNames.get(0)));
         }
         for (int i = 1; i < domainNames.size(); i++) {
-            result.append(",\n")
+            result.append(",\r\n")
                     .append(generateSimpleDomain(domainNames.get(i)));
         }
 
-        result.append("\n}");
+        result.append("\r\n}");
 
         return result.toString();
     }
 
     private static String generateDomainWithAttribute(String domainName, String attributeType) {
-        return "    " + domainName + " {\n" +
-                "        @Override\n" +
-                "        public " + attributeType + " attribute(Text text, Fragment fragment) {\n\n" +
-                "        }\n" +
-                "\n" +
-                "        @Override\n" +
+        return "    " + domainName + " {\r\n" +
+                "        @Override\r\n" +
+                "        public " + attributeType + " attribute(Text text, Fragment fragment) {\r\n\r\n" +
+                "        }\r\n" +
+                "\r\n" +
+                "        @Override\r\n" +
                 "        public TokenWithAttribute<" + attributeType +
-                "> createToken(Text text, Fragment fragment) {\n" +
+                "> createToken(Text text, Fragment fragment) {\r\n" +
                 "            return new TokenWithAttribute<>(fragment, " +
-                domainName + ", attribute(text, fragment));\n" +
-                "        }\n" +
+                domainName + ", attribute(text, fragment));\r\n" +
+                "        }\r\n" +
                 "    }";
     }
 
@@ -407,24 +407,24 @@ public class Utility {
 
         result.append("package ")
                 .append(packageName)
-                .append(";\n\n");
-        result.append("import io.github.sboyanovich.scannergenerator.scanner.Fragment;\n" +
-                "import io.github.sboyanovich.scannergenerator.scanner.Text;\n" +
-                "import io.github.sboyanovich.scannergenerator.scanner.token.DomainWithAttribute;\n" +
-                "import io.github.sboyanovich.scannergenerator.scanner.token.TokenWithAttribute;\n\n");
+                .append(";\r\n\r\n");
+        result.append("import io.github.sboyanovich.scannergenerator.scanner.Fragment;\r\n" +
+                "import io.github.sboyanovich.scannergenerator.scanner.Text;\r\n" +
+                "import io.github.sboyanovich.scannergenerator.scanner.token.DomainWithAttribute;\r\n" +
+                "import io.github.sboyanovich.scannergenerator.scanner.token.TokenWithAttribute;\r\n\r\n");
         result.append("public enum ")
                 .append(enumName)
-                .append(" implements DomainWithAttribute<").append(attributeType).append("> {\n");
+                .append(" implements DomainWithAttribute<").append(attributeType).append("> {\r\n");
 
         if (domainNames.size() > 0) {
             result.append(generateDomainWithAttribute(domainNames.get(0), attributeType));
         }
         for (int i = 1; i < domainNames.size(); i++) {
-            result.append(",\n")
+            result.append(",\r\n")
                     .append(generateDomainWithAttribute(domainNames.get(i), attributeType));
         }
 
-        result.append("\n}");
+        result.append("\r\n}");
 
         return result.toString();
     }
@@ -434,19 +434,19 @@ public class Utility {
 
         result.append("package ")
                 .append(packageName)
-                .append(";\n\n");
-        result.append("import io.github.sboyanovich.scannergenerator.automata.StateTag;\n\n");
-        result.append("public enum StateTags implements StateTag {\n");
+                .append(";\r\n\r\n");
+        result.append("import io.github.sboyanovich.scannergenerator.automata.StateTag;\r\n\r\n");
+        result.append("public enum StateTags implements StateTag {\r\n");
 
         if (stateNames.size() > 0) {
             result.append("    ").append(stateNames.get(0));
         }
         for (int i = 1; i < stateNames.size(); i++) {
-            result.append(",\n")
+            result.append(",\r\n")
                     .append("    ").append(stateNames.get(i));
         }
 
-        result.append("\n}");
+        result.append("\r\n}");
 
         return result.toString();
     }
