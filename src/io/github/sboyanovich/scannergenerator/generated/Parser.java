@@ -1,13 +1,12 @@
 package io.github.sboyanovich.scannergenerator.generated;
 
+import io.github.sboyanovich.scannergenerator.scanner.Position;
 import io.github.sboyanovich.scannergenerator.scanner.token.Domain;
 import io.github.sboyanovich.scannergenerator.scanner.token.Token;
 import io.github.sboyanovich.scannergenerator.scanner.token.TokenWithAttribute;
+import io.github.sboyanovich.scannergenerator.utility.Utility;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static io.github.sboyanovich.scannergenerator.generated.DomainsWithIntPairAttribute.REPETITION_OP;
 import static io.github.sboyanovich.scannergenerator.generated.DomainsWithIntegerAttribute.CHAR;
@@ -21,6 +20,13 @@ public class Parser {
     private int nodeNames;
 
     private int stateNames;
+
+    private MockCompiler compiler;
+
+    private Map<String, Position> defNamesMap;
+    private Map<String, Position> modeNamesMap;
+    private Map<String, Position> domainNamesMap;
+    private Map<String, Position> ruleNamesMap;
 
     private Set<Domain> ruleFirst = Set.of(
             L_ANGLE_BRACKET,
@@ -43,15 +49,20 @@ public class Parser {
             REPETITION_OP
     );
 
-    private Parser(Iterator<Token> tokens) {
+    private Parser(Iterator<Token> tokens, MockCompiler compiler) {
         this.tokens = tokens;
         this.sym = tokens.next();
         this.nodeNames = 0;
         this.stateNames = 0;
+        this.compiler = compiler;
+        this.defNamesMap = new HashMap<>();
+        this.modeNamesMap = new HashMap<>();
+        this.domainNamesMap = new HashMap<>();
+        this.ruleNamesMap = new HashMap<>();
     }
 
-    static AST parse(Iterator<Token> tokens) {
-        return new Parser(tokens).parse();
+    static AST parse(Iterator<Token> tokens, MockCompiler compiler) {
+        return new Parser(tokens, compiler).parse();
     }
 
     private AST parse() {
@@ -123,10 +134,21 @@ public class Parser {
 
         AST.Identifier identifier = new AST.Identifier();
         identifier.number = getNodeName();
-        identifier.identifier = ((TokenWithAttribute<String>) t).getAttribute();
+        String id = ((TokenWithAttribute<String>) t).getAttribute();
+        identifier.identifier = id;
 
         expect(DEFINER);
         AST.Regex regex = regex();
+
+        Position idPos = t.getCoords().getStarting();
+        if (this.defNamesMap.containsKey(id)) {
+            Position pos = this.defNamesMap.get(id);
+            this.compiler.addError(
+                    idPos,
+                    "Redefinition! Named expression " + id + " is already defined at " + pos + ".");
+        } else {
+            this.defNamesMap.put(id, idPos);
+        }
 
         definition.identifier = identifier;
         definition.regex = regex;
@@ -145,7 +167,21 @@ public class Parser {
         while (sym.getTag().equals(IDENTIFIER)) {
             AST.Identifier identifier = new AST.Identifier();
             identifier.number = getNodeName();
-            identifier.identifier = ((TokenWithAttribute<String>) sym).getAttribute();
+            String id = ((TokenWithAttribute<String>) sym).getAttribute();
+            identifier.identifier = id;
+
+            Position idPos = sym.getCoords().getStarting();
+            if (id.equals("INITIAL")) {
+                this.compiler.addWarning(idPos, "INITIAL is default mode's name. No need to explicitly declare it.");
+            } else {
+                if (this.modeNamesMap.containsKey(id)) {
+                    Position declPos = this.modeNamesMap.get(id);
+                    this.compiler.addWarning(idPos, "Mode " + id + " has already been declared at " + declPos + ".");
+                } else {
+                    this.modeNamesMap.put(id, idPos);
+                }
+            }
+
             modeNames.add(identifier);
             nextToken();
         }
@@ -179,8 +215,22 @@ public class Parser {
             while (sym.getTag().equals(IDENTIFIER)) {
                 AST.Identifier identifier = new AST.Identifier();
                 identifier.number = getNodeName();
-                identifier.identifier = ((TokenWithAttribute<String>) sym).getAttribute();
+                String id = ((TokenWithAttribute<String>) sym).getAttribute();
+                identifier.identifier = id;
                 identifiers.add(identifier);
+
+                Position idPos = sym.getCoords().getStarting();
+
+                if (this.domainNamesMap.containsKey(id)) {
+                    Position declPos = this.domainNamesMap.get(id);
+                    this.compiler.addError(
+                            idPos,
+                            "Redeclaration! Domain " + id + " has already been declared at " + declPos + " ."
+                    );
+                } else {
+                    this.domainNamesMap.put(id, idPos);
+                }
+
                 nextToken();
             }
 
@@ -211,7 +261,23 @@ public class Parser {
 
         String stateName;
         if (sym.getTag().equals(IDENTIFIER)) {
-            stateName = ((TokenWithAttribute<String>) sym).getAttribute();
+            String id = ((TokenWithAttribute<String>) sym).getAttribute();
+            stateName = id;
+
+            Position idPos = sym.getCoords().getStarting();
+
+            if (id.startsWith("STATE_")) {
+                this.compiler.addError(idPos, "Rule names, starting with \"STATE_\" are reserved for the generator.");
+            }
+
+            if (this.ruleNamesMap.containsKey(id)) {
+                Position declPos = this.ruleNamesMap.get(id);
+                this.compiler.addError(idPos, "Rule names must be distinct! Rule name " + id
+                        + " already used at " + declPos + ".");
+            } else {
+                this.ruleNamesMap.put(id, idPos);
+            }
+
             nextToken();
         } else {
             stateName = "STATE_" + stateNames++; // generating name
@@ -224,17 +290,30 @@ public class Parser {
         AST.Rules.Rule.Action action;
 
         if (sym.getTag().equals(ACTION_SWITCH)) {
-            String modeName = ((TokenWithAttribute<String>) sym).getAttribute();
+            String id = ((TokenWithAttribute<String>) sym).getAttribute();
+            Position idPos = sym.getCoords().getStarting();
+            handleUndeclared(id, idPos, true);
+
+            String modeName = id;
             action = new AST.Rules.Rule.Action.Switch(getNodeName(), modeName);
             nextToken();
         } else if (sym.getTag().equals(ACTION_RETURN)) {
-            String domainName = ((TokenWithAttribute<String>) sym).getAttribute();
+            String id = ((TokenWithAttribute<String>) sym).getAttribute();
+            Position idPos = sym.getCoords().getStarting();
+            handleUndeclared(id, idPos, false);
+
+            String domainName = id;
             action = new AST.Rules.Rule.Action.Return(getNodeName(), domainName);
             nextToken();
         } else if (sym.getTag().equals(ACTION_SWITCH_RETURN)) {
             StringPair modeDomain = ((TokenWithAttribute<StringPair>) sym).getAttribute();
             String modeName = modeDomain.getFirst();
             String domainName = modeDomain.getSecond();
+
+            Position idPos = sym.getCoords().getStarting();
+            handleUndeclared(modeName, idPos, true);
+            handleUndeclared(domainName, idPos, false);
+
             action = new AST.Rules.Rule.Action.SwitchReturn(getNodeName(), modeName, domainName);
             nextToken();
         } else if (sym.getTag().equals(IDENTIFIER)) {
@@ -265,7 +344,12 @@ public class Parser {
 
         Token t = sym;
         expect(IDENTIFIER);
-        String modeName = ((TokenWithAttribute<String>) t).getAttribute();
+        String id = ((TokenWithAttribute<String>) t).getAttribute();
+        String modeName = id;
+
+        Position idPos = t.getCoords().getStarting();
+        handleUndeclared(id, idPos, true);
+
         AST.Identifier identifier = new AST.Identifier();
         identifier.number = getNodeName();
         identifier.identifier = modeName;
@@ -371,7 +455,12 @@ public class Parser {
         if (sym.getTag().equals(CHAR)) {
             AST.Regex.Char result = new AST.Regex.Char();
             result.number = getNodeName();
-            result.codePoint = ((TokenWithAttribute<Integer>) sym).getAttribute();
+
+            int c = ((TokenWithAttribute<Integer>) sym).getAttribute();
+            Position cPos = sym.getCoords().getStarting();
+            handleChar(c, cPos);
+
+            result.codePoint = c;
             nextToken();
             return result;
         } else if (sym.getTag().equals(DOT)) {
@@ -387,7 +476,13 @@ public class Parser {
         } else if (sym.getTag().equals(NAMED_EXPR)) {
             AST.Regex.NamedExpr result = new AST.Regex.NamedExpr();
             result.number = getNodeName();
-            result.name = ((TokenWithAttribute<String>) sym).getAttribute();
+            String id = ((TokenWithAttribute<String>) sym).getAttribute();
+            result.name = id;
+
+            if (!this.defNamesMap.containsKey(id)) {
+                this.compiler.addError(sym.getCoords().getStarting(), "Named expression " + id + " is undefined.");
+            }
+
             nextToken();
             return result;
         } else if (sym.getTag().equals(CHAR_CLASS_OPEN)) {
@@ -438,11 +533,25 @@ public class Parser {
             Token t = sym;
             expect(CHAR);
             int cpa = ((TokenWithAttribute<Integer>) t).getAttribute();
+
+            Position cPosA = t.getCoords().getStarting();
+            handleChar(cpa, cPosA);
+
             if (sym.getTag().equals(CHAR_CLASS_RANGE_OP)) {
                 nextToken();
                 t = sym;
                 expect(CHAR);
                 int cpb = ((TokenWithAttribute<Integer>) t).getAttribute();
+
+                Position cPosB = t.getCoords().getStarting();
+                handleChar(cpb, cPosB);
+
+                if (cpa > cpb) {
+                    this.compiler.addError(cPosA, "Impossible range! Range start greater than end.");
+                } else if (cpa == cpb) {
+                    this.compiler.addWarning(cPosA, "Range contains only one code point. " +
+                            "There's a shorter way to write it :)");
+                }
 
                 AST.Regex.CharClass.CharOrRange.Range range = new AST.Regex.CharOrRange.Range();
                 range.number = getNodeName();
@@ -475,12 +584,39 @@ public class Parser {
         return nodeNames++;
     }
 
+    private void handleUndeclared(String id, Position idPos, boolean isMode) {
+        Map<String, Position> declMap = this.domainNamesMap;
+        String type = "Domain";
+        boolean extra = true;
+        if (isMode) {
+            declMap = this.modeNamesMap;
+            type = "Mode";
+            extra = !id.equals("INITIAL");
+        }
+        if (!declMap.containsKey(id)) {
+            if (extra) {
+                this.compiler.addError(idPos, type + " " + id
+                        + " has not been declared. Is there a spelling error?");
+            }
+        }
+    }
+
+    private void handleChar(int c, Position cPos) {
+        int maxCodePoint = this.compiler.getAlphabetSize() - 2;
+        if (!Utility.isInRange(c, 0, maxCodePoint)) {
+            this.compiler.addError(cPos,
+                    "Invalid code point value for char: " + c + ". Valid range is [0," + maxCodePoint + "].");
+        }
+    }
+
     private void expect(Domain tag) {
         if (this.sym.getTag() == tag) {
             nextToken();
         } else {
-            throw new IllegalStateException(
-                    "Syntax error at token " + this.sym + ". Expected " + tag + ", got " + this.sym.getTag() + "!");
+            String message = "Syntax error at token " + this.sym +
+                    ". Expected " + tag + ", got " + this.sym.getTag() + "!";
+            compiler.addError(this.sym.getCoords().getStarting(), message);
+            throw new IllegalStateException(message);
         }
     }
 }

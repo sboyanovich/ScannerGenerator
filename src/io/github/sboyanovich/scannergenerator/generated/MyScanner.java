@@ -12,9 +12,9 @@ import static io.github.sboyanovich.scannergenerator.generated.GeneratedScanner.
 public class MyScanner extends GeneratedScanner {
     private MockCompiler compiler;
 
-    public MyScanner(String inputText) {
+    public MyScanner(String inputText, int alphabetSize) {
         super(inputText);
-        this.compiler = new MockCompiler();
+        this.compiler = new MockCompiler(alphabetSize);
     }
 
     public MockCompiler getCompiler() {
