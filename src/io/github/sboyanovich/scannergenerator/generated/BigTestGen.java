@@ -14,7 +14,11 @@ public class BigTestGen {
     public static void main(String[] args) {
         String text = Utility.getTextFromResourceFile("testInputM1.txt");
 
-        MyScanner scanner = new MyScanner(text);
+        int maxCodePoint = Character.MAX_CODE_POINT;
+        int aeoi = maxCodePoint + 1;
+        int alphabetSize = maxCodePoint + 1 + 1;
+
+        MyScanner scanner = new MyScanner(text, alphabetSize);
         MockCompiler compiler = scanner.getCompiler();
 
         Set<Domain> ignoredTokenTypes = Set.of(
