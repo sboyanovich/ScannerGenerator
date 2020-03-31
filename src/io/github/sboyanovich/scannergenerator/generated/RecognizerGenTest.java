@@ -4,6 +4,8 @@ import io.github.sboyanovich.scannergenerator.automata.DFA;
 import io.github.sboyanovich.scannergenerator.automata.NFA;
 import io.github.sboyanovich.scannergenerator.automata.StateTag;
 import io.github.sboyanovich.scannergenerator.scanner.LexicalRecognizer;
+import io.github.sboyanovich.scannergenerator.scanner.Message;
+import io.github.sboyanovich.scannergenerator.scanner.Position;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
 import java.time.Duration;
@@ -79,7 +81,7 @@ public class RecognizerGenTest {
         int aeoi = maxCodePoint + 1;
         int alphabetSize = maxCodePoint + 1 + 1;
 
-        MyScanner scanner = new MyScanner(text);
+        MyScanner scanner = new MyScanner(text, alphabetSize);
         MockCompiler compiler = scanner.getCompiler();
 
 /*
@@ -109,17 +111,33 @@ public class RecognizerGenTest {
         System.out.println();
         System.out.println("Errors: " + errCount);
         System.out.println("Compiler messages: ");
-        SortedMap<Position, Message> messages = compiler.getSortedMessages();
-        for (Map.Entry<Position, Message> entry : messages.entrySet()) {
-            System.out.println(entry.getValue() + " at " + entry.getKey());
-        }
-*/
+        */
 
-        if (true) {
-            AST ast = Parser.parse(scanner);
+        AST ast = null;
+        try {
+            ast = Parser.parse(scanner, compiler);
+        } catch (IllegalStateException e) {
+            System.out.println("There are syntax errors in the input. Parsing cannot proceed.\n");
+        }
             /*String dotAST = ast.toGraphVizDotString();
             System.out.println();
             System.out.println(dotAST);*/
+        int errors = compiler.getErrorCount();
+        int warnings = compiler.getWarningCount();
+        if (errors > 0) {
+            System.out.println("Errors: " + errors);
+        }
+        if (warnings > 0) {
+            System.out.println("Warnings: " + warnings);
+        }
+        System.out.println("Compiler messages:");
+        SortedMap<Position, Message> messages = compiler.getSortedMessages();
+        for (Map.Entry<Position, Message> entry : messages.entrySet()) {
+            System.out.println("\tat " + entry.getKey() + " " + entry.getValue());
+        }
+
+        if (compiler.getErrorCount() == 0) {
+
             AST.Spec spec = (AST.Spec) ast;
 
             Map<String, NFA> definitions = new HashMap<>();
@@ -271,12 +289,33 @@ public class RecognizerGenTest {
 
             List<AST.DomainGroup> domainGroupList = spec.domainGroups.domainGroups;
 
+            final String SIMPLE_DOMAIN_KEY = "@SIMPLE";
+
+            Map<String, List<String>> domainNamesMap = new HashMap<>();
+            for (AST.DomainGroup domainGroup : domainGroupList) {
+                String key = "";
+                if (domainGroup instanceof AST.DomainGroup.SimpleDomainGroup) {
+                    key = SIMPLE_DOMAIN_KEY;
+                } else if (domainGroup instanceof AST.DomainGroup.DomainWithAttributeGroup) {
+                    key = ((AST.DomainGroup.DomainWithAttributeGroup) domainGroup).attributeType;
+                }
+                List<String> names;
+                if (domainNamesMap.containsKey(key)) {
+                    names = domainNamesMap.get(key);
+                } else {
+                    names = new ArrayList<>();
+                    domainNamesMap.put(key, names);
+                }
+                names.addAll(domainGroup.getDomainNames());
+            }
+
+
             Map<String, String> domainEnums = new HashMap<>();
 
-            for (AST.DomainGroup domainGroup : domainGroupList) {
-                List<String> domainNames = domainGroup.getDomainNames();
+            for (String key : domainNamesMap.keySet()) {
+                List<String> domainNames = domainNamesMap.get(key);
                 String enumName = "";
-                if (domainGroup instanceof AST.DomainGroup.SimpleDomainGroup) {
+                if (key.equals(SIMPLE_DOMAIN_KEY)) {
                     enumName = simpleDomainsEnumName;
                     String simpleDomainsEnum = Utility.generateSimpleDomainsEnum(
                             domainNames,
@@ -284,8 +323,8 @@ public class RecognizerGenTest {
                             enumName
                     );
                     Utility.writeTextToFile(simpleDomainsEnum, prefix + enumName + ".java");
-                } else if (domainGroup instanceof AST.DomainGroup.DomainWithAttributeGroup) {
-                    String type = ((AST.DomainGroup.DomainWithAttributeGroup) domainGroup).attributeType;
+                } else {
+                    String type = key;
                     enumName = "DomainsWith" + type + "Attribute";
                     String domainEnum = Utility.generateDomainWithAttributeEnum(
                             type,
