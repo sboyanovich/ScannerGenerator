@@ -437,13 +437,26 @@ public class Parser {
                 return result;
             } else {
                 IntPair attribute = ((TokenWithAttribute<IntPair>) sym).getAttribute();
+                Position pos = sym.getCoords().getStarting();
                 nextToken();
 
                 AST.Regex.Repetition result = new AST.Regex.Repetition();
                 result.number = getNodeName();
                 result.a = lRegex;
-                result.from = attribute.getFirst();
-                result.to = attribute.getSecond();
+                int from = attribute.getFirst();
+                int to = attribute.getSecond();
+
+                if (to >= 0) {
+                    if (from > to) {
+                        this.compiler.addError(
+                                pos,
+                                "Repetition lower bound (" + from + ") greater than upper bound (" + to + ")!");
+                    }
+                }
+
+                result.from = from;
+                result.to = to;
+
                 return result;
             }
         } else {
