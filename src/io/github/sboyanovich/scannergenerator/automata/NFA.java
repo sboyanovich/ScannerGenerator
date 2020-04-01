@@ -1030,8 +1030,8 @@ public class NFA {
         System.out.println("DET: Total time taken: " + totalTime + "ms");
         System.out.println("DET: Closure time: " + closureTime + "ms");
         System.out.println("DET: Lambda closure time: " + lambdaClosureTime + "ms");
-        System.out.println(lambdaClosureMemoHitCounter + "lambda-closure memo hits.");
-        System.out.println(lambdaClosureMemoQueryCounter + "lambda-closure memo queries.");
+        System.out.println(lambdaClosureMemoHitCounter + " lambda-closure memo hits.");
+        System.out.println(lambdaClosureMemoQueryCounter + " lambda-closure memo queries.");
         System.out.println();
 
         return new DFA(numberOfStates, alphabetSize, initialState, labelsMap, newTransitionTable);
