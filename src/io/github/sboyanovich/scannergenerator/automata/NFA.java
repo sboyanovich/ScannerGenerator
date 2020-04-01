@@ -475,7 +475,43 @@ public class NFA {
     }
 
     public NFA positiveIteration() {
-        return this.concatenation(this.iteration());
+        // THIS IS MORE PERFORMANT THAN MATHEMATICAL DEFINITION, ALSO DOESN'T NEED EXTRA STATE
+        Set<Integer> acceptingStates = acceptingStates();
+        // handle automaton with no accepting states
+        if (acceptingStates.isEmpty()) {
+            return emptyLanguage(this.alphabetSize);
+        }
+
+        int numberOfStates = this.numberOfStates;
+        int alphabetSize = this.alphabetSize;
+        int initialState = this.initialState;
+
+        Map<Integer, StateTag> labels = new HashMap<>();
+        for (int state : this.labels.keySet()) {
+            labels.put(state, this.labels.get(state));
+        }
+
+        NFAStateGraphBuilder edges = new NFAStateGraphBuilder(numberOfStates, alphabetSize);
+        // preserving edges from this automaton
+        for (int i = 0; i < this.numberOfStates; i++) {
+            for (int j = 0; j < this.numberOfStates; j++) {
+                if (this.edges.edgeExists(i, j)) {
+                    edges.setEdge(
+                            i, j,
+                            SegmentSet.fromSet(this.edges.getEdgeMarker(i, j).get(), this.alphabetSize),
+                            true
+                    );
+                }
+            }
+        }
+        SegmentSet nothing = SegmentSet.nothing(this.alphabetSize);
+
+        // linking this automaton's accepting states with initial state (lambda-steps)
+        for (int state : this.labels.keySet()) {
+            edges.setEdge(state, initialState, nothing, true);
+        }
+
+        return new NFA(numberOfStates, alphabetSize, initialState, labels, edges.build());
     }
 
     public NFA optional() {
@@ -483,6 +519,7 @@ public class NFA {
     }
 
     public NFA power(int n) {
+        // TODO: Implement fast power.
         if (n == 0) {
             return NFA.emptyStringLanguage(this.alphabetSize);
         } else {
@@ -801,70 +838,6 @@ public class NFA {
         return new NFA(numberOfStates, alphabetSize, initialState, labels, edges.build());
     }
 
-    static int hitCounter = 0;
-    static int queryCounter = 0;
-    static int superstateHitCounter = 0;
-    static int superstateQueryCounter = 0;
-
-    // this is expensive to eagerly compute
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
-    private Set<Integer> superState(
-            int state, int letter, Map<Integer, Map<Integer, Set<Integer>>> stateSymbolMemo
-    ) {
-        queryCounter++;
-        Map<Integer, Set<Integer>> stateMemo;
-        if (stateSymbolMemo.containsKey(state)) {
-            stateMemo = stateSymbolMemo.get(state);
-            if (stateMemo.containsKey(letter)) {
-                hitCounter++;
-                return stateMemo.get(letter);
-            }
-        } else {
-            stateMemo = new HashMap<>();
-            stateSymbolMemo.put(state, stateMemo);
-        }
-        Set<Integer> result = new HashSet<>();
-        for (int i = 0; i < this.numberOfStates; i++) {
-            if (this.edges.isNonTrivialEdge(state, i)) {
-                if (this.edges.getEdgeMarker(state, i).get().contains(letter)) {
-                    result.add(i);
-                }
-            }
-        }
-        stateMemo.put(letter, result);
-        return result;
-    }
-
-    private Set<Integer> closure(
-            Set<Integer> superstate, int letter, Map<Integer, Map<Integer, Set<Integer>>> stateSymbolMemo
-    ) {
-        Set<Integer> result = new HashSet<>();
-
-        for (Integer state : superstate) {
-            result.addAll(superState(state, letter, stateSymbolMemo));
-        }
-
-        return result;
-    }
-
-    // Weird that this is less performant
-    private Set<Integer> closureV2(Set<Integer> superstate, int letter) {
-        Set<Integer> result = new HashSet<>();
-
-        for (int i = 0; i < this.numberOfStates; i++) {
-            for (Integer state : superstate) {
-                if (this.edges.isNonTrivialEdge(state, i)) {
-                    if (this.edges.getEdgeMarker(state, i).get().contains(letter)) {
-                        result.add(i);
-                        break;
-                    }
-                }
-            }
-        }
-
-        return result;
-    }
-
     private Set<Integer> lambdaClosure(Set<Integer> states) {
         Set<Integer> result = new HashSet<>(states);
 
@@ -900,12 +873,10 @@ public class NFA {
         // (except NOT_FINAL and FINAL_DUMMY) (these are most likely going to be overwritten anyway)
         // client-defined priority ranks must be non-negative
 
-        hitCounter = 0;
-        queryCounter = 0;
-        superstateHitCounter = 0;
-        superstateQueryCounter = 0;
+        int lambdaClosureMemoHitCounter = 0;
+        int lambdaClosureMemoQueryCounter = 0;
 
-        long totalTime = 0, closureTime = 0, lambdaClosureTime = 0;
+        long totalTime, closureTime = 0, lambdaClosureTime = 0;
         Instant start, end, startTotal, endTotal;
 
         startTotal = Instant.now();
@@ -946,8 +917,17 @@ public class NFA {
         List<Integer> eqc = emap.getRepresents();
 
         /// OPTIMIZING STRUCTURES
-        Map<Integer, Map<Integer, Set<Integer>>> stateSymbolMemo = new HashMap<>();
         Map<Set<Integer>, Set<Integer>> memo = new HashMap<>();
+        Map<Integer, List<Integer>> edges = new HashMap<>();
+        for (int i = 0; i < this.numberOfStates; i++) {
+            List<Integer> states = new ArrayList<>();
+            for (int j = 0; j < this.numberOfStates; j++) {
+                if (this.edges.isNonTrivialEdge(i, j)) {
+                    states.add(j);
+                }
+            }
+            edges.put(i, states);
+        }
 
         {
             int i = 0;
@@ -961,17 +941,28 @@ public class NFA {
                     int repLetter = eqc.get(j);
 
                     start = Instant.now();
-                    Set<Integer> closure =
-                            this.closure(currentSuperstate, repLetter, stateSymbolMemo);
+                    Set<Integer> closure = new HashSet<>();
+
+                    for (int from : currentSuperstate) {
+                        List<Integer> toStates = edges.get(from);
+                        for (int to : toStates) {
+                            if (!closure.contains(to)) {
+                                Set<Integer> edge = this.edges.getEdgeMarker(from, to).get();
+                                if (edge.contains(repLetter)) {
+                                    closure.add(to);
+                                }
+                            }
+                        }
+                    }
                     end = Instant.now();
                     closureTime += Duration.between(start, end).toNanos();
 
                     Set<Integer> image;
 
-                    superstateQueryCounter++;
+                    lambdaClosureMemoQueryCounter++;
                     if (memo.containsKey(closure)) {
                         image = memo.get(closure);
-                        superstateHitCounter++;
+                        lambdaClosureMemoHitCounter++;
                     } else {
                         start = Instant.now();
                         image = this.lambdaClosure(
@@ -1039,10 +1030,8 @@ public class NFA {
         System.out.println("DET: Total time taken: " + totalTime + "ms");
         System.out.println("DET: Closure time: " + closureTime + "ms");
         System.out.println("DET: Lambda closure time: " + lambdaClosureTime + "ms");
-        System.out.println(hitCounter + " superstate memo hits.");
-        System.out.println(queryCounter + " superstate memo queries.");
-        System.out.println(superstateHitCounter + " closure memo hits.");
-        System.out.println(superstateQueryCounter + " closure memo queries.");
+        System.out.println(lambdaClosureMemoHitCounter + "lambda-closure memo hits.");
+        System.out.println(lambdaClosureMemoQueryCounter + "lambda-closure memo queries.");
         System.out.println();
 
         return new DFA(numberOfStates, alphabetSize, initialState, labelsMap, newTransitionTable);
