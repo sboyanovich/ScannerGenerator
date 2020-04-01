@@ -26,7 +26,8 @@ public class MyScanner extends GeneratedScanner {
         Optional<Token> result = super.handleError(text, mode, start, follow);
         int codePoint = text.codePointAt(follow.getIndex());
         this.compiler.addError(follow, "Unexpected symbol encountered: " + codePoint);
-        return result;
+        setStartToCurrentPosition();
+        return Optional.empty();
     }
 
     @Override
