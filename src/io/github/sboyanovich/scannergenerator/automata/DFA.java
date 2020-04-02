@@ -259,7 +259,7 @@ public class DFA {
         DisjointSetForest result = finestPartition(nElements);
         for (int i = 0; i < nElements; i++) {
             for (int j = i; j < nElements; j++) {
-                if (dsf.areEquivalent(i, j)) {
+                if (dsf.areEquivalent(i, j) && !result.areEquivalent(i, j)) {
                     if (areEquivalent(i, j, transitionFunction, dsf)) {
                         result.union(i, j);
                     }
