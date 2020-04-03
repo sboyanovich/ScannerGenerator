@@ -44,6 +44,7 @@ public class RecognizerGenTest {
         boolean readRecognizersFromResources = false;
         boolean dumpAstDescription = false;
 
+        /// PROCESSING COMMAND LINE ARGS
         boolean expectPackageName = false;
         for (int i = 1; i < args.length; i++) {
             String arg = args[i];
@@ -79,15 +80,18 @@ public class RecognizerGenTest {
 
         startTotal = Instant.now();
 
+        /// READING TEXT FROM FILE
         String text = Utility.getText(inputFile);
 
         int maxCodePoint = Character.MAX_CODE_POINT;
         int aeoi = maxCodePoint + 1;
         int alphabetSize = maxCodePoint + 1 + 1;
 
+        /// CREATING SCANNER
         MyScanner scanner = new MyScanner(text, alphabetSize);
         MockCompiler compiler = scanner.getCompiler();
 
+        /// PARSING AND BUILDING AST
         AST ast = null;
         try {
             ast = Parser.parse(scanner, compiler);
@@ -110,12 +114,14 @@ public class RecognizerGenTest {
         if (warnings > 0) {
             System.out.println("Warnings: " + warnings);
         }
+        /// DISPLAYING COMPILER MESSAGES
         System.out.println("Compiler messages:");
         SortedMap<Position, Message> messages = compiler.getSortedMessages();
         for (Map.Entry<Position, Message> entry : messages.entrySet()) {
             System.out.println("\tat " + entry.getKey() + " " + entry.getValue());
         }
 
+        /// GENERATION PHASE
         if (compiler.getErrorCount() == 0) {
 
             AST.Spec spec = (AST.Spec) ast;
@@ -125,6 +131,7 @@ public class RecognizerGenTest {
 
             Instant start, end;
 
+            /// BUILDING DEFINITIONS NFAs
             for (AST.Definitions.Def def : spec.definitions.definitions) {
                 String name = def.identifier.identifier;
 
@@ -143,21 +150,13 @@ public class RecognizerGenTest {
 
             }
 
-/*            System.out.println();
-            for(String key : definitions.keySet()) {
-                NFA auto = definitions.get(key);
-                System.out.println(key + ": ");
-                String dot = auto.toGraphvizDotString(Utility::defaultUnicodeInterpretation, true);
-                System.out.println(dot);
-                System.out.println();
-            }*/
-
             Map<String, List<NFA>> modeNFALists = new HashMap<>();
             Map<String, NFA> modeNFAs = new HashMap<>();
             List<StateTag> priorityList = new ArrayList<>();
             Map<String, Set<Integer>> rulePivots = new HashMap<>();
             Map<String, Set<Integer>> modePivots = new HashMap<>();
 
+            /// BUILDING RULE NFAs
             List<AST.Rules.Rule> rules = spec.rules.rules;
             for (AST.Rules.Rule rule : rules) {
                 String stateName = rule.stateName;
@@ -186,6 +185,7 @@ public class RecognizerGenTest {
 
                 priorityList.add(stateTag);
 
+                /// ADDING RULES TO THEIR MODES
                 List<AST.Identifier> modeNames = rule.modeList.modeNames;
                 for (var mode : modeNames) {
                     String modeName = mode.identifier;
@@ -208,6 +208,7 @@ public class RecognizerGenTest {
                 }
             }
 
+            /// BUILDING MODE NFAs
             for (String modeName : modeNFALists.keySet()) {
                 start = Instant.now();
                 NFA modeNFA = NFA.unionAll(modeNFALists.get(modeName));
@@ -218,12 +219,14 @@ public class RecognizerGenTest {
 
             Map<StateTag, Integer> priorityMap = new HashMap<>();
 
+            /// BUILDING PRIORITY MAP
             for (int i = 0; i < priorityList.size(); i++) {
                 priorityMap.put(priorityList.get(i), priorityList.size() - (i + 1));
             }
 
             Map<String, LexicalRecognizer> modes = new HashMap<>();
 
+            /// BUILDING RECOGNIZERS FOR EVERY MODE
             start = Instant.now();
             for (String modeName : modeNFAs.keySet()) {
                 NFA nfa = modeNFAs.get(modeName);
@@ -232,16 +235,10 @@ public class RecognizerGenTest {
             end = Instant.now();
             timeBuildingRecognizers += Duration.between(start, end).toMillis();
 
+            /// WRITING RECOGNIZERS TO FILES
             start = Instant.now();
             for (String modeName : modes.keySet()) {
                 LexicalRecognizer recognizer = modes.get(modeName);
-                /*String dot = recognizer.toGraphvizDotString(
-                        Objects::toString, true
-                );
-                System.out.println();
-                System.out.println(modeName + ": ");
-                System.out.println(dot);
-                System.out.println();*/
                 recognizer.writeToFile(
                         prefix + recognizersDirName + "/" + modeName + ".reco", priorityMap
                 );
@@ -251,17 +248,12 @@ public class RecognizerGenTest {
 
             System.out.println();
             Collections.reverse(priorityList);
-/*
-            StringBuilder finalTags = new StringBuilder();
-            finalTags.append("List<StateTag> finalTags = new ArrayList<>();\n");
-            for (int i = 0; i < priorityList.size(); i++) {
-                StateTag tag = priorityList.get(i);
-                finalTags.append("finalTags.add(").append(tag).append(");\n");
-            }
-            System.out.println(finalTags.toString());
-*/
+
+            /// CODE GENERATION SECTION
+
             List<String> stateNames = priorityList.stream().map(Objects::toString).collect(Collectors.toList());
 
+            /// GENERATING STATE TAGS ENUM
             start = Instant.now();
             String stateTagsEnum = Utility.generateStateTagsEnum(stateNames, packageName);
 
@@ -271,6 +263,7 @@ public class RecognizerGenTest {
 
             final String SIMPLE_DOMAIN_KEY = "@SIMPLE";
 
+            /// MERGING DOMAIN GROUPS BY ATTRIBUTE TYPE
             Map<String, List<String>> domainNamesMap = new HashMap<>();
             for (AST.DomainGroup domainGroup : domainGroupList) {
                 String key = "";
@@ -289,9 +282,9 @@ public class RecognizerGenTest {
                 names.addAll(domainGroup.getDomainNames());
             }
 
-
             Map<String, String> domainEnums = new HashMap<>();
 
+            /// GENERATING DOMAINS ENUMS
             for (String key : domainNamesMap.keySet()) {
                 List<String> domainNames = domainNamesMap.get(key);
                 String enumName = "";
@@ -319,6 +312,7 @@ public class RecognizerGenTest {
                 }
             }
 
+            /// GENERATING MAIN SCANNER CLASS
             StringBuilder scannerCode = new StringBuilder();
             scannerCode.append("package ").append(packageName).append(";\r\n\r\n")
                     .append("import io.github.sboyanovich.scannergenerator.automata.StateTag;\r\n" +
@@ -572,6 +566,7 @@ public class RecognizerGenTest {
 
             List<String> actionNames = new ArrayList<>();
 
+            /// RULE ACTIONS
             for (AST.Rules.Rule rule : rules) {
                 String stateName = rule.stateName;
                 AST.Rules.Rule.Action action = rule.action;
@@ -688,8 +683,6 @@ public class RecognizerGenTest {
             System.out.println("Time generating code: " + timeGeneratingCode + "ms");
             System.out.println("Total time: " + totalTimeElapsed + "ms");
         }
-/*        Scanner sc = new Scanner(System.in);
-        sc.nextLine();*/
     }
 
     static String generateActionFuncCall(String actionName) {
@@ -707,49 +700,28 @@ public class RecognizerGenTest {
         return regex.buildNFA(namedExpressions, alphabetSize);
     }
 
-    static LexicalRecognizer buildRecognizer(NFA lang, Map<StateTag, Integer> priorityMap, Set<Integer> pivots) {
-        //System.out.println(lang.getNumberOfStates());
+    private static final int A_LOT_OF_STATES = 250;
 
-        // This appears to be necessary for determinization to work properly. It shouldn't be.
+    static LexicalRecognizer buildRecognizer(NFA lang, Map<StateTag, Integer> priorityMap, Set<Integer> pivots) {
         Instant start = Instant.now();
-        if (lang.getNumberOfStates() >= 250) {
+        if (lang.getNumberOfStates() >= A_LOT_OF_STATES) {
             lang = lang.removeLambdaSteps();
         }
         Instant end = Instant.now();
         timeRemovingLambdas += Duration.between(start, end).toMillis();
 
-        //System.out.println("Lambda steps removed.");
-
         List<Integer> pivotList = new ArrayList<>(pivots);
 
-        /*       Instant start = Instant.now(); */
         start = Instant.now();
         DFA dfa = lang.determinize(priorityMap, pivotList);
         end = Instant.now();
         timeDeterminizing += Duration.between(start, end).toMillis();
-/*        Instant stop = Instant.now();
-        long timeElapsed = Duration.between(start, stop).toMillis();
-
-        System.out.println("Determinized!");
-        System.out.println("\tin " + timeElapsed + "ms");
-        System.out.println("States: " + dfa.getNumberOfStates());
-        System.out.println("Classes: " + dfa.getTransitionTable().getEquivalenceMap().getEqClassDomain());
-
-        start = Instant.now();*/
 
         start = Instant.now();
         LexicalRecognizer recognizer = new LexicalRecognizer(dfa);
         end = Instant.now();
         timeCompressingAndMinimizing += Duration.between(start, end).toMillis();
-/*
-        stop = Instant.now();
-        timeElapsed = Duration.between(start, stop).toMillis();
-        System.out.println("Recognizer built!");
-        System.out.println("\tin " + timeElapsed + "ms");
-        System.out.println("States: " + recognizer.getNumberOfStates());
-        System.out.println("Classes: " + recognizer.getNumberOfColumns());
-*/
+
         return recognizer;
     }
-
 }
