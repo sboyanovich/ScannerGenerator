@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 public class RecognizerGenTest {
 
-    public static boolean DEBUG_PROFILE = false;
+    public static boolean VERBOSE = false;
     static Instant startTotal = null, endTotal = null;
     static long totalTimeElapsed, timeNFA, timeGeneratingCode,
             timeBuildingRecognizers, timeWritingRecognizers, timeRemovingLambdas,
@@ -72,7 +72,7 @@ public class RecognizerGenTest {
                         dumpAstDescription = true;
                         break;
                     case "-v":
-                        DEBUG_PROFILE = true;
+                        VERBOSE = true;
                         break;
                     default:
                         System.err.println("Unrecognized arg: " + arg);
@@ -82,7 +82,7 @@ public class RecognizerGenTest {
             }
         }
 
-        if (DEBUG_PROFILE) {
+        if (VERBOSE) {
             startTotal = Instant.now();
         }
 
@@ -143,21 +143,21 @@ public class RecognizerGenTest {
             for (AST.Definitions.Def def : spec.definitions.definitions) {
                 String name = def.identifier.identifier;
 
-                if (DEBUG_PROFILE) {
+                if (VERBOSE) {
                     start = Instant.now();
                 }
                 Set<Integer> pivots = def.regex.getPivots(defPivots, alphabetSize);
                 defPivots.put(name, pivots);
-                if (DEBUG_PROFILE) {
+                if (VERBOSE) {
                     end = Instant.now();
                     timeComputingPivots += Duration.between(start, end).toNanos();
                 }
 
-                if (DEBUG_PROFILE) {
+                if (VERBOSE) {
                     start = Instant.now();
                 }
                 NFA auto = buildNFAFromRegex(def.regex, definitions, alphabetSize);
-                if (DEBUG_PROFILE) {
+                if (VERBOSE) {
                     end = Instant.now();
                     timeNFA += Duration.between(start, end).toNanos();
                 }
@@ -176,21 +176,21 @@ public class RecognizerGenTest {
             for (AST.Rules.Rule rule : rules) {
                 String stateName = rule.stateName;
 
-                if (DEBUG_PROFILE) {
+                if (VERBOSE) {
                     start = Instant.now();
                 }
                 Set<Integer> pivots = rule.regex.getPivots(defPivots, alphabetSize);
                 rulePivots.put(stateName, pivots);
-                if (DEBUG_PROFILE) {
+                if (VERBOSE) {
                     end = Instant.now();
                     timeComputingPivots += Duration.between(start, end).toNanos();
                 }
 
-                if (DEBUG_PROFILE) {
+                if (VERBOSE) {
                     start = Instant.now();
                 }
                 NFA nfa = buildNFAFromRegex(rule.regex, definitions, alphabetSize);
-                if (DEBUG_PROFILE) {
+                if (VERBOSE) {
                     end = Instant.now();
                     timeNFA += Duration.between(start, end).toNanos();
                 }
@@ -215,11 +215,11 @@ public class RecognizerGenTest {
                     if (modeNFALists.containsKey(modeName)) {
                         modeNFALists.get(modeName).add(nfa);
 
-                        if (DEBUG_PROFILE) {
+                        if (VERBOSE) {
                             start = Instant.now();
                         }
                         modePivots.get(modeName).addAll(rulePivots.get(stateName));
-                        if (DEBUG_PROFILE) {
+                        if (VERBOSE) {
                             end = Instant.now();
                             timeComputingPivots += Duration.between(start, end).toNanos();
                         }
@@ -227,11 +227,11 @@ public class RecognizerGenTest {
                         List<NFA> modeList = new ArrayList<>();
                         modeList.add(nfa);
                         modeNFALists.put(modeName, modeList);
-                        if (DEBUG_PROFILE) {
+                        if (VERBOSE) {
                             start = Instant.now();
                         }
                         modePivots.put(modeName, new HashSet<>(rulePivots.get(stateName)));
-                        if (DEBUG_PROFILE) {
+                        if (VERBOSE) {
                             end = Instant.now();
                             timeComputingPivots += Duration.between(start, end).toNanos();
                         }
@@ -241,11 +241,11 @@ public class RecognizerGenTest {
 
             /// BUILDING MODE NFAs
             for (String modeName : modeNFALists.keySet()) {
-                if (DEBUG_PROFILE) {
+                if (VERBOSE) {
                     start = Instant.now();
                 }
                 NFA modeNFA = NFA.unionAll(modeNFALists.get(modeName));
-                if (DEBUG_PROFILE) {
+                if (VERBOSE) {
                     end = Instant.now();
                     timeNFA += Duration.between(start, end).toNanos();
                 }
@@ -262,23 +262,23 @@ public class RecognizerGenTest {
             Map<String, LexicalRecognizer> modes = new HashMap<>();
 
             /// BUILDING RECOGNIZERS FOR EVERY MODE
-            if (DEBUG_PROFILE) {
+            if (VERBOSE) {
                 start = Instant.now();
             }
             for (String modeName : modeNFAs.keySet()) {
                 NFA nfa = modeNFAs.get(modeName);
-                if (DEBUG_PROFILE) {
+                if (VERBOSE) {
                     System.out.println("Mode: " + modeName);
                 }
                 modes.put(modeName, buildRecognizer(nfa, priorityMap, modePivots.get(modeName)));
             }
-            if (DEBUG_PROFILE) {
+            if (VERBOSE) {
                 end = Instant.now();
                 timeBuildingRecognizers += Duration.between(start, end).toMillis();
             }
 
             /// WRITING RECOGNIZERS TO FILES
-            if (DEBUG_PROFILE) {
+            if (VERBOSE) {
                 start = Instant.now();
             }
             for (String modeName : modes.keySet()) {
@@ -290,7 +290,7 @@ public class RecognizerGenTest {
                         prefix + recognizersDirName + "/" + modeName + ".reco", priorityMap
                 );
             }
-            if (DEBUG_PROFILE) {
+            if (VERBOSE) {
                 end = Instant.now();
                 timeWritingRecognizers += Duration.between(start, end).toMillis();
             }
@@ -303,7 +303,7 @@ public class RecognizerGenTest {
             List<String> stateNames = priorityList.stream().map(Objects::toString).collect(Collectors.toList());
 
             /// GENERATING STATE TAGS ENUM
-            if (DEBUG_PROFILE) {
+            if (VERBOSE) {
                 start = Instant.now();
             }
             String stateTagsEnum = Utility.generateStateTagsEnum(stateNames, packageName);
@@ -700,17 +700,17 @@ public class RecognizerGenTest {
             scannerCode.append("}");
 
             Utility.writeTextToFile(scannerCode.toString(), prefix + scannerClassName + ".java");
-            if (DEBUG_PROFILE) {
+            if (VERBOSE) {
                 end = Instant.now();
                 timeGeneratingCode += Duration.between(start, end).toMillis();
             }
 
-            if (DEBUG_PROFILE) {
+            if (VERBOSE) {
                 endTotal = Instant.now();
                 totalTimeElapsed = Duration.between(startTotal, endTotal).toMillis();
             }
 
-            if (DEBUG_PROFILE) {
+            if (VERBOSE) {
                 final int MILLION = 1_000_000;
 
                 timeBuildingCharClasses /= MILLION;
@@ -729,7 +729,7 @@ public class RecognizerGenTest {
                 System.out.println();
             }
 
-            if (DEBUG_PROFILE) {
+            if (VERBOSE) {
                 System.out.println("Time building NFAs: " + timeNFA + "ms");
                 System.out.println("Time building char classes " + timeBuildingCharClasses + "ms");
                 System.out.println("Time computing pivots: " + timeComputingPivots + "ns");
@@ -763,33 +763,33 @@ public class RecognizerGenTest {
 
     static LexicalRecognizer buildRecognizer(NFA lang, Map<StateTag, Integer> priorityMap, Set<Integer> pivots) {
         Instant start = null, end = null;
-        if (DEBUG_PROFILE) {
+        if (VERBOSE) {
             start = Instant.now();
         }
         if (lang.getNumberOfStates() >= A_LOT_OF_STATES) {
             lang = lang.removeLambdaSteps();
         }
-        if (DEBUG_PROFILE) {
+        if (VERBOSE) {
             end = Instant.now();
             timeRemovingLambdas += Duration.between(start, end).toMillis();
         }
 
         List<Integer> pivotList = new ArrayList<>(pivots);
 
-        if (DEBUG_PROFILE) {
+        if (VERBOSE) {
             start = Instant.now();
         }
         DFA dfa = lang.determinize(priorityMap, pivotList);
-        if (DEBUG_PROFILE) {
+        if (VERBOSE) {
             end = Instant.now();
             timeDeterminizing += Duration.between(start, end).toMillis();
         }
 
-        if (DEBUG_PROFILE) {
+        if (VERBOSE) {
             start = Instant.now();
         }
         LexicalRecognizer recognizer = new LexicalRecognizer(dfa);
-        if (DEBUG_PROFILE) {
+        if (VERBOSE) {
             end = Instant.now();
             timeCompressingAndMinimizing += Duration.between(start, end).toMillis();
         }

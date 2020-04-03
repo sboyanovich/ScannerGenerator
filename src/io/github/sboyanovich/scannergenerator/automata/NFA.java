@@ -880,28 +880,28 @@ public class NFA {
         long totalTime, closureTime = 0, lambdaClosureTime = 0;
         Instant start = null, end = null, startTotal = null, endTotal = null;
 
-        if (RecognizerGenTest.DEBUG_PROFILE) {
+        if (RecognizerGenTest.VERBOSE) {
             startTotal = Instant.now();
         }
 
         EquivalenceMap emap;
 
-        if (RecognizerGenTest.DEBUG_PROFILE) {
+        if (RecognizerGenTest.VERBOSE) {
             System.out.println("States: " + this.numberOfStates);
         }
         if (pivots.isEmpty()) {
             List<Integer> mentioned = mentioned(this);
-            if (RecognizerGenTest.DEBUG_PROFILE) {
+            if (RecognizerGenTest.VERBOSE) {
                 System.out.println("Mentioned :" + mentioned.size());
             }
             emap = getCoarseSymbolClassMap(mentioned, this.alphabetSize);
         } else {
-            if (RecognizerGenTest.DEBUG_PROFILE) {
+            if (RecognizerGenTest.VERBOSE) {
                 System.out.println("Pivots: " + pivots.size());
             }
             emap = getCoarseSymbolClassMapRegexBased(pivots, this.alphabetSize);
         }
-        if (RecognizerGenTest.DEBUG_PROFILE) {
+        if (RecognizerGenTest.VERBOSE) {
             System.out.println("Classes: " + emap.getEqClassDomain());
         }
 
@@ -951,7 +951,7 @@ public class NFA {
                 for (int j = 0; j < eqcd; j++) {
                     int repLetter = eqc.get(j);
 
-                    if (RecognizerGenTest.DEBUG_PROFILE) {
+                    if (RecognizerGenTest.VERBOSE) {
                         start = Instant.now();
                     }
                     Set<Integer> closure = new HashSet<>();
@@ -967,7 +967,7 @@ public class NFA {
                             }
                         }
                     }
-                    if (RecognizerGenTest.DEBUG_PROFILE) {
+                    if (RecognizerGenTest.VERBOSE) {
                         end = Instant.now();
                         closureTime += Duration.between(start, end).toNanos();
                     }
@@ -979,14 +979,14 @@ public class NFA {
                         image = memo.get(closure);
                         lambdaClosureMemoHitCounter++;
                     } else {
-                        if (RecognizerGenTest.DEBUG_PROFILE) {
+                        if (RecognizerGenTest.VERBOSE) {
                             start = Instant.now();
                         }
                         image = this.lambdaClosure(
                                 closure
                         );
                         memo.put(closure, image);
-                        if (RecognizerGenTest.DEBUG_PROFILE) {
+                        if (RecognizerGenTest.VERBOSE) {
                             end = Instant.now();
                             lambdaClosureTime += Duration.between(start, end).toNanos();
                         }
@@ -1040,7 +1040,7 @@ public class NFA {
         DFATransitionTable newTransitionTable =
                 new DFATransitionTable(numberOfStates, alphabetSize, transitionTable, emap);
 
-        if (RecognizerGenTest.DEBUG_PROFILE) {
+        if (RecognizerGenTest.VERBOSE) {
             closureTime /= 1_000_000;
             lambdaClosureTime /= 1_000_000;
 

@@ -507,7 +507,7 @@ public abstract class AST {
             @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
                 Instant start = null, end = null;
-                if (RecognizerGenTest.DEBUG_PROFILE) {
+                if (RecognizerGenTest.VERBOSE) {
                     start = Instant.now();
                 }
                 NFA result;
@@ -523,7 +523,7 @@ public abstract class AST {
                 } else {
                     result = NFA.acceptsAllTheseCodePoints(alphabetSize, codePoints);
                 }
-                if (RecognizerGenTest.DEBUG_PROFILE) {
+                if (RecognizerGenTest.VERBOSE) {
                     end = Instant.now();
                     RecognizerGenTest.timeBuildingCharClasses += Duration.between(start, end).toNanos();
                 }
