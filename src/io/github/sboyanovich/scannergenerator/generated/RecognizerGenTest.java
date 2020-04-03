@@ -23,7 +23,7 @@ public class RecognizerGenTest {
 
     static final String APP_NAME = "xscan";
     static final String USAGE_HINT =
-            "USAGE: " + APP_NAME + " <input_file> [-r] [-d] [-p <package_name>]";
+            "USAGE: " + APP_NAME + " <input_file> [-r] [-d] [-p <package_name>] [-t]";
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -42,6 +42,7 @@ public class RecognizerGenTest {
         String scannerClassName = "GeneratedScanner";
         boolean dumpDotDescriptions = false;
         boolean readRecognizersFromResources = false;
+        boolean dumpAstDescription = false;
 
         boolean expectPackageName = false;
         for (int i = 1; i < args.length; i++) {
@@ -65,6 +66,9 @@ public class RecognizerGenTest {
                             System.exit(1);
                         }
                         break;
+                    case "-t":
+                        dumpAstDescription = true;
+                        break;
                     default:
                         System.err.println("Unrecognized arg: " + arg);
                         System.err.println(USAGE_HINT);
@@ -84,44 +88,20 @@ public class RecognizerGenTest {
         MyScanner scanner = new MyScanner(text, alphabetSize);
         MockCompiler compiler = scanner.getCompiler();
 
-/*
-        Set<Domain> ignoredTokenTypes = Set.of(
-                Domain.END_OF_INPUT,
-                Domain.ERROR
-        );
-
-        List<Token> allTokens = new ArrayList<>();
-
-        int errCount = 0;
-
-        Token t = scanner.nextToken();
-        allTokens.add(t);
-        while (t.getTag() != Domain.END_OF_INPUT) {
-            if (!ignoredTokenTypes.contains(t.getTag())) {
-                System.out.println(t);
-            }
-            if (t.getTag() == Domain.ERROR) {
-                errCount++;
-                System.out.println(t.getCoords());
-            }
-            t = scanner.nextToken();
-            allTokens.add(t);
-        }
-
-        System.out.println();
-        System.out.println("Errors: " + errCount);
-        System.out.println("Compiler messages: ");
-        */
-
         AST ast = null;
         try {
             ast = Parser.parse(scanner, compiler);
         } catch (IllegalStateException e) {
             System.out.println("There are syntax errors in the input. Parsing cannot proceed.\n");
         }
-            /*String dotAST = ast.toGraphVizDotString();
+
+        if (dumpAstDescription) {
+            String dotAST = ast.toGraphVizDotString();
             System.out.println();
-            System.out.println(dotAST);*/
+            System.out.println(dotAST);
+            System.out.println();
+        }
+
         int errors = compiler.getErrorCount();
         int warnings = compiler.getWarningCount();
         if (errors > 0) {
