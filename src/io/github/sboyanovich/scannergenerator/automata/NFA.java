@@ -1,5 +1,6 @@
 package io.github.sboyanovich.scannergenerator.automata;
 
+import io.github.sboyanovich.scannergenerator.generated.RecognizerGenTest;
 import io.github.sboyanovich.scannergenerator.utility.EquivalenceMap;
 
 import java.time.Duration;
@@ -879,20 +880,30 @@ public class NFA {
         long totalTime, closureTime = 0, lambdaClosureTime = 0;
         Instant start, end, startTotal, endTotal;
 
-        startTotal = Instant.now();
+        if (RecognizerGenTest.DEBUG_PROFILE) {
+            startTotal = Instant.now();
+        }
 
         EquivalenceMap emap;
 
-        System.out.println("States: " + this.numberOfStates);
+        if (RecognizerGenTest.DEBUG_PROFILE) {
+            System.out.println("States: " + this.numberOfStates);
+        }
         if (pivots.isEmpty()) {
             List<Integer> mentioned = mentioned(this);
-            System.out.println("Mentioned :" + mentioned.size());
+            if (RecognizerGenTest.DEBUG_PROFILE) {
+                System.out.println("Mentioned :" + mentioned.size());
+            }
             emap = getCoarseSymbolClassMap(mentioned, this.alphabetSize);
         } else {
-            System.out.println("Pivots: " + pivots.size());
+            if (RecognizerGenTest.DEBUG_PROFILE) {
+                System.out.println("Pivots: " + pivots.size());
+            }
             emap = getCoarseSymbolClassMapRegexBased(pivots, this.alphabetSize);
         }
-        System.out.println("Classes: " + emap.getEqClassDomain());
+        if (RecognizerGenTest.DEBUG_PROFILE) {
+            System.out.println("Classes: " + emap.getEqClassDomain());
+        }
 
         priorities = new HashMap<>(priorities);
         // TODO: Validate priorities Map
@@ -940,7 +951,9 @@ public class NFA {
                 for (int j = 0; j < eqcd; j++) {
                     int repLetter = eqc.get(j);
 
-                    start = Instant.now();
+                    if (RecognizerGenTest.DEBUG_PROFILE) {
+                        start = Instant.now();
+                    }
                     Set<Integer> closure = new HashSet<>();
 
                     for (int from : currentSuperstate) {
@@ -954,8 +967,10 @@ public class NFA {
                             }
                         }
                     }
-                    end = Instant.now();
-                    closureTime += Duration.between(start, end).toNanos();
+                    if (RecognizerGenTest.DEBUG_PROFILE) {
+                        end = Instant.now();
+                        closureTime += Duration.between(start, end).toNanos();
+                    }
 
                     Set<Integer> image;
 
@@ -964,13 +979,17 @@ public class NFA {
                         image = memo.get(closure);
                         lambdaClosureMemoHitCounter++;
                     } else {
-                        start = Instant.now();
+                        if (RecognizerGenTest.DEBUG_PROFILE) {
+                            start = Instant.now();
+                        }
                         image = this.lambdaClosure(
                                 closure
                         );
                         memo.put(closure, image);
-                        end = Instant.now();
-                        lambdaClosureTime += Duration.between(start, end).toNanos();
+                        if (RecognizerGenTest.DEBUG_PROFILE) {
+                            end = Instant.now();
+                            lambdaClosureTime += Duration.between(start, end).toNanos();
+                        }
                     }
 
                     boolean newState = superstates.add(image);
@@ -1021,18 +1040,20 @@ public class NFA {
         DFATransitionTable newTransitionTable =
                 new DFATransitionTable(numberOfStates, alphabetSize, transitionTable, emap);
 
-        closureTime /= 1_000_000;
-        lambdaClosureTime /= 1_000_000;
+        if (RecognizerGenTest.DEBUG_PROFILE) {
+            closureTime /= 1_000_000;
+            lambdaClosureTime /= 1_000_000;
 
-        endTotal = Instant.now();
-        totalTime = Duration.between(startTotal, endTotal).toMillis();
-        System.out.println();
-        System.out.println("DET: Total time taken: " + totalTime + "ms");
-        System.out.println("DET: Closure time: " + closureTime + "ms");
-        System.out.println("DET: Lambda closure time: " + lambdaClosureTime + "ms");
-        System.out.println(lambdaClosureMemoHitCounter + " lambda-closure memo hits.");
-        System.out.println(lambdaClosureMemoQueryCounter + " lambda-closure memo queries.");
-        System.out.println();
+            endTotal = Instant.now();
+            totalTime = Duration.between(startTotal, endTotal).toMillis();
+            System.out.println();
+            System.out.println("DET: Total time taken: " + totalTime + "ms");
+            System.out.println("DET: Closure time: " + closureTime + "ms");
+            System.out.println("DET: Lambda closure time: " + lambdaClosureTime + "ms");
+            System.out.println(lambdaClosureMemoHitCounter + " lambda-closure memo hits.");
+            System.out.println(lambdaClosureMemoQueryCounter + " lambda-closure memo queries.");
+            System.out.println();
+        }
 
         return new DFA(numberOfStates, alphabetSize, initialState, labelsMap, newTransitionTable);
     }

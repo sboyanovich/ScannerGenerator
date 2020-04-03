@@ -506,7 +506,10 @@ public abstract class AST {
 
             @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
-                Instant start = Instant.now();
+                Instant start, end;
+                if (RecognizerGenTest.DEBUG_PROFILE) {
+                    start = Instant.now();
+                }
                 NFA result;
                 Set<Integer> codePoints = new HashSet<>();
                 for (var cor : charsOrRanges) {
@@ -520,8 +523,10 @@ public abstract class AST {
                 } else {
                     result = NFA.acceptsAllTheseCodePoints(alphabetSize, codePoints);
                 }
-                Instant end = Instant.now();
-                RecognizerGenTest.timeBuildingCharClasses += Duration.between(start, end).toNanos();
+                if (RecognizerGenTest.DEBUG_PROFILE) {
+                    end = Instant.now();
+                    RecognizerGenTest.timeBuildingCharClasses += Duration.between(start, end).toNanos();
+                }
                 return result;
             }
 
