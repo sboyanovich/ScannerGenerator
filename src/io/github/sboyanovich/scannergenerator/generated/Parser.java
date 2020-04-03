@@ -310,9 +310,12 @@ public class Parser {
             String modeName = modeDomain.getFirst();
             String domainName = modeDomain.getSecond();
 
+            int offset = modeName.length() + 1;
+
             Position idPos = sym.getCoords().getStarting();
+            Position idPos2 = new Position(idPos.getLine(), idPos.getPos() + offset, idPos.getIndex() + offset);
             handleUndeclared(modeName, idPos, true);
-            handleUndeclared(domainName, idPos, false);
+            handleUndeclared(domainName, idPos2, false);
 
             action = new AST.Rules.Rule.Action.SwitchReturn(getNodeName(), modeName, domainName);
             nextToken();
