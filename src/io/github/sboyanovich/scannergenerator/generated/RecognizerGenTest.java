@@ -118,8 +118,10 @@ public class RecognizerGenTest {
             System.out.println("Warnings: " + warnings);
         }
         /// DISPLAYING COMPILER MESSAGES
-        System.out.println("Compiler messages:");
         SortedMap<Position, Message> messages = compiler.getSortedMessages();
+        if(!messages.isEmpty()) {
+            System.out.println("Compiler messages:");
+        }
         for (Map.Entry<Position, Message> entry : messages.entrySet()) {
             System.out.println("\tat " + entry.getKey() + " " + entry.getValue());
         }
@@ -278,6 +280,9 @@ public class RecognizerGenTest {
             }
             for (String modeName : modes.keySet()) {
                 LexicalRecognizer recognizer = modes.get(modeName);
+                System.out.println("Mode: " + modeName);
+                System.out.println("\tStates: " + recognizer.getNumberOfStates());
+                System.out.println("\tGeneralized symbols: " + recognizer.getNumberOfColumns());
                 recognizer.writeToFile(
                         prefix + recognizersDirName + "/" + modeName + ".reco", priorityMap
                 );
