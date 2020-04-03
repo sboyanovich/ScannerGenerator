@@ -8,6 +8,7 @@ import io.github.sboyanovich.scannergenerator.scanner.Message;
 import io.github.sboyanovich.scannergenerator.scanner.Position;
 import io.github.sboyanovich.scannergenerator.utility.Utility;
 
+import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -87,7 +88,14 @@ public class RecognizerGenTest {
         }
 
         /// READING TEXT FROM FILE
-        String text = Utility.getText(inputFile);
+        String text = "";
+        File path = new File(inputFile);
+        if (path.exists()) {
+            text = Utility.getText(inputFile);
+        } else {
+            System.err.println("Error: File " + inputFile + " not found!");
+            System.exit(1);
+        }
 
         int maxCodePoint = Character.MAX_CODE_POINT;
         int aeoi = maxCodePoint + 1;
