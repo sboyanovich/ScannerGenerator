@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
 
 public class RecognizerGenTest {
 
-    public static final boolean DEBUG_PROFILE = false;
-    static Instant startTotal, endTotal;
+    public static boolean DEBUG_PROFILE = false;
+    static Instant startTotal = null, endTotal = null;
     static long totalTimeElapsed, timeNFA, timeGeneratingCode,
             timeBuildingRecognizers, timeWritingRecognizers, timeRemovingLambdas,
             timeComputingPivots, timeDeterminizing, timeCompressingAndMinimizing;
@@ -24,7 +24,7 @@ public class RecognizerGenTest {
 
     static final String APP_NAME = "xscan";
     static final String USAGE_HINT =
-            "USAGE: " + APP_NAME + " <input_file> [-r] [-d] [-p <package_name>] [-t]";
+            "USAGE: " + APP_NAME + " <input_file> [-r] [-d] [-p <package_name>] [-t] [-v]";
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -70,6 +70,9 @@ public class RecognizerGenTest {
                         break;
                     case "-t":
                         dumpAstDescription = true;
+                        break;
+                    case "-v":
+                        DEBUG_PROFILE = true;
                         break;
                     default:
                         System.err.println("Unrecognized arg: " + arg);
@@ -119,7 +122,7 @@ public class RecognizerGenTest {
         }
         /// DISPLAYING COMPILER MESSAGES
         SortedMap<Position, Message> messages = compiler.getSortedMessages();
-        if(!messages.isEmpty()) {
+        if (!messages.isEmpty()) {
             System.out.println("Compiler messages:");
         }
         for (Map.Entry<Position, Message> entry : messages.entrySet()) {
@@ -134,7 +137,7 @@ public class RecognizerGenTest {
             Map<String, NFA> definitions = new HashMap<>();
             Map<String, Set<Integer>> defPivots = new HashMap<>();
 
-            Instant start, end;
+            Instant start = null, end = null;
 
             /// BUILDING DEFINITIONS NFAs
             for (AST.Definitions.Def def : spec.definitions.definitions) {
@@ -759,7 +762,7 @@ public class RecognizerGenTest {
     private static final int A_LOT_OF_STATES = 250;
 
     static LexicalRecognizer buildRecognizer(NFA lang, Map<StateTag, Integer> priorityMap, Set<Integer> pivots) {
-        Instant start, end;
+        Instant start = null, end = null;
         if (DEBUG_PROFILE) {
             start = Instant.now();
         }

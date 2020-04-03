@@ -878,7 +878,7 @@ public class NFA {
         int lambdaClosureMemoQueryCounter = 0;
 
         long totalTime, closureTime = 0, lambdaClosureTime = 0;
-        Instant start, end, startTotal, endTotal;
+        Instant start = null, end = null, startTotal = null, endTotal = null;
 
         if (RecognizerGenTest.DEBUG_PROFILE) {
             startTotal = Instant.now();

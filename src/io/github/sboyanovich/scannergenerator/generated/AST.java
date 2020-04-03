@@ -506,7 +506,7 @@ public abstract class AST {
 
             @Override
             NFA buildNFA(Map<String, NFA> namedExpressions, int alphabetSize) {
-                Instant start, end;
+                Instant start = null, end = null;
                 if (RecognizerGenTest.DEBUG_PROFILE) {
                     start = Instant.now();
                 }
